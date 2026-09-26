@@ -1,0 +1,530 @@
+{
+  "meta": {
+    "owner": "Chris",
+    "status": "stub_needs_expert_review",
+    "source_field": "zon_new",
+    "source_layer": "City of Pittsburgh zoning districts (PGHWebZoning)",
+    "housing_types": [
+      "single_family",
+      "townhouse_duplex",
+      "small_apartment",
+      "large_apartment"
+    ],
+    "warning": "Every allowance below is a first-pass reading of the district title, not a legal interpretation of the Pittsburgh Zoning Code. reviewed is false on every row. The tool flags these results. It does not determine what may be built."
+  },
+  "districts": {
+    "R1D-VL": {
+      "label": "Single-Unit Detached Residential, Very Low Density",
+      "allowed": [
+        "single_family"
+      ],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Stub from the district title only. Detached single-unit districts are marked single-family only. Confirm attached and ADU rules."
+    },
+    "R1D-L": {
+      "label": "Single-Unit Detached Residential, Low Density",
+      "allowed": [
+        "single_family"
+      ],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Stub from the district title only. Detached single-unit districts are marked single-family only. Confirm attached and ADU rules."
+    },
+    "R1D-M": {
+      "label": "Single-Unit Detached Residential, Moderate Density",
+      "allowed": [
+        "single_family"
+      ],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Stub from the district title only. Detached single-unit districts are marked single-family only. Confirm attached and ADU rules."
+    },
+    "R1D-H": {
+      "label": "Single-Unit Detached Residential, High Density",
+      "allowed": [
+        "single_family"
+      ],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Stub from the district title only. Detached single-unit districts are marked single-family only. Confirm attached and ADU rules."
+    },
+    "R1D-VH": {
+      "label": "Single-Unit Detached Residential, Very High Density",
+      "allowed": [
+        "single_family"
+      ],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Stub from the district title only. Detached single-unit districts are marked single-family only. Confirm attached and ADU rules."
+    },
+    "R1A-M": {
+      "label": "Single-Unit Attached Residential, Moderate Density",
+      "allowed": [
+        "single_family",
+        "townhouse_duplex"
+      ],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Stub from the district title only. Attached single-unit is mapped to single-family and townhouse/duplex. Apartment bins are not marked allowed."
+    },
+    "R1A-H": {
+      "label": "Single-Unit Attached Residential, High Density",
+      "allowed": [
+        "single_family",
+        "townhouse_duplex"
+      ],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Stub from the district title only. Attached single-unit is mapped to single-family and townhouse/duplex. Apartment bins are not marked allowed."
+    },
+    "R1A-VH": {
+      "label": "Single-Unit Attached Residential, Very High Density",
+      "allowed": [
+        "single_family",
+        "townhouse_duplex"
+      ],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Stub from the district title only. Attached single-unit is mapped to single-family and townhouse/duplex. Apartment bins are not marked allowed."
+    },
+    "R2-L": {
+      "label": "Two-Unit Residential, Low Density",
+      "allowed": [
+        "single_family",
+        "townhouse_duplex"
+      ],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Stub from the district title only. Two-unit districts are mapped to single-family and townhouse/duplex, not the 3\u201319 or 20+ bins."
+    },
+    "R2-M": {
+      "label": "Two-Unit Residential, Moderate Density",
+      "allowed": [
+        "single_family",
+        "townhouse_duplex"
+      ],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Stub from the district title only. Two-unit districts are mapped to single-family and townhouse/duplex, not the 3\u201319 or 20+ bins."
+    },
+    "R2-H": {
+      "label": "Two-Unit Residential, High Density",
+      "allowed": [
+        "single_family",
+        "townhouse_duplex"
+      ],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Stub from the district title only. Two-unit districts are mapped to single-family and townhouse/duplex, not the 3\u201319 or 20+ bins."
+    },
+    "R2-VH": {
+      "label": "Two-Unit Residential, Very High Density",
+      "allowed": [
+        "single_family",
+        "townhouse_duplex"
+      ],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Stub from the district title only. Two-unit districts are mapped to single-family and townhouse/duplex, not the 3\u201319 or 20+ bins."
+    },
+    "R3-L": {
+      "label": "Three-Unit Residential, Low Density",
+      "allowed": [
+        "single_family",
+        "townhouse_duplex"
+      ],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Stub from the district title only. This district is named for three-unit buildings. The tool's small-apartment bin is 3\u201319 units, so that bin is not marked allowed. A three-unit building may still be permitted. Confirm the use table."
+    },
+    "R3-M": {
+      "label": "Three-Unit Residential, Moderate Density",
+      "allowed": [
+        "single_family",
+        "townhouse_duplex"
+      ],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Stub from the district title only. This district is named for three-unit buildings. The tool's small-apartment bin is 3\u201319 units, so that bin is not marked allowed. A three-unit building may still be permitted. Confirm the use table."
+    },
+    "RM-VL": {
+      "label": "Multi-Unit Residential, Very Low Density",
+      "allowed": [
+        "single_family",
+        "townhouse_duplex",
+        "small_apartment"
+      ],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Stub from the district title only. Moderate or very-low multi-unit districts are marked for the small-apartment bin (3\u201319) and not the 20+ bin. Confirm height and unit caps."
+    },
+    "RM-M": {
+      "label": "Multi-Unit Residential, Moderate Density",
+      "allowed": [
+        "single_family",
+        "townhouse_duplex",
+        "small_apartment"
+      ],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Stub from the district title only. Moderate or very-low multi-unit districts are marked for the small-apartment bin (3\u201319) and not the 20+ bin. Confirm height and unit caps."
+    },
+    "RM-H": {
+      "label": "Multi-Unit Residential, High Density",
+      "allowed": [
+        "single_family",
+        "townhouse_duplex",
+        "small_apartment",
+        "large_apartment"
+      ],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Stub from the district title only. High and very-high multi-unit titles are marked for all four types, including 20+ units. Confirm the use table before relying on this."
+    },
+    "RM-VH": {
+      "label": "Multi-Unit Residential, Very High Density",
+      "allowed": [
+        "single_family",
+        "townhouse_duplex",
+        "small_apartment",
+        "large_apartment"
+      ],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Stub from the district title only. High and very-high multi-unit titles are marked for all four types, including 20+ units. Confirm the use table before relying on this."
+    },
+    "R-MU": {
+      "label": "Residential Mixed Use",
+      "allowed": [
+        "townhouse_duplex",
+        "small_apartment",
+        "large_apartment"
+      ],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Stub from the district title only. Mixed residential is marked for townhouse and both apartment bins. Single-family may also be allowed."
+    },
+    "LNC": {
+      "label": "Local Neighborhood Commercial",
+      "allowed": [
+        "townhouse_duplex",
+        "small_apartment"
+      ],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Stub from the district title only. Commercial districts sometimes allow upper-story housing or multi-unit buildings. Confirm the use table; this is not a reading of it."
+    },
+    "NDO": {
+      "label": "Neighborhood Office",
+      "allowed": [
+        "townhouse_duplex",
+        "small_apartment"
+      ],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Stub from the district title only. Commercial districts sometimes allow upper-story housing or multi-unit buildings. Confirm the use table; this is not a reading of it."
+    },
+    "UNC": {
+      "label": "Urban Neighborhood Commercial",
+      "allowed": [
+        "townhouse_duplex",
+        "small_apartment",
+        "large_apartment"
+      ],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Stub from the district title only. Commercial districts sometimes allow upper-story housing or multi-unit buildings. Confirm the use table; this is not a reading of it."
+    },
+    "HC": {
+      "label": "Highway Commercial",
+      "allowed": [
+        "small_apartment",
+        "large_apartment"
+      ],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Stub from the district title only. Commercial districts sometimes allow upper-story housing or multi-unit buildings. Confirm the use table; this is not a reading of it."
+    },
+    "NDI": {
+      "label": "Neighborhood Industrial",
+      "allowed": [],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Stub assumes these four housing types are not by-right. Residential use may still be possible as a special exception, overlay, or site plan. Expert review required."
+    },
+    "UI": {
+      "label": "Urban Industrial",
+      "allowed": [],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Stub assumes these four housing types are not by-right. Residential use may still be possible as a special exception, overlay, or site plan. Expert review required."
+    },
+    "GI": {
+      "label": "General Industrial",
+      "allowed": [],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Stub assumes these four housing types are not by-right. Residential use may still be possible as a special exception, overlay, or site plan. Expert review required."
+    },
+    "P": {
+      "label": "Parks and Open Space",
+      "allowed": [],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Stub assumes these four housing types are not by-right. Residential use may still be possible as a special exception, overlay, or site plan. Expert review required."
+    },
+    "H": {
+      "label": "Hillside",
+      "allowed": [],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Stub from the district title only. Hillside is marked as not allowing these four types by right. Confirm any housing that exists as nonconforming or by exception."
+    },
+    "EMI": {
+      "label": "Educational/Medical Institution",
+      "allowed": [],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Stub assumes these four housing types are not by-right. Residential use may still be possible as a special exception, overlay, or site plan. Expert review required."
+    },
+    "RIV-RM": {
+      "label": "Riverfront Mixed Residential",
+      "allowed": [
+        "townhouse_duplex",
+        "small_apartment",
+        "large_apartment"
+      ],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Stub from the district title only. Confirm riverfront use standards and flood overlays, which this file does not encode."
+    },
+    "RIV-MU": {
+      "label": "Riverfront Mixed Use",
+      "allowed": [
+        "townhouse_duplex",
+        "small_apartment",
+        "large_apartment"
+      ],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Stub from the district title only. Confirm the riverfront use table."
+    },
+    "RIV-NS": {
+      "label": "Riverfront North Shore",
+      "allowed": [
+        "townhouse_duplex",
+        "small_apartment",
+        "large_apartment"
+      ],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Stub from the district title only. This district is unlikely in the MVP neighborhoods. Confirm before use."
+    },
+    "RIV-IMU": {
+      "label": "Riverfront Industrial Mixed Use",
+      "allowed": [],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Stub assumes these four housing types are not by-right. Residential use may still be possible as a special exception, overlay, or site plan. Expert review required."
+    },
+    "RIV-GI": {
+      "label": "Riverfront General Industrial",
+      "allowed": [],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Stub assumes these four housing types are not by-right. Residential use may still be possible as a special exception, overlay, or site plan. Expert review required."
+    },
+    "SP-1": {
+      "label": "Pittsburgh Technology Center",
+      "allowed": [],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Specially planned or planned-unit district. Allowances are site-specific. Stub marks none of the four types until the adopted plan is checked."
+    },
+    "SP-4": {
+      "label": "Station Square",
+      "allowed": [],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Specially planned or planned-unit district. Allowances are site-specific. Stub marks none of the four types until the adopted plan is checked."
+    },
+    "SP-5": {
+      "label": "SouthSide Works",
+      "allowed": [],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Specially planned or planned-unit district. Allowances are site-specific. Stub marks none of the four types until the adopted plan is checked."
+    },
+    "SP-8": {
+      "label": "Riverfront Landing",
+      "allowed": [],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Specially planned or planned-unit district. Allowances are site-specific. Stub marks none of the four types until the adopted plan is checked."
+    },
+    "SP-9": {
+      "label": "Bakery Square",
+      "allowed": [],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Specially planned or planned-unit district. Allowances are site-specific. Stub marks none of the four types until the adopted plan is checked."
+    },
+    "SP-10": {
+      "label": "Almono",
+      "allowed": [],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Specially planned or planned-unit district. Allowances are site-specific. Stub marks none of the four types until the adopted plan is checked."
+    },
+    "SP-11": {
+      "label": "Lower Hill",
+      "allowed": [],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Specially planned or planned-unit district. Allowances are site-specific. Stub marks none of the four types until the adopted plan is checked."
+    },
+    "CP": {
+      "label": "Commercial Planned Unit Development",
+      "allowed": [],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Specially planned or planned-unit district. Allowances are site-specific. Stub marks none of the four types until the adopted plan is checked."
+    },
+    "RP": {
+      "label": "Residential Planned Unit Development",
+      "allowed": [],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Specially planned or planned-unit district. Allowances are site-specific. Stub marks none of the four types until the adopted plan is checked."
+    },
+    "AP": {
+      "label": "Residential/Commercial Planned Unit Development",
+      "allowed": [],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Specially planned or planned-unit district. Allowances are site-specific. Stub marks none of the four types until the adopted plan is checked."
+    },
+    "GT-A": {
+      "label": "Golden Triangle A",
+      "allowed": [
+        "small_apartment",
+        "large_apartment"
+      ],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Stub from the district title only. Downtown districts are outside the MVP neighborhoods."
+    },
+    "GT-B": {
+      "label": "Golden Triangle B",
+      "allowed": [
+        "small_apartment",
+        "large_apartment"
+      ],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Stub from the district title only. Downtown districts are outside the MVP neighborhoods."
+    },
+    "GT-C": {
+      "label": "Golden Triangle C",
+      "allowed": [
+        "small_apartment",
+        "large_apartment"
+      ],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Stub from the district title only. Downtown districts are outside the MVP neighborhoods."
+    },
+    "GT-D": {
+      "label": "Golden Triangle D",
+      "allowed": [
+        "small_apartment",
+        "large_apartment"
+      ],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Stub from the district title only. Downtown districts are outside the MVP neighborhoods."
+    },
+    "GT-E": {
+      "label": "Golden Triangle E",
+      "allowed": [
+        "small_apartment",
+        "large_apartment"
+      ],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Stub from the district title only. Downtown districts are outside the MVP neighborhoods."
+    },
+    "GPRA": {
+      "label": "Grandview Public Realm A",
+      "allowed": [],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Stub. Public-realm district. Confirm any residential permission in the adopted plan."
+    },
+    "GPRB": {
+      "label": "Grandview Public Realm B",
+      "allowed": [],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Stub. Public-realm district. Confirm any residential permission in the adopted plan."
+    },
+    "GPRC": {
+      "label": "Grandview Public Realm C",
+      "allowed": [],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Stub. Public-realm district. Confirm any residential permission in the adopted plan."
+    },
+    "UPR-A": {
+      "label": "Uptown Public Realm A",
+      "allowed": [
+        "townhouse_duplex",
+        "small_apartment",
+        "large_apartment"
+      ],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Stub from the district title only. Outside the MVP neighborhoods unless a parcel is mis-tagged."
+    },
+    "UPR-B": {
+      "label": "Uptown Public Realm B",
+      "allowed": [
+        "townhouse_duplex",
+        "small_apartment",
+        "large_apartment"
+      ],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Stub from the district title only. Outside the MVP neighborhoods unless a parcel is mis-tagged."
+    },
+    "UC-E": {
+      "label": "Urban Center Employment",
+      "allowed": [
+        "small_apartment",
+        "large_apartment"
+      ],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Stub from the district title only. Commercial districts sometimes allow upper-story housing or multi-unit buildings. Confirm the use table; this is not a reading of it."
+    },
+    "UC-MU": {
+      "label": "Urban Center Mixed Use",
+      "allowed": [
+        "townhouse_duplex",
+        "small_apartment",
+        "large_apartment"
+      ],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "Stub from the district title only. Commercial districts sometimes allow upper-story housing or multi-unit buildings. Confirm the use table; this is not a reading of it."
+    },
+    "MTOBOR": {
+      "label": "Mount Oliver Borough",
+      "allowed": [],
+      "reviewed": false,
+      "needs_expert_review": true,
+      "notes": "This code is a borough sliver in the city zoning layer, not a Pittsburgh zoning district. No types are marked allowed."
+    }
+  }
+}
