@@ -57,7 +57,7 @@
       "higher_means": "Stronger case that this type serves lower-income households here, after a displacement penalty",
       "measured": [
         "Block-group median household income compared with the county median",
-        "Share of renters paying 30 percent or more of income in rent",
+        "Share of renters paying 30 percent or more of income in rent (ACS B25070, not HUD CHAS)",
         "The same sale prices and turnover used in demand, read here as displacement pressure"
       ],
       "normative": [
@@ -72,10 +72,11 @@
       "higher_means": "More hazard exposure. Ranking uses 100 minus this number so higher is a better match.",
       "measured": [
         "Overlap with FEMA Special Flood Hazard Area and 0.2-percent zones",
-        "Overlap with City of Pittsburgh landslide-prone areas"
+        "Overlap with Pittsburgh steep slopes of 25 percent or greater, used as a landslide-risk proxy, not a landslide inventory",
+        "Overlap with Pittsburgh undermined areas, a preliminary mine-subsidence screen"
       ],
       "normative": [
-        "65/35 blend of flood and landslide",
+        "50/30/20 blend of flood, steep-slope proxy, and undermined area. A missing layer is dropped and the other weights are rescaled.",
         "A floor of 70 when any Special Flood Hazard Area touches the parcel",
         "A small exposure multiplier by housing type (more homes, slightly higher risk)"
       ]
@@ -99,8 +100,9 @@
     "equity_need_weight": 0.5,
     "equity_production_weight": 0.35,
     "equity_displacement_weight": 0.25,
-    "climate_flood_weight": 0.65,
-    "climate_landslide_weight": 0.35,
+    "climate_flood_weight": 0.5,
+    "climate_slope_weight": 0.3,
+    "climate_undermined_weight": 0.2,
     "sfha_minimum_component": 70,
     "flood_02_component": 40,
     "type_factors": {

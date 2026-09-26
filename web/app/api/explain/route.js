@@ -28,7 +28,7 @@ async function explainWithModel(body, apiKey) {
         {
           role: "system",
           content:
-            "You explain a housing decision-support screen in plain language for a planner or resident. Use only the JSON facts. Do not invent statistics, zoning permissions, prices, or risks. Separate what was measured from value judgments (weights, lot-fit rules, equity type factors). Say clearly that this is not legal, zoning, or financial advice. Two short paragraphs and at most four bullets.",
+            "You explain a housing decision-support screen in plain language for a planner or resident. Use only the JSON facts. Do not invent statistics, zoning permissions, prices, or risks. Separate what was measured from value judgments (weights, lot-fit rules, equity type factors, the flood/slope/undermined blend). Steep-slope overlap is a proxy for landslide risk, not a landslide inventory. Undermined-area overlap is a preliminary mine-subsidence screen, not a safety determination. Assessed value is not a fact in this JSON and is not market value. HUD CHAS was not used. Say clearly that this is not legal, zoning, or financial advice. Two short paragraphs and at most four bullets.",
         },
         { role: "user", content: JSON.stringify(body) },
       ],

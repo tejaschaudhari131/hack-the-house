@@ -84,7 +84,20 @@ export default function ParcelPanel({
         <ul>
           <li>Zoning allowances are a stub read from district titles. Every rule needs expert review.</li>
           <li>The sliders are value judgments. Confidence is only about thin or missing data.</li>
-          <li>Climate here is FEMA flood zones and mapped landslide-prone areas, not a site survey, future rainfall, or building emissions.</li>
+          <li>
+            Climate here is FEMA flood zones, city slopes of 25% or greater used only as a landslide-risk proxy,
+            and mapped undermined areas as a preliminary mine screen. It is not a survey, a flood determination,
+            a geotechnical study, future rainfall, or building emissions.
+          </li>
+          <li>
+            Assessed value is not market value and is not used. Demand uses valid sale prices from the assessment
+            file, not the separate sales dataset.
+          </li>
+          <li>
+            Equity uses ACS income and rent burden. HUD CHAS tract cost burden by income is the next input and is
+            not in this build. ACS figures have margins of error.
+          </li>
+          <li>The zoning map is not the zoning code. Overlays, exceptions, and review rules are not in the stub.</li>
           <li>No infrastructure capacity, school seats, subsidies, or loan terms.</li>
           <li>Scores use fixed anchors for these neighborhoods. They are not a citywide percentile.</li>
         </ul>
@@ -222,7 +235,7 @@ export default function ParcelPanel({
                   <Bar
                     label="Climate risk"
                     value={row.climate_risk}
-                    hint="Higher means more mapped hazard. Ranking uses 100 minus this."
+                    hint="Flood, steep-slope proxy, and undermined area. Higher means more mapped hazard."
                   />
                 </article>
               ))}

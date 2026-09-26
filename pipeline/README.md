@@ -16,7 +16,7 @@ python run_pipeline.py
 Outputs:
 
 - `data/processed/parcels.geojson` (also copied to `web/public/data/`)
-- `data/processed/sources.json` — URL, publisher, pull date, license, status
+- `data/processed/sources.json` — organizers' list URL, caveat, access URL, publisher, pull date, license, status
 - `data/processed/score_model.json` — measured inputs vs value judgments
 - `data/processed/summary.json`
 

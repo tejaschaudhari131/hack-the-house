@@ -8,6 +8,7 @@ from score import (
     climate_risk,
     composite,
     lot_fit,
+    model_card,
     rank_types,
     score_parcel,
 )
@@ -33,11 +34,13 @@ class ScoreTests(unittest.TestCase):
             "census_geography": "block_group",
             "sfha_overlap": 0.4,
             "flood_02_overlap": 0,
-            "landslide_overlap": 0.2,
+            "steep_slope_overlap": 0.2,
+            "undermined_overlap": 0.1,
             "assessment_joined": True,
             "transit_available": True,
             "flood_available": True,
-            "landslide_available": True,
+            "steep_slope_available": True,
+            "undermined_available": True,
         }
         neighborhood = {"price_per_sqft": 140, "turnover_per_100": 12, "valid_sales": 40}
         result = score_parcel(parcel, neighborhood, county_median_income=76000)
@@ -60,10 +63,12 @@ class ScoreTests(unittest.TestCase):
             "assessment_joined": True,
             "transit_available": True,
             "flood_available": False,
-            "landslide_available": False,
+            "steep_slope_available": False,
+            "undermined_available": False,
             "sfha_overlap": 0,
             "flood_02_overlap": 0,
-            "landslide_overlap": 0,
+            "steep_slope_overlap": 0,
+            "undermined_overlap": 0,
         }
         neighborhood = {"price_per_sqft": 200, "turnover_per_100": 20, "valid_sales": 30}
         result = score_parcel(parcel, neighborhood, 76000)
@@ -97,6 +102,35 @@ class ScoreTests(unittest.TestCase):
 
     def test_exposure_multiplier_increases_large_apartment_risk(self):
         self.assertGreater(climate_risk("large_apartment", 50), climate_risk("single_family", 50))
+
+    def test_steep_slope_is_a_proxy_not_a_landslide_inventory(self):
+        climate = next(row for row in model_card()["dimensions"] if row["id"] == "climate_risk")
+        text = " ".join(climate["measured"]).lower()
+        self.assertIn("proxy", text)
+        self.assertIn("not a landslide inventory", text)
+        parcel = {
+            "lot_sqft": 5000,
+            "trips_within_400m": 20,
+            "nearest_stop_m": 200,
+            "median_income": 50000,
+            "rent_burden_share": 0.3,
+            "assessment_joined": True,
+            "transit_available": True,
+            "flood_available": True,
+            "steep_slope_available": True,
+            "undermined_available": False,
+            "sfha_overlap": 0,
+            "flood_02_overlap": 0,
+            "steep_slope_overlap": 0.5,
+            "undermined_overlap": 0,
+        }
+        neighborhood = {"price_per_sqft": 150, "turnover_per_100": 12, "valid_sales": 20}
+        result = score_parcel(parcel, neighborhood, 76000)
+        self.assertEqual(result["factors"]["steep_slope_component"], 50.0)
+        self.assertIsNone(result["factors"]["undermined_component"])
+        self.assertEqual(result["factors"]["steep_slope_role"], "landslide_risk_proxy")
+        self.assertGreater(result["scores"]["single_family"]["climate_risk"], 0)
+        self.assertTrue(any("undermined" in note.lower() for note in result["confidence_notes"]))
 
 
 if __name__ == "__main__":

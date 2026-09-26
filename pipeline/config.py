@@ -18,11 +18,15 @@ MVP_NEIGHBORHOODS = (
 
 WHY_THESE_PLACES = (
     "Hazelwood and Lawrenceville are the two places the scores can actually separate. "
-    "Hazelwood sits on the Monongahela, so FEMA flood zones and the city's landslide-prone "
-    "slopes both show up, and incomes are lower. Lawrenceville (Lower, Central, and Upper, "
-    "the three official neighborhoods) has frequent bus service and higher sale prices, "
-    "which is the gentrification pressure the equity score is meant to show. "
-    "Glen Hazel is left out on purpose: it is its own neighborhood, not part of the Hazelwood boundary."
+    "In this pull, slopes of 25 percent or greater (a landslide-risk proxy, not a landslide "
+    "inventory) touch about 57 percent of Hazelwood parcels and about 15 percent of "
+    "Lawrenceville parcels. Mapped undermined areas show up in Hazelwood (about 13 percent "
+    "of parcels) and not in these Lawrenceville parcels. Mapped FEMA flood zones run the "
+    "other way: about 6 percent of Lawrenceville parcels and under 1 percent of Hazelwood "
+    "parcels. Incomes are lower in Hazelwood. Lawrenceville (Lower, Central, and Upper) has "
+    "frequent bus service and higher sale prices, which is the displacement pressure the "
+    "equity score is meant to show. Glen Hazel is left out on purpose: it is its own "
+    "neighborhood, not part of the Hazelwood boundary."
 )
 
 # Fixed window so a Sunday rerun does not silently change the sales sample.
@@ -49,9 +53,14 @@ ZONING_QUERY_URL = (
     "https://services1.arcgis.com/YZCmUqbcsUpOKfj7/arcgis/rest/services/"
     "PGHWebZoning/FeatureServer/0/query"
 )
-LANDSLIDE_QUERY_URL = (
+# Organizers' list has no landslide-inventory layer. This is the steep-slope proxy.
+STEEP_SLOPE_QUERY_URL = (
     "https://services1.arcgis.com/YZCmUqbcsUpOKfj7/arcgis/rest/services/"
-    "PGHWebLandslideProne/FeatureServer/0/query"
+    "PGHWebSlope25/FeatureServer/0/query"
+)
+UNDERMINED_QUERY_URL = (
+    "https://services1.arcgis.com/YZCmUqbcsUpOKfj7/arcgis/rest/services/"
+    "PGHWebUndermined/FeatureServer/0/query"
 )
 FLOOD_QUERY_URL = (
     "https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query"

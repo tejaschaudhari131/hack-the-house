@@ -276,20 +276,55 @@ def download_zoning(refresh):
     return features
 
 
-def download_landslide(refresh):
-    print("Landslide-prone areas", flush=True)
-    cache = config.RAW_DIR / "landslide.geojson"
+def _features_in_neighborhoods(neighborhoods, query_url, out_fields, page_size=500):
+    features = []
+    seen = set()
+    for neighborhood in neighborhoods:
+        bounds = envelope(neighborhood["geom"], pad=0.002)
+        extra = {
+            "geometry": esri_envelope(bounds),
+            "geometryType": "esriGeometryEnvelope",
+            "inSR": "4326",
+            "spatialRel": "esriSpatialRelIntersects",
+            "outFields": out_fields,
+        }
+        page = list(arcgis_features(query_url, extra, page_size=page_size, order_by=""))
+        for feature in page:
+            props = feature.get("properties") or {}
+            # PGHWebSlope25 repeats objectid on every polygon. objectid_1 is the unique id.
+            key = props.get("objectid_1")
+            if key is None:
+                key = props.get("objectid") or props.get("OBJECTID")
+            if key is None:
+                key = json.dumps(feature.get("geometry"), sort_keys=True)
+            if key in seen:
+                continue
+            seen.add(key)
+            features.append(feature)
+    return features
+
+
+def download_steep_slopes(neighborhoods, refresh):
+    print("Steep slopes, 25 percent or greater", flush=True)
+    cache = config.RAW_DIR / "steep_slopes.geojson"
     if cache.exists() and not refresh:
         return json.loads(cache.read_text())["features"]
-    features = list(
-        arcgis_features(
-            config.LANDSLIDE_QUERY_URL,
-            {"outFields": "code,landslideprone,acres"},
-            page_size=1000,
-            order_by="objectid",
-        )
+    features = _features_in_neighborhoods(
+        neighborhoods, config.STEEP_SLOPE_QUERY_URL, "slope25,objectid_1"
     )
     cache.write_text(json.dumps({"type": "FeatureCollection", "features": features}))
+    print(f"  steep-slope polygons in the MVP boxes: {len(features)}", flush=True)
+    return features
+
+
+def download_undermined(neighborhoods, refresh):
+    print("Undermined areas", flush=True)
+    cache = config.RAW_DIR / "undermined.geojson"
+    if cache.exists() and not refresh:
+        return json.loads(cache.read_text())["features"]
+    features = _features_in_neighborhoods(neighborhoods, config.UNDERMINED_QUERY_URL, "undermined,objectid")
+    cache.write_text(json.dumps({"type": "FeatureCollection", "features": features}))
+    print(f"  undermined polygons in the MVP boxes: {len(features)}", flush=True)
     return features
 
 
@@ -644,7 +679,29 @@ def _neighborhood_market(parcels):
     return stats
 
 
-def assemble(neighborhoods, parcel_features, assessments, zoning_features, flood_features, landslide_features, block_groups, census_tables, transit):
+def _union_features(features):
+    parts = []
+    for feature in features or []:
+        geometry = geojson_to_shape(feature.get("geometry"))
+        if geometry is not None and not geometry.is_empty:
+            parts.append(geometry)
+    if not parts:
+        return None
+    return shapely.union_all(parts)
+
+
+def assemble(
+    neighborhoods,
+    parcel_features,
+    assessments,
+    zoning_features,
+    flood_features,
+    slope_features,
+    undermined_features,
+    block_groups,
+    census_tables,
+    transit,
+):
     print("Joining parcels to neighborhoods and layers", flush=True)
     hood_geoms = [item["geom"] for item in neighborhoods]
     hood_tree = STRtree(hood_geoms)
@@ -676,12 +733,8 @@ def assemble(neighborhoods, parcel_features, assessments, zoning_features, flood
             shaded_parts.append(geometry)
     sfha = shapely.union_all(sfha_parts) if sfha_parts else None
     shaded = shapely.union_all(shaded_parts) if shaded_parts else None
-    slide_parts = []
-    for feature in landslide_features or []:
-        geometry = geojson_to_shape(feature.get("geometry"))
-        if geometry is not None:
-            slide_parts.append(geometry)
-    landslide = shapely.union_all(slide_parts) if slide_parts else None
+    steep = _union_features(slope_features) if slope_features is not None else None
+    undermined = _union_features(undermined_features) if undermined_features is not None else None
     stops = transit["stops"] if transit else []
 
     parcels = []
@@ -783,7 +836,10 @@ def assemble(neighborhoods, parcel_features, assessments, zoning_features, flood
 
         record["sfha_overlap"] = round(_overlap(geometry, sfha), 3) if flood_features is not None else None
         record["flood_02_overlap"] = round(_overlap(geometry, shaded), 3) if flood_features is not None else None
-        record["landslide_overlap"] = round(_overlap(geometry, landslide), 3) if landslide_features is not None else None
+        record["steep_slope_overlap"] = round(_overlap(geometry, steep), 3) if slope_features is not None else None
+        record["undermined_overlap"] = (
+            round(_overlap(geometry, undermined), 3) if undermined_features is not None else None
+        )
         zones = []
         if record["sfha_overlap"]:
             zones.append("SFHA")
@@ -792,7 +848,8 @@ def assemble(neighborhoods, parcel_features, assessments, zoning_features, flood
         record["flood_zones"] = zones
         # A successful download that finds no overlap is a real zero, not a missing layer.
         record["flood_available"] = flood_features is not None
-        record["landslide_available"] = landslide_features is not None
+        record["steep_slope_available"] = slope_features is not None
+        record["undermined_available"] = undermined_features is not None
         record["transit_available"] = transit is not None
         if transit is not None:
             record.update(_transit_for_point(xy(point.x, point.y), stops))
@@ -830,7 +887,8 @@ def _public_feature(record):
         "flood_zones": record.get("flood_zones") or [],
         "sfha_overlap": record.get("sfha_overlap"),
         "flood_02_overlap": record.get("flood_02_overlap"),
-        "landslide_overlap": record.get("landslide_overlap"),
+        "steep_slope_overlap": record.get("steep_slope_overlap"),
+        "undermined_overlap": record.get("undermined_overlap"),
         "trips_within_400m": record.get("trips_within_400m"),
         "stops_within_800m": record.get("stops_within_800m"),
         "nearest_stop_m": record.get("nearest_stop_m"),
@@ -924,6 +982,12 @@ def write_outputs(neighborhoods, parcels, market, county_income, sources, transi
         "transit_service_date": None if not transit_meta else transit_meta.get("service_date"),
         "sources_failed": failures,
         "decision_support_only": True,
+        "chas_status": (
+            "Not loaded. huduser.gov answered unattended downloads with an AWS WAF challenge "
+            "(HTTP 202) on 2026-09-26, and the CHAS API needs an account token. Equity uses ACS "
+            "income and rent burden. Next step is the 2018-2022 CHAS tract table of cost burden "
+            "by HUD income band, joined on the tract GEOID."
+        ),
     }
     zoning_review = {
         "needs_expert_review": True,
@@ -950,17 +1014,17 @@ def write_outputs(neighborhoods, parcels, market, county_income, sources, transi
     print(f"Wrote {len(features)} parcels to {config.PROCESSED_DIR} and {config.WEB_DATA_DIR}", flush=True)
 
 
-def _run_step(sources, failures, name, url, publisher, license_name, notes, func):
+def _run_step(sources, failures, name, url, publisher, license_name, notes, func, extra=None):
     try:
         result = func()
-        sources.append(
-            _source(name, url, publisher, license_name, "ok", notes)
-        )
+        sources.append(_source(name, url, publisher, license_name, "ok", notes, extra))
         return result
     except Exception as error:  # noqa: BLE001 - record the failure, do not invent data
         message = f"{type(error).__name__}: {error}"
         print(f"FAILED {name}: {message}", flush=True)
-        sources.append(_source(name, url, publisher, license_name, "failed", notes, {"error": message}))
+        failed = dict(extra or {})
+        failed["error"] = message
+        sources.append(_source(name, url, publisher, license_name, "failed", notes, failed))
         failures.append({"name": name, "error": message})
         return None
 
@@ -997,11 +1061,19 @@ def main(refresh=False):
         sources,
         failures,
         "Allegheny County parcel boundaries",
-        config.PARCEL_QUERY_URL,
-        "Allegheny County GIS",
-        "License not specified on the county MapServer. WPRDC's parcel-boundary dataset, which points at PASDA for the archival file, is also 'license not specified'.",
-        "Geometry, PIN, map-block-lot, and calculated acreage for parcels in the neighborhood bounding boxes. Clipped to neighborhood polygons in a later step. No owner fields are on this layer.",
+        "https://data.wprdc.org/dataset/allegheny-county-parcel-boundaries",
+        "Allegheny County GIS / WPRDC",
+        "License not specified on the county MapServer or on the WPRDC parcel-boundary dataset.",
+        "Geometry, PIN, map-block-lot, and calculated acreage for parcels in the neighborhood bounding boxes. Clipped to neighborhood polygons in a later step. No owner fields are on this layer. "
+        "The organizers' dataset URL returned HTTP 404 on 2026-09-26. The live WPRDC page is https://data.wprdc.org/dataset/allegheny-county-parcel-boundaries1. Polygons were read from the county MapServer.",
         lambda: download_parcels(neighborhoods, refresh),
+        extra={
+            "catalog_priority": "Core",
+            "catalog_name": "Allegheny County Parcel Boundaries",
+            "catalog_url": "https://data.wprdc.org/dataset/allegheny-county-parcel-boundaries",
+            "caveat": "Geometry and assessment records may update on different schedules; validate parcel IDs.",
+            "access_url": config.PARCEL_QUERY_URL,
+        },
     )
     if not parcel_features:
         raise SystemExit("Cannot continue without parcels.")
@@ -1013,50 +1085,104 @@ def main(refresh=False):
         "https://data.wprdc.org/dataset/property-assessments",
         "Allegheny County Office of Property Assessments, redistributed by the Western Pennsylvania Regional Data Center",
         "Creative Commons CC0",
-        "Land use, lot area, year built, living area, and sale fields for zips 15201 and 15207. If more than 10 percent of clipped parcels are still unmatched, the pipeline streams the county CSV for those parcel IDs only. Owner names are not in this extract. CHANGENOTICE address fields are never requested or written.",
+        "Land use, lot area, year built, living area, and sale fields for zips 15201 and 15207. If more than 10 percent of clipped parcels are still unmatched, the pipeline streams the county CSV for those parcel IDs only. Owner names are not in this extract. CHANGENOTICE address fields are never requested or written. Assessed value is not read and is not treated as market value.",
         lambda: download_assessments(refresh),
+        extra={
+            "catalog_priority": "Core",
+            "catalog_name": "Allegheny County Property Assessments",
+            "catalog_url": "https://data.wprdc.org/dataset/property-assessments",
+            "caveat": "Assessment fields can be stale or missing; do not treat assessed value as market value.",
+            "access_url": config.ASSESSMENT_CSV_URL,
+        },
     ) or {}
 
     zoning_features = _run_step(
         sources,
         failures,
         "City of Pittsburgh zoning districts",
-        config.ZONING_QUERY_URL,
-        "City of Pittsburgh GIS (gis@pittsburghpa.gov), via WPRDC",
+        "https://data.wprdc.org/dataset/pittsburgh-zoning",
+        "City of Pittsburgh / WPRDC",
         "License not specified on the WPRDC zoning resource",
-        "District code zon_new and the district title. Which housing types are allowed is NOT taken from this layer. That stub lives in zoning/districts.json and needs expert review.",
+        "District code zon_new and the district title. Which housing types are allowed is NOT taken from this layer. That stub lives in zoning/districts.json and needs expert review. "
+        "The organizers' dataset URL returned HTTP 404 on 2026-09-26. The live WPRDC page is https://data.wprdc.org/dataset/zoning. Polygons were read from the city feature service.",
         lambda: download_zoning(refresh),
+        extra={
+            "catalog_priority": "Core",
+            "catalog_name": "Pittsburgh Zoning Districts",
+            "catalog_url": "https://data.wprdc.org/dataset/pittsburgh-zoning",
+            "caveat": "Map alone is insufficient: overlays, definitions, exceptions, and review rules matter.",
+            "access_url": config.ZONING_QUERY_URL,
+        },
     )
     flood_features = _run_step(
         sources,
         failures,
         "FEMA National Flood Hazard Layer flood zones",
-        "https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28",
-        "Federal Emergency Management Agency",
+        "https://www.fema.gov/flood-maps/national-flood-hazard-layer",
+        "FEMA",
         "Public domain, U.S. federal work",
-        "Effective NFHL layer 28, limited to Special Flood Hazard Areas (SFHA_TF = T) and 0.2-percent zones (ZONE_SUBTY contains 0.2). Zone X minimal-hazard polygons are not downloaded; no overlap with the queried zones is scored as minimal mapped flood hazard.",
+        "Effective NFHL layer 28, limited to Special Flood Hazard Areas (SFHA_TF = T) and 0.2-percent zones (ZONE_SUBTY contains 0.2). Zone X minimal-hazard polygons are not downloaded; no overlap with the queried zones is scored as minimal mapped flood hazard. The FEMA HTML page returned HTTP 403 to this client; the MapServer query is the file that was read.",
         lambda: download_flood(neighborhoods, refresh),
+        extra={
+            "catalog_priority": "Core",
+            "catalog_name": "FEMA National Flood Hazard Layer",
+            "catalog_url": "https://www.fema.gov/flood-maps/national-flood-hazard-layer",
+            "caveat": "Not a substitute for survey or flood determination; map amendments may matter.",
+            "access_url": "https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28",
+        },
     )
-    landslide_features = _run_step(
+    slope_features = _run_step(
         sources,
         failures,
-        "City of Pittsburgh landslide-prone areas",
-        config.LANDSLIDE_QUERY_URL,
-        "City of Pittsburgh GIS, via WPRDC",
-        "License not specified on the WPRDC landslide-prone areas resource",
-        "Polygons flagged landslide-prone. Overlap with each parcel is the measured input.",
-        lambda: download_landslide(refresh),
+        "Pittsburgh Steep Slopes (25% or greater)",
+        "https://data.wprdc.org/dataset/25-or-greater-slope",
+        "City of Pittsburgh / WPRDC",
+        "License not specified on the WPRDC steep-slope resource",
+        "Polygons of slopes 25 percent or greater inside the MVP neighborhood boxes. Overlap is the measured input. The score uses this as a landslide-risk proxy because the organizers' list has no landslide-inventory layer. It is not a landslide map.",
+        lambda: download_steep_slopes(neighborhoods, refresh),
+        extra={
+            "catalog_priority": "Core",
+            "catalog_name": "Pittsburgh Steep Slopes (25% or greater)",
+            "catalog_url": "https://data.wprdc.org/dataset/25-or-greater-slope",
+            "caveat": "Derived threshold layer; site engineering requires detailed survey/geotechnical work.",
+            "access_url": config.STEEP_SLOPE_QUERY_URL,
+            "role": "landslide_risk_proxy",
+        },
+    )
+    undermined_features = _run_step(
+        sources,
+        failures,
+        "Pittsburgh Undermined Areas",
+        "https://data.wprdc.org/dataset/undermined-areas",
+        "City / County / WPRDC",
+        "License not specified on the WPRDC undermined-areas resource",
+        "Mine-influence polygons inside the MVP neighborhood boxes. Overlap is a preliminary screen only.",
+        lambda: download_undermined(neighborhoods, refresh),
+        extra={
+            "catalog_priority": "Core",
+            "catalog_name": "Pittsburgh Undermined Areas",
+            "catalog_url": "https://data.wprdc.org/dataset/undermined-areas",
+            "caveat": "Historic mine maps can be incomplete or imprecise; never use alone for safety decisions.",
+            "access_url": config.UNDERMINED_QUERY_URL,
+        },
     )
     census_tables = _run_step(
         sources,
         failures,
         "ACS 2024 5-year tables B19013, B25064, and B25070",
-        config.CENSUS_TABLES["B19013"],
+        "https://www.census.gov/data/developers/data-sets/acs-5year.html",
         "U.S. Census Bureau",
         "Public domain",
         "Median household income, median gross rent, and gross rent as a percentage of household income. Filtered to Allegheny County block groups, tracts, and the county summary. "
         + config.CENSUS_API_NOTE,
         lambda: download_census(refresh),
+        extra={
+            "catalog_priority": "Core",
+            "catalog_name": "American Community Survey 5-Year",
+            "catalog_url": "https://www.census.gov/data/developers/data-sets/acs-5year.html",
+            "caveat": "Estimates have margins of error; avoid false precision for small areas.",
+            "access_url": config.CENSUS_TABLES["B19013"],
+        },
     )
     block_groups = None
     if census_tables is not None:
@@ -1064,21 +1190,36 @@ def main(refresh=False):
             sources,
             failures,
             "Census cartographic block groups, Pennsylvania 2024",
-            config.BLOCK_GROUP_ZIP_URL,
+            "https://www.census.gov/geographies/mapping-files/time-series/geo/tiger-line-file.html",
             "U.S. Census Bureau",
             "Public domain",
-            "2024 cartographic boundary file cb_2024_42_bg_500k, filtered to Allegheny County. Used only to assign a block group to each parcel. NAD83 coordinates are used as WGS84; the difference is small relative to a block group.",
+            "2024 cartographic boundary file cb_2024_42_bg_500k, filtered to Allegheny County, joined to 2024 ACS so the geography vintage matches the statistics. The organizers' list names TIGER/Line; this cartographic file uses the same 2024 GEOIDs and is the file that was joined. NAD83 coordinates are used as WGS84; the difference is small relative to a block group.",
             lambda: load_block_groups(refresh),
+            extra={
+                "catalog_priority": "Core",
+                "catalog_name": "TIGER/Line Shapefiles",
+                "catalog_url": "https://www.census.gov/geographies/mapping-files/time-series/geo/tiger-line-file.html",
+                "caveat": "Boundary vintages must match the statistics being joined.",
+                "access_url": config.BLOCK_GROUP_ZIP_URL,
+            },
         )
     transit = _run_step(
         sources,
         failures,
         "Pittsburgh Regional Transit GTFS",
-        config.GTFS_URL,
-        "Pittsburgh Regional Transit",
+        "https://data.wprdc.org/dataset/port-authority-of-allegheny-county-transit-data",
+        "Pittsburgh Regional Transit / WPRDC",
         "PRT Developer License Agreement, accepted by downloading the public GTFS zip. See https://www.rideprt.org/business-center/developer-resources/",
-        "stops.txt, trips.txt, calendar.txt, calendar_dates.txt, routes.txt, and stop_times.txt. Weekday trip counts use one representative weekday inside the feed's service window.",
+        "stops.txt, trips.txt, calendar.txt, calendar_dates.txt, routes.txt, and stop_times.txt. Weekday trip counts use one representative weekday inside the feed's service window. "
+        "The organizers' dataset URL returned HTTP 404 on 2026-09-26. The schedule actually read is the PRT developer GTFS zip. Trip counts are scheduled service, not realized reliability.",
         lambda: download_transit(neighborhoods, refresh),
+        extra={
+            "catalog_priority": "Core",
+            "catalog_name": "Pittsburgh Regional Transit GTFS",
+            "catalog_url": "https://data.wprdc.org/dataset/port-authority-of-allegheny-county-transit-data",
+            "caveat": "Scheduled service is not the same as realized reliability; agency name may appear historically as Port Authority.",
+            "access_url": config.GTFS_URL,
+        },
     )
 
     def clip_once():
@@ -1088,7 +1229,8 @@ def main(refresh=False):
             assessments,
             zoning_features or [],
             None if flood_features is None else flood_features,
-            None if landslide_features is None else landslide_features,
+            None if slope_features is None else slope_features,
+            None if undermined_features is None else undermined_features,
             block_groups or [],
             census_tables,
             transit,
@@ -1119,6 +1261,108 @@ def main(refresh=False):
         neighborhood_stats = market[record["neighborhood"]]
         record["score"] = score_parcel(record, neighborhood_stats, county_income)
     transit_meta = None if transit is None else {"service_date": transit.get("service_date")}
+    sources.extend(
+        [
+            _source(
+                "Comprehensive Housing Affordability Strategy (CHAS)",
+                "https://www.huduser.gov/portal/datasets/cp.html",
+                "HUD",
+                "Public",
+                "deferred",
+                "Tract-level cost burden by HUD income band was not loaded. huduser.gov returned an AWS WAF challenge (HTTP 202, x-amzn-waf-action: challenge) to unattended downloads on 2026-09-26, and the CHAS API requires an account token. Equity uses ACS B19013 and B25070 instead. Next step: join the 2018-2022 CHAS tract table (summary level 080) of cost burden by income on the tract GEOID.",
+                {
+                    "catalog_priority": "Core",
+                    "catalog_name": "Comprehensive Housing Affordability Strategy (CHAS)",
+                    "catalog_url": "https://www.huduser.gov/portal/datasets/cp.html",
+                    "caveat": "Based on multi-year ACS data; releases lag and tables are complex.",
+                },
+            ),
+            _source(
+                "Allegheny County Property Sale Transactions",
+                "https://data.wprdc.org/dataset/allegheny-county-property-sale-transactions",
+                "Allegheny County / WPRDC",
+                "Public",
+                "not_downloaded",
+                "Sale prices in this MVP come from sale fields on the property-assessment extract, not from this separate transactions file. The same caveat is applied: only SALECODE 0 / SALEDESC beginning with VALID SALE, price at least $10,000, on or after 2021-09-26. The organizers' URL returned HTTP 404 on 2026-09-26. The live WPRDC page is https://data.wprdc.org/dataset/real-estate-sales.",
+                {
+                    "catalog_priority": "Core",
+                    "catalog_name": "Allegheny County Property Sale Transactions",
+                    "catalog_url": "https://data.wprdc.org/dataset/allegheny-county-property-sale-transactions",
+                    "caveat": "Filter using sale-validation codes; many nominal transfers are not arm’s-length sales.",
+                },
+            ),
+            _source(
+                "OpenStreetMap",
+                "https://www.openstreetmap.org/",
+                "OpenStreetMap contributors",
+                "Open Data Commons Open Database License (ODbL)",
+                "used_by_app",
+                "Raster tiles are the basemap only (https://tile.openstreetmap.org/{z}/{x}/{y}.png). They are not a scored input.",
+                {
+                    "catalog_priority": "Useful",
+                    "catalog_name": "OpenStreetMap",
+                    "catalog_url": "https://www.openstreetmap.org/",
+                    "caveat": "Completeness varies; comply with ODbL attribution and share-alike requirements.",
+                },
+            ),
+            _source(
+                "EPA EJScreen",
+                "https://www.epa.gov/ejscreen/download-ejscreen-data",
+                "U.S. EPA",
+                "Public",
+                "not_in_mvp",
+                "Stretch source from the organizers' list. Not joined in this build.",
+                {
+                    "catalog_priority": "Useful",
+                    "catalog_name": "EPA EJScreen",
+                    "catalog_url": "https://www.epa.gov/ejscreen/download-ejscreen-data",
+                    "caveat": "Screening tool, not a risk assessment; methods and indicator definitions change.",
+                },
+            ),
+            _source(
+                "Location Affordability Index",
+                "https://hudgis-hud.opendata.arcgis.com/datasets/c1c32742599a42c9a45c95be50ed2ab6_12/about",
+                "HUD / DOT",
+                "Public",
+                "not_in_mvp",
+                "Stretch source from the organizers' list. Not joined in this build.",
+                {
+                    "catalog_priority": "Useful",
+                    "catalog_name": "Location Affordability Index",
+                    "catalog_url": "https://hudgis-hud.opendata.arcgis.com/datasets/c1c32742599a42c9a45c95be50ed2ab6_12/about",
+                    "caveat": "Modeled estimates depend on household profiles and vintage; not observed household spending.",
+                },
+            ),
+            _source(
+                "LEHD Origin-Destination Employment Statistics (LODES)",
+                "https://lehd.ces.census.gov/data/",
+                "U.S. Census Bureau",
+                "Public",
+                "not_in_mvp",
+                "Stretch source from the organizers' list. Not joined in this build. Transit access uses the PRT schedule instead.",
+                {
+                    "catalog_priority": "Useful",
+                    "catalog_name": "LEHD Origin-Destination Employment Statistics (LODES)",
+                    "catalog_url": "https://lehd.ces.census.gov/data/",
+                    "caveat": "Data are modeled and noise-infused; latest year lags.",
+                },
+            ),
+            _source(
+                "Opportunity Atlas",
+                "https://www.opportunityatlas.org/",
+                "Opportunity Insights / U.S. Census Bureau",
+                "Research release",
+                "not_in_mvp",
+                "Stretch source from the organizers' list. Not joined in this build, and not used to rank people or places as current conditions.",
+                {
+                    "catalog_priority": "Useful",
+                    "catalog_name": "Opportunity Atlas",
+                    "catalog_url": "https://www.opportunityatlas.org/",
+                    "caveat": "Historical cohort outcomes are not current neighborhood conditions and should not be used to rank people.",
+                },
+            ),
+        ]
+    )
     write_outputs(neighborhoods, parcels, market, county_income, sources, transit_meta, failures)
     if failures:
         print("Completed with source failures:", ", ".join(item["name"] for item in failures), flush=True)

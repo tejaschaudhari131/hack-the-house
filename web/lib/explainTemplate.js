@@ -39,8 +39,20 @@ function listMeasured(parcel, countyMedian) {
   if (parcel.sfha_overlap) bits.push(`about ${num(parcel.sfha_overlap * 100, 0)}% of the parcel overlaps a FEMA Special Flood Hazard Area`)
   else if (parcel.flood_zones?.includes("0.2%")) bits.push("the parcel touches the FEMA 0.2% annual-chance flood zone")
   else if (parcel.sfha_overlap === 0) bits.push("the parcel does not overlap a mapped Special Flood Hazard Area")
-  if (parcel.landslide_overlap) bits.push(`about ${num(parcel.landslide_overlap * 100, 0)}% overlaps a city landslide-prone area`)
-  else if (parcel.landslide_overlap === 0) bits.push("the parcel does not overlap a mapped landslide-prone area")
+  if (parcel.steep_slope_overlap) {
+    bits.push(
+      `about ${num(parcel.steep_slope_overlap * 100, 0)}% is on a mapped slope of 25% or greater, used here only as a landslide-risk proxy, not as a landslide inventory`,
+    )
+  } else if (parcel.steep_slope_overlap === 0) {
+    bits.push("the parcel does not overlap the city's 25% steep-slope layer (a landslide-risk proxy, not a landslide inventory)")
+  }
+  if (parcel.undermined_overlap) {
+    bits.push(
+      `about ${num(parcel.undermined_overlap * 100, 0)}% overlaps a mapped undermined area, which is a preliminary mine-subsidence screen and not a safety determination`,
+    )
+  } else if (parcel.undermined_overlap === 0) {
+    bits.push("the parcel does not overlap a mapped undermined area")
+  }
   return bits
 }
 
@@ -87,7 +99,7 @@ export function explainTemplate({ parcel, ranked, weights, whatIf, zoning, count
     )
   }
   paragraphs.push(
-    "Value judgments, not measurements: the weights themselves; the lot-fit curves that prefer townhouses on small lots and larger buildings on big lots; the equity rule that gives bigger buildings more weight where incomes are lower and a larger penalty where sales are hot; and a small climate penalty that rises with building size. Climate risk otherwise comes from mapped flood and landslide overlap. Confidence (" +
+    "Value judgments, not measurements: the weights themselves; the lot-fit curves that prefer townhouses on small lots and larger buildings on big lots; the equity rule that gives bigger buildings more weight where incomes are lower and a larger penalty where sales are hot; the 50/30/20 blend of flood, steep-slope proxy, and undermined area; and a small climate penalty that rises with building size. Steep slope is not a landslide map. Confidence (" +
       `${parcel.confidence_label || "unknown"}, ${parcel.confidence ?? "n/a"}) is only about thin data. It does not say the value judgments are right.`,
   )
   if (parcel.confidence_notes?.length) {

@@ -40,8 +40,9 @@ NORMATIVE = {
     "equity_need_weight": 0.50,
     "equity_production_weight": 0.35,
     "equity_displacement_weight": 0.25,
-    "climate_flood_weight": 0.65,
-    "climate_landslide_weight": 0.35,
+    "climate_flood_weight": 0.50,
+    "climate_slope_weight": 0.30,
+    "climate_undermined_weight": 0.20,
     "sfha_minimum_component": 70,
     "flood_02_component": 40,
     "type_factors": {
@@ -188,9 +189,30 @@ def equity_score(housing_type, need, displacement):
     return clamp100(raw * 100)
 
 
-def climate_components(sfha_overlap, flood_02_overlap, landslide_overlap, flood_available, landslide_available):
-    if not flood_available and not landslide_available:
-        return None, None, None
+def _weighted_present(parts):
+    """Blend (value, weight) pairs. Missing values are dropped, not treated as zero."""
+    numerator = 0.0
+    denominator = 0.0
+    for value, weight in parts:
+        if value is None or weight is None or weight <= 0:
+            continue
+        numerator += float(weight) * float(value)
+        denominator += float(weight)
+    if denominator == 0:
+        return None
+    return numerator / denominator
+
+
+def climate_components(
+    sfha_overlap,
+    flood_02_overlap,
+    steep_slope_overlap,
+    undermined_overlap,
+    flood_available,
+    steep_slope_available,
+    undermined_available,
+):
+    """Flood is FEMA. Steep slope is a landslide-risk proxy, not a landslide inventory."""
     flood_component = None
     if flood_available:
         sfha = clamp(float(sfha_overlap or 0))
@@ -201,19 +223,20 @@ def climate_components(sfha_overlap, flood_02_overlap, landslide_overlap, flood_
             flood_component = NORMATIVE["flood_02_component"] * max(shaded, 0.35)
         else:
             flood_component = 0.0
-    land_component = None
-    if landslide_available:
-        land_component = 100 * clamp(float(landslide_overlap or 0))
-    if flood_component is None:
-        base = land_component
-    elif land_component is None:
-        base = flood_component
-    else:
-        base = (
-            NORMATIVE["climate_flood_weight"] * flood_component
-            + NORMATIVE["climate_landslide_weight"] * land_component
-        )
-    return base, flood_component, land_component
+    slope_component = None
+    if steep_slope_available:
+        slope_component = 100 * clamp(float(steep_slope_overlap or 0))
+    undermined_component = None
+    if undermined_available:
+        undermined_component = 100 * clamp(float(undermined_overlap or 0))
+    base = _weighted_present(
+        [
+            (flood_component, NORMATIVE["climate_flood_weight"]),
+            (slope_component, NORMATIVE["climate_slope_weight"]),
+            (undermined_component, NORMATIVE["climate_undermined_weight"]),
+        ]
+    )
+    return base, flood_component, slope_component, undermined_component
 
 
 def climate_risk(housing_type, base):
@@ -267,9 +290,16 @@ def confidence_for(parcel, neighborhood, census_note_extra=None):
     if not parcel.get("flood_available", True):
         score -= 0.15
         notes.append("FEMA flood zones did not load, so flood risk is not in the climate score.")
-    if not parcel.get("landslide_available", True):
+    if not parcel.get("steep_slope_available", True):
         score -= 0.10
-        notes.append("Landslide-prone areas did not load, so landslide risk is not in the climate score.")
+        notes.append(
+            "The steep-slope layer did not load, so the landslide-risk proxy is not in the climate score."
+        )
+    if not parcel.get("undermined_available", True):
+        score -= 0.08
+        notes.append(
+            "Undermined areas did not load, so mine-subsidence screening is not in the climate score."
+        )
     sales = int(neighborhood.get("valid_sales") or 0)
     if sales < NORMATIVE["min_valid_sales_for_price"]:
         score -= 0.10
@@ -309,12 +339,14 @@ def score_parcel(parcel, neighborhood, county_median_income):
         parcel.get("nearest_stop_m"),
         parcel.get("transit_available", True),
     )
-    base, flood_component, land_component = climate_components(
+    base, flood_component, slope_component, undermined_component = climate_components(
         parcel.get("sfha_overlap"),
         parcel.get("flood_02_overlap"),
-        parcel.get("landslide_overlap"),
+        parcel.get("steep_slope_overlap"),
+        parcel.get("undermined_overlap"),
         parcel.get("flood_available", True),
-        parcel.get("landslide_available", True),
+        parcel.get("steep_slope_available", True),
+        parcel.get("undermined_available", True),
     )
     conf, conf_label, notes = confidence_for(parcel, neighborhood)
     fits = {}
@@ -345,7 +377,9 @@ def score_parcel(parcel, neighborhood, county_median_income):
         "transit_walk": walk,
         "transit_frequency": freq,
         "flood_component": None if flood_component is None else round(flood_component, 1),
-        "landslide_component": None if land_component is None else round(land_component, 1),
+        "steep_slope_component": None if slope_component is None else round(slope_component, 1),
+        "undermined_component": None if undermined_component is None else round(undermined_component, 1),
+        "steep_slope_role": "landslide_risk_proxy",
         "climate_base": None if base is None else round(base, 1),
     }
     return {
@@ -456,7 +490,7 @@ def model_card():
                 "higher_means": "Stronger case that this type serves lower-income households here, after a displacement penalty",
                 "measured": [
                     "Block-group median household income compared with the county median",
-                    "Share of renters paying 30 percent or more of income in rent",
+                    "Share of renters paying 30 percent or more of income in rent (ACS B25070, not HUD CHAS)",
                     "The same sale prices and turnover used in demand, read here as displacement pressure",
                 ],
                 "normative": [
@@ -471,10 +505,11 @@ def model_card():
                 "higher_means": "More hazard exposure. Ranking uses 100 minus this number so higher is a better match.",
                 "measured": [
                     "Overlap with FEMA Special Flood Hazard Area and 0.2-percent zones",
-                    "Overlap with City of Pittsburgh landslide-prone areas",
+                    "Overlap with Pittsburgh steep slopes of 25 percent or greater, used as a landslide-risk proxy, not a landslide inventory",
+                    "Overlap with Pittsburgh undermined areas, a preliminary mine-subsidence screen",
                 ],
                 "normative": [
-                    "65/35 blend of flood and landslide",
+                    "50/30/20 blend of flood, steep-slope proxy, and undermined area. A missing layer is dropped and the other weights are rescaled.",
                     "A floor of 70 when any Special Flood Hazard Area touches the parcel",
                     "A small exposure multiplier by housing type (more homes, slightly higher risk)",
                 ],

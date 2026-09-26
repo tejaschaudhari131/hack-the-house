@@ -1,7 +1,7 @@
 {
   "project": "Housing Typology, Equity & Climate Matchmaker",
   "pulled_at": "2026-09-26",
-  "why_these_places": "Hazelwood and Lawrenceville are the two places the scores can actually separate. Hazelwood sits on the Monongahela, so FEMA flood zones and the city's landslide-prone slopes both show up, and incomes are lower. Lawrenceville (Lower, Central, and Upper, the three official neighborhoods) has frequent bus service and higher sale prices, which is the gentrification pressure the equity score is meant to show. Glen Hazel is left out on purpose: it is its own neighborhood, not part of the Hazelwood boundary.",
+  "why_these_places": "Hazelwood and Lawrenceville are the two places the scores can actually separate. In this pull, slopes of 25 percent or greater (a landslide-risk proxy, not a landslide inventory) touch about 57 percent of Hazelwood parcels and about 15 percent of Lawrenceville parcels. Mapped undermined areas show up in Hazelwood (about 13 percent of parcels) and not in these Lawrenceville parcels. Mapped FEMA flood zones run the other way: about 6 percent of Lawrenceville parcels and under 1 percent of Hazelwood parcels. Incomes are lower in Hazelwood. Lawrenceville (Lower, Central, and Upper) has frequent bus service and higher sale prices, which is the displacement pressure the equity score is meant to show. Glen Hazel is left out on purpose: it is its own neighborhood, not part of the Hazelwood boundary.",
   "sale_cutoff": "2021-09-26",
   "sale_rule": "SALECODE 0 or SALEDESC starting with VALID SALE, price at least $10,000, on or after the cutoff. Nominal and multi-parcel sales are excluded.",
   "county_median_income": 78548.0,
@@ -70,5 +70,6 @@
   "zoning_codes_unmapped": [],
   "transit_service_date": "2026-09-25",
   "sources_failed": [],
-  "decision_support_only": true
+  "decision_support_only": true,
+  "chas_status": "Not loaded. huduser.gov answered unattended downloads with an AWS WAF challenge (HTTP 202) on 2026-09-26, and the CHAS API needs an account token. Equity uses ACS income and rent burden. Next step is the 2018-2022 CHAS tract table of cost burden by HUD income band, joined on the tract GEOID."
 }

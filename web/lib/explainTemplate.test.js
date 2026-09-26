@@ -19,7 +19,8 @@ test("template names measured facts and value judgments", () => {
       nearest_stop_name: "Second Ave at Tecumseh",
       routes_within_400m: ["56"],
       sfha_overlap: 0.2,
-      landslide_overlap: 0,
+      steep_slope_overlap: 0,
+      undermined_overlap: 0.4,
       confidence: 0.8,
       confidence_label: "high",
       confidence_notes: [],
@@ -58,5 +59,7 @@ test("template names measured facts and value judgments", () => {
   assert.match(text, /Observed for this place/)
   assert.match(text, /Value judgments/)
   assert.match(text, /Stub zoning/)
+  assert.match(text, /landslide-risk proxy/)
+  assert.match(text, /undermined area/)
   assert.match(text, /100 Example St/)
 })
