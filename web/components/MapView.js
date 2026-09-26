@@ -67,8 +67,8 @@ export default function MapView({ parcels, neighborhoods, zoning, weights, whatI
       style={{ height: "100%", width: "100%" }}
     >
       <TileLayer
-        attribution='&copy; OpenStreetMap contributors &copy; CARTO'
-        url="https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       <FitTo collection={neighborhoods} focus={focus} />
       <GeoJSON

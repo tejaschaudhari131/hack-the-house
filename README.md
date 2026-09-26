@@ -94,7 +94,7 @@ About 5% of clipped parcels (411 of 8,645) did not match an assessment row in ZI
 
 - Python: shapely, pyshp (and the standard library)
 - Web: Next.js, React, Leaflet, react-leaflet
-- Basemap tiles: CARTO / OpenStreetMap, attributed on the map
+- Basemap tiles: OpenStreetMap, attributed on the map
 
 No paid data product. No model is required for the scores. The optional explanation model is called only when `LLM_API_KEY` is set.
 

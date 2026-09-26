@@ -59,6 +59,7 @@ export default function ParcelPanel({
     if (!ranked) return []
     const blocks = []
     let current = null
+    let place = 0
     for (const row of ranked) {
       const flagged = !whatIf && zoningInfo?.status === "stub" && row.allowed === false
       const key = flagged ? "flagged" : "ranked"
@@ -66,7 +67,8 @@ export default function ParcelPanel({
         current = { key, rows: [] }
         blocks.push(current)
       }
-      current.rows.push(row)
+      place += 1
+      current.rows.push({ ...row, place })
     }
     return blocks
   }, [ranked, whatIf, zoningInfo])
@@ -205,11 +207,11 @@ export default function ParcelPanel({
                     ? "Ranked as if zoning allowed all four"
                     : "Ranked among types the stub marks as allowed"}
               </h3>
-              {group.rows.map((row, index) => (
+              {group.rows.map((row) => (
                 <article key={row.id} className="type-card" style={{ borderColor: TYPE_COLORS[row.id] }}>
                   <header>
                     <span>
-                      {index + 1}. {TYPE_LABELS[row.id]}
+                      {row.place}. {TYPE_LABELS[row.id]}
                     </span>
                     <strong>{formatScore(row.composite)}</strong>
                   </header>
