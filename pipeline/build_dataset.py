@@ -300,22 +300,20 @@ def download_flood(neighborhoods, refresh):
         return json.loads(cache.read_text())["features"]
     features = []
     seen = set()
+    # Zone X "minimal hazard" polygons are county-sized. Asking for them blows up
+    # the FEMA service. Minimal hazard is a measured zero in the score, so the
+    # query keeps Special Flood Hazard Areas and 0.2% zones only.
     for neighborhood in neighborhoods:
         bounds = envelope(neighborhood["geom"], pad=0.003)
         extra = {
+            "where": "SFHA_TF='T' OR ZONE_SUBTY LIKE '%0.2%'",
             "geometry": esri_envelope(bounds),
             "geometryType": "esriGeometryEnvelope",
             "inSR": "4326",
             "spatialRel": "esriSpatialRelIntersects",
             "outFields": "FLD_ZONE,ZONE_SUBTY,SFHA_TF",
-            "orderByFields": "OBJECTID",
         }
-        # Flood layer paging uses the same helper. Some NFHL queries reject orderByFields.
-        try:
-            page = list(arcgis_features(config.FLOOD_QUERY_URL, extra, page_size=2000))
-        except RuntimeError:
-            extra.pop("orderByFields", None)
-            page = list(arcgis_features(config.FLOOD_QUERY_URL, extra, page_size=2000, order_by=""))
+        page = list(arcgis_features(config.FLOOD_QUERY_URL, extra, page_size=40, order_by=""))
         for feature in page:
             props = feature.get("properties") or {}
             key = (
@@ -516,7 +514,11 @@ def download_transit(neighborhoods, refresh):
                 "routes": sorted(stop_routes.get(stop_id, [])),
             }
         )
-    print(f"  stops near MVP area: {len(kept)}", flush=True)
+    trip_rows = sum(stop["trips"] for stop in kept)
+    print(
+        f"  stops near MVP area: {len(kept)}; weekday trip-stop rows among them: {trip_rows}",
+        flush=True,
+    )
     return {"stops": kept, "service_date": ref.isoformat(), "feed_end": feed_end.isoformat() if feed_end else None}
 
 
@@ -648,7 +650,7 @@ def assemble(neighborhoods, parcel_features, assessments, zoning_features, flood
     hood_tree = STRtree(hood_geoms)
     zone_shapes = []
     zone_props = []
-    for feature in zoning_features:
+    for feature in zoning_features or []:
         geometry = geojson_to_shape(feature.get("geometry"))
         if geometry is None:
             continue
@@ -656,12 +658,12 @@ def assemble(neighborhoods, parcel_features, assessments, zoning_features, flood
         zone_props.append(feature.get("properties") or {})
     zone_tree = STRtree(zone_shapes) if zone_shapes else None
 
-    bg_shapes = [item["geom"] for item in block_groups]
+    bg_shapes = [item["geom"] for item in (block_groups or [])]
     bg_tree = STRtree(bg_shapes) if bg_shapes else None
 
     sfha_parts = []
     shaded_parts = []
-    for feature in flood_features:
+    for feature in flood_features or []:
         kind = _zone_kind(feature.get("properties") or {})
         if kind is None:
             continue
@@ -675,7 +677,7 @@ def assemble(neighborhoods, parcel_features, assessments, zoning_features, flood
     sfha = shapely.union_all(sfha_parts) if sfha_parts else None
     shaded = shapely.union_all(shaded_parts) if shaded_parts else None
     slide_parts = []
-    for feature in landslide_features:
+    for feature in landslide_features or []:
         geometry = geojson_to_shape(feature.get("geometry"))
         if geometry is not None:
             slide_parts.append(geometry)
@@ -1032,7 +1034,7 @@ def main(refresh=False):
         "https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28",
         "Federal Emergency Management Agency",
         "Public domain, U.S. federal work",
-        "Effective flood hazard zones (layer 28) intersecting the MVP neighborhoods. Special Flood Hazard Area uses SFHA_TF and zone codes A/AE/AH/AO/V/VE. The 0.2-percent zone is read from ZONE_SUBTY.",
+        "Effective NFHL layer 28, limited to Special Flood Hazard Areas (SFHA_TF = T) and 0.2-percent zones (ZONE_SUBTY contains 0.2). Zone X minimal-hazard polygons are not downloaded; no overlap with the queried zones is scored as minimal mapped flood hazard.",
         lambda: download_flood(neighborhoods, refresh),
     )
     landslide_features = _run_step(
