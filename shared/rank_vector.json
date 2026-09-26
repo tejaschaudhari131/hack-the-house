@@ -1,0 +1,28 @@
+{
+  "weights": {"demand": 1, "transit": 1, "equity": 1, "climate": 1},
+  "scores": {
+    "single_family": {"demand": 40, "transit": 50, "equity": 60, "climate_risk": 10},
+    "townhouse_duplex": {"demand": 80, "transit": 50, "equity": 30, "climate_risk": null},
+    "small_apartment": {"demand": 70, "transit": 50, "equity": 55, "climate_risk": 25},
+    "large_apartment": {"demand": 20, "transit": 50, "equity": 40, "climate_risk": 30}
+  },
+  "expected_composite": {
+    "single_family": 60.0,
+    "townhouse_duplex": 53.3,
+    "small_apartment": 62.5,
+    "large_apartment": 45.0
+  },
+  "expected_order_what_if": [
+    "small_apartment",
+    "single_family",
+    "townhouse_duplex",
+    "large_apartment"
+  ],
+  "allowed": ["single_family", "townhouse_duplex"],
+  "expected_order_current_rules": [
+    "single_family",
+    "townhouse_duplex",
+    "small_apartment",
+    "large_apartment"
+  ]
+}
