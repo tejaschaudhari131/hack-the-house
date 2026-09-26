@@ -1,0 +1,270 @@
+"use client"
+
+import { useMemo, useState } from "react"
+
+import { TYPE_COLORS } from "../lib/colors.js"
+import { TYPE_LABELS } from "../lib/rank.js"
+
+function formatScore(value) {
+  if (value === null || value === undefined) return "n/a"
+  return Number(value).toFixed(1)
+}
+
+function Bar({ label, value, hint }) {
+  const width = value === null || value === undefined ? 0 : Math.max(0, Math.min(100, value))
+  return (
+    <div className="bar-row">
+      <div className="bar-label">
+        <span>{label}</span>
+        <span>{formatScore(value)}</span>
+      </div>
+      <div className="bar-track" aria-hidden="true">
+        <div className="bar-fill" style={{ width: `${width}%` }} />
+      </div>
+      {hint ? <p className="hint">{hint}</p> : null}
+    </div>
+  )
+}
+
+function ZoningBadge({ row, whatIf, zoningInfo }) {
+  if (whatIf) return <span className="badge scenario">What-if: treated as allowed</span>
+  if (!zoningInfo || zoningInfo.status !== "stub") return <span className="badge unknown">Zoning unknown</span>
+  if (row.allowed) return <span className="badge allowed">Stub marks this allowed</span>
+  return <span className="badge flagged">Flagged by stub rules</span>
+}
+
+export default function ParcelPanel({
+  summary,
+  model,
+  weights,
+  onWeights,
+  whatIf,
+  onWhatIf,
+  focus,
+  onFocus,
+  query,
+  onQuery,
+  matches,
+  onSelectPin,
+  selected,
+  ranked,
+  zoningInfo,
+  explanation,
+  explaining,
+  onExplain,
+}) {
+  const [showModel, setShowModel] = useState(false)
+  const failed = summary?.sources_failed || []
+  const groups = useMemo(() => {
+    if (!ranked) return []
+    const blocks = []
+    let current = null
+    for (const row of ranked) {
+      const flagged = !whatIf && zoningInfo?.status === "stub" && row.allowed === false
+      const key = flagged ? "flagged" : "ranked"
+      if (!current || current.key !== key) {
+        current = { key, rows: [] }
+        blocks.push(current)
+      }
+      current.rows.push(row)
+    }
+    return blocks
+  }, [ranked, whatIf, zoningInfo])
+
+  return (
+    <aside className="panel">
+      <section className="limitations" aria-labelledby="limits-heading">
+        <h2 id="limits-heading">Limitations / what this tool can&apos;t tell you</h2>
+        <p>
+          This is decision support. It is not legal, zoning, financial, or permitting advice, and it
+          will not tell you what may be built or what a project will cost.
+        </p>
+        <ul>
+          <li>Zoning allowances are a stub read from district titles. Every rule needs expert review.</li>
+          <li>The sliders are value judgments. Confidence is only about thin or missing data.</li>
+          <li>Climate here is FEMA flood zones and mapped landslide-prone areas, not a site survey, future rainfall, or building emissions.</li>
+          <li>No infrastructure capacity, school seats, subsidies, or loan terms.</li>
+          <li>Scores use fixed anchors for these neighborhoods. They are not a citywide percentile.</li>
+        </ul>
+        {failed.length ? (
+          <p className="warning">
+            These sources failed and were not filled in with made-up numbers: {failed.map((item) => item.name).join("; ")}.
+          </p>
+        ) : null}
+      </section>
+
+      <section>
+        <h2>Weights</h2>
+        <p className="hint">These are choices. They re-rank every parcel on the map.</p>
+        {Object.entries(weights).map(([key, value]) => (
+          <label key={key} className="slider">
+            <span>
+              {key === "climate" ? "Climate (prefer lower hazard)" : key[0].toUpperCase() + key.slice(1)}{" "}
+              <strong>{value}</strong>
+            </span>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={value}
+              onChange={(event) => onWeights({ ...weights, [key]: Number(event.target.value) })}
+            />
+          </label>
+        ))}
+        <label className="toggle">
+          <input type="checkbox" checked={whatIf} onChange={(event) => onWhatIf(event.target.checked)} />
+          What if zoning changed (rank all four types)
+        </label>
+        <div className="zoom-row">
+          <button type="button" className={focus === "Hazelwood" ? "on" : ""} onClick={() => onFocus("Hazelwood")}>
+            Hazelwood
+          </button>
+          <button type="button" className={focus === "Lawrenceville" ? "on" : ""} onClick={() => onFocus("Lawrenceville")}>
+            Lawrenceville
+          </button>
+          <button type="button" className={focus ? "" : "on"} onClick={() => onFocus(null)}>
+            Both
+          </button>
+        </div>
+      </section>
+
+      <section>
+        <h2>Find a parcel</h2>
+        <label>
+          Address search
+          <input
+            value={query}
+            onChange={(event) => onQuery(event.target.value)}
+            placeholder="Try a street name"
+          />
+        </label>
+        {query.trim() && matches.length === 0 ? <p className="hint">No address match in the MVP area.</p> : null}
+        <ul className="matches">
+          {matches.map((feature) => (
+            <li key={feature.properties.pin}>
+              <button type="button" onClick={() => onSelectPin(feature.properties.pin)}>
+                {feature.properties.address || feature.properties.pin}
+                <span>{feature.properties.neighborhood}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      {!selected ? (
+        <section>
+          <h2>Click a parcel</h2>
+          <p>{summary?.why_these_places}</p>
+          <ul className="stats">
+            {(summary?.neighborhoods || []).map((neighborhood) => (
+              <li key={neighborhood.name}>
+                <strong>{neighborhood.name}</strong>
+                {" · "}
+                {neighborhood.parcel_count?.toLocaleString?.() || neighborhood.parcel_count} parcels
+                {neighborhood.price_per_sqft ? ` · median valid sale $${neighborhood.price_per_sqft}/sq ft` : ""}
+                {neighborhood.turnover_per_100 ? ` · ${neighborhood.turnover_per_100} valid sales per 100 parcels` : ""}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : (
+        <section>
+          <h2>{selected.address || selected.pin}</h2>
+          <p>
+            {selected.neighborhood}
+            {selected.land_use ? ` · ${selected.land_use}` : ""}
+            {selected.lot_sqft ? ` · ${Number(selected.lot_sqft).toLocaleString()} sq ft` : ""}
+          </p>
+          <p>
+            Zoning: {selected.zoning_code || "not matched"}
+            {selected.zoning_label ? ` (${selected.zoning_label})` : ""}
+          </p>
+          {zoningInfo?.status === "stub" ? (
+            <p className="hint">Stub rules, needs expert review. {zoningInfo.note}</p>
+          ) : (
+            <p className="hint">{zoningInfo?.note}</p>
+          )}
+          <p>
+            Data confidence: <strong>{selected.confidence_label}</strong> ({selected.confidence}). This is not a
+            grade for the value judgments.
+          </p>
+          {selected.confidence_notes?.length ? (
+            <ul>
+              {selected.confidence_notes.map((note) => (
+                <li key={note}>{note}</li>
+              ))}
+            </ul>
+          ) : null}
+
+          {groups.map((group) => (
+            <div key={group.key}>
+              <h3>
+                {group.key === "flagged"
+                  ? "Flagged by the zoning stub"
+                  : whatIf
+                    ? "Ranked as if zoning allowed all four"
+                    : "Ranked among types the stub marks as allowed"}
+              </h3>
+              {group.rows.map((row, index) => (
+                <article key={row.id} className="type-card" style={{ borderColor: TYPE_COLORS[row.id] }}>
+                  <header>
+                    <span>
+                      {index + 1}. {TYPE_LABELS[row.id]}
+                    </span>
+                    <strong>{formatScore(row.composite)}</strong>
+                  </header>
+                  <ZoningBadge row={row} whatIf={whatIf} zoningInfo={zoningInfo} />
+                  <Bar label="Demand" value={row.demand} hint="Sales, turnover, and a lot-fit rule" />
+                  <Bar label="Transit" value={row.transit} hint="Measured for the place; same for every type" />
+                  <Bar label="Equity" value={row.equity} hint="Income, rent burden, plus a normative type rule" />
+                  <Bar
+                    label="Climate risk"
+                    value={row.climate_risk}
+                    hint="Higher means more mapped hazard. Ranking uses 100 minus this."
+                  />
+                </article>
+              ))}
+            </div>
+          ))}
+
+          <button type="button" className="explain" onClick={onExplain} disabled={explaining}>
+            {explaining ? "Writing explanation…" : "Explain the top two"}
+          </button>
+          {explanation ? (
+            <div className="explanation">
+              <p className="badge">
+                {explanation.source === "llm" ? `Language model (${explanation.model})` : "Template explanation"}
+              </p>
+              {explanation.notice ? <p className="warning">{explanation.notice}</p> : null}
+              {explanation.text.split("\n").filter(Boolean).map((paragraph) => (
+                <p key={paragraph.slice(0, 40)}>{paragraph}</p>
+              ))}
+            </div>
+          ) : null}
+        </section>
+      )}
+
+      <section>
+        <button type="button" className="text-button" onClick={() => setShowModel((open) => !open)}>
+          {showModel ? "Hide score ingredients" : "Show score ingredients"}
+        </button>
+        {showModel && model ? (
+          <div className="model">
+            {model.dimensions.map((dimension) => (
+              <div key={dimension.id}>
+                <h3>{dimension.label}</h3>
+                <p>{dimension.higher_means}</p>
+                <p>
+                  <strong>Measured:</strong> {dimension.measured.join(" ")}
+                </p>
+                <p>
+                  <strong>Value judgments:</strong> {dimension.normative.join(" ")}
+                </p>
+              </div>
+            ))}
+          </div>
+        ) : null}
+      </section>
+    </aside>
+  )
+}
