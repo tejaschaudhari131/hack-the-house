@@ -1,0 +1,92 @@
+[
+  {
+    "name": "Census API (not used)",
+    "url": "https://api.census.gov/data/2024/acs/acs5",
+    "publisher": "U.S. Census Bureau",
+    "pulled_at": "2026-09-26",
+    "license": "Public domain",
+    "status": "unavailable",
+    "notes": "https://api.census.gov/data/2024/acs/acs5 rejected unauthenticated requests (X-DataWebAPI-KeyError, redirect to missing_key.html) on 2026-09-26. The pipeline reads the Census Bureau's public 2024 ACS 5-year table-based summary files instead."
+  },
+  {
+    "name": "Pittsburgh neighborhood boundaries",
+    "url": "https://data.wprdc.org/dataset/e672f13d-71c4-4a66-8f38-710e75ed80a4/resource/4af8e160-57e9-4ebf-a501-76ca1b42fc99/download/neighborhoods.geojson",
+    "publisher": "City of Pittsburgh, via Western Pennsylvania Regional Data Center",
+    "pulled_at": "2026-09-26",
+    "license": "Creative Commons Attribution (CC BY) on the WPRDC neighborhoods dataset",
+    "status": "ok",
+    "notes": "Official neighborhood polygons. MVP keeps Hazelwood plus Lower, Central, and Upper Lawrenceville."
+  },
+  {
+    "name": "Allegheny County parcel boundaries",
+    "url": "https://gisdata.alleghenycounty.us/arcgis/rest/services/OPENDATA/Parcels/MapServer/0/query",
+    "publisher": "Allegheny County GIS",
+    "pulled_at": "2026-09-26",
+    "license": "License not specified on the county MapServer. WPRDC's parcel-boundary dataset, which points at PASDA for the archival file, is also 'license not specified'.",
+    "status": "ok",
+    "notes": "Geometry, PIN, map-block-lot, and calculated acreage for parcels in the neighborhood bounding boxes. Clipped to neighborhood polygons in a later step. No owner fields are on this layer."
+  },
+  {
+    "name": "Allegheny County property assessments",
+    "url": "https://data.wprdc.org/dataset/property-assessments",
+    "publisher": "Allegheny County Office of Property Assessments, redistributed by the Western Pennsylvania Regional Data Center",
+    "pulled_at": "2026-09-26",
+    "license": "Creative Commons CC0",
+    "status": "ok",
+    "notes": "Land use, lot area, year built, living area, and sale fields for zips 15201 and 15207. If more than 10 percent of clipped parcels are still unmatched, the pipeline streams the county CSV for those parcel IDs only. Owner names are not in this extract. CHANGENOTICE address fields are never requested or written."
+  },
+  {
+    "name": "City of Pittsburgh zoning districts",
+    "url": "https://services1.arcgis.com/YZCmUqbcsUpOKfj7/arcgis/rest/services/PGHWebZoning/FeatureServer/0/query",
+    "publisher": "City of Pittsburgh GIS (gis@pittsburghpa.gov), via WPRDC",
+    "pulled_at": "2026-09-26",
+    "license": "License not specified on the WPRDC zoning resource",
+    "status": "ok",
+    "notes": "District code zon_new and the district title. Which housing types are allowed is NOT taken from this layer. That stub lives in zoning/districts.json and needs expert review."
+  },
+  {
+    "name": "FEMA National Flood Hazard Layer flood zones",
+    "url": "https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28",
+    "publisher": "Federal Emergency Management Agency",
+    "pulled_at": "2026-09-26",
+    "license": "Public domain, U.S. federal work",
+    "status": "ok",
+    "notes": "Effective NFHL layer 28, limited to Special Flood Hazard Areas (SFHA_TF = T) and 0.2-percent zones (ZONE_SUBTY contains 0.2). Zone X minimal-hazard polygons are not downloaded; no overlap with the queried zones is scored as minimal mapped flood hazard."
+  },
+  {
+    "name": "City of Pittsburgh landslide-prone areas",
+    "url": "https://services1.arcgis.com/YZCmUqbcsUpOKfj7/arcgis/rest/services/PGHWebLandslideProne/FeatureServer/0/query",
+    "publisher": "City of Pittsburgh GIS, via WPRDC",
+    "pulled_at": "2026-09-26",
+    "license": "License not specified on the WPRDC landslide-prone areas resource",
+    "status": "ok",
+    "notes": "Polygons flagged landslide-prone. Overlap with each parcel is the measured input."
+  },
+  {
+    "name": "ACS 2024 5-year tables B19013, B25064, and B25070",
+    "url": "https://www2.census.gov/programs-surveys/acs/summary_file/2024/table-based-SF/data/5YRData/acsdt5y2024-b19013.dat",
+    "publisher": "U.S. Census Bureau",
+    "pulled_at": "2026-09-26",
+    "license": "Public domain",
+    "status": "ok",
+    "notes": "Median household income, median gross rent, and gross rent as a percentage of household income. Filtered to Allegheny County block groups, tracts, and the county summary. https://api.census.gov/data/2024/acs/acs5 rejected unauthenticated requests (X-DataWebAPI-KeyError, redirect to missing_key.html) on 2026-09-26. The pipeline reads the Census Bureau's public 2024 ACS 5-year table-based summary files instead."
+  },
+  {
+    "name": "Census cartographic block groups, Pennsylvania 2024",
+    "url": "https://www2.census.gov/geo/tiger/GENZ2024/shp/cb_2024_42_bg_500k.zip",
+    "publisher": "U.S. Census Bureau",
+    "pulled_at": "2026-09-26",
+    "license": "Public domain",
+    "status": "ok",
+    "notes": "2024 cartographic boundary file cb_2024_42_bg_500k, filtered to Allegheny County. Used only to assign a block group to each parcel. NAD83 coordinates are used as WGS84; the difference is small relative to a block group."
+  },
+  {
+    "name": "Pittsburgh Regional Transit GTFS",
+    "url": "https://www.rideprt.org/developerresources/GTFS.zip",
+    "publisher": "Pittsburgh Regional Transit",
+    "pulled_at": "2026-09-26",
+    "license": "PRT Developer License Agreement, accepted by downloading the public GTFS zip. See https://www.rideprt.org/business-center/developer-resources/",
+    "status": "ok",
+    "notes": "stops.txt, trips.txt, calendar.txt, calendar_dates.txt, routes.txt, and stop_times.txt. Weekday trip counts use one representative weekday inside the feed's service window."
+  }
+]

@@ -1,0 +1,28 @@
+{
+  "needs_expert_review": true,
+  "rules_file": "zoning/districts.json",
+  "observed_codes": {
+    "R1A-H": 2655,
+    "R1A-VH": 2454,
+    "H": 896,
+    "R1D-M": 741,
+    "LNC": 721,
+    "R1D-H": 384,
+    "UI": 198,
+    "RIV-IMU": 196,
+    "RIV-MU": 90,
+    "P": 89,
+    "NDI": 63,
+    "GI": 60,
+    "R2-L": 37,
+    "SP-10": 24,
+    "RIV-GI": 19,
+    "EMI": 9,
+    "RM-M": 5,
+    "SP-1": 2,
+    "RP": 1,
+    "R1D-L": 1
+  },
+  "unmapped_codes": [],
+  "note": "Allowances are stubs inferred from district titles. Chris should review every row against the current zoning code."
+}
