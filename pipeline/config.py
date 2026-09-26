@@ -86,5 +86,14 @@ ASSESSMENT_FIELDS = (
     "SALEDATE,SALEPRICE,SALECODE,SALEDESC"
 )
 
-# Owner mailing addresses exist in the source as CHANGENOTICEADDRESS*. Never request them.
-FORBIDDEN_OUTPUT_FRAGMENTS = ("owner", "changenotice", "mailing")
+# Person-level fields exist on the county roll (OWNERNAME, CHANGENOTICEADDRESS*,
+# and deed-party names on the separate sales file). Never request or write them.
+FORBIDDEN_OUTPUT_FRAGMENTS = (
+    "owner",
+    "changenotice",
+    "mailing",
+    "buyer",
+    "seller",
+    "grantor",
+    "grantee",
+)

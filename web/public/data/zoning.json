@@ -1,7 +1,7 @@
 {
   "meta": {
     "owner": "Chris",
-    "status": "stub_needs_expert_review",
+    "status": "use_table_unread",
     "source_field": "zon_new",
     "source_layer": "City of Pittsburgh zoning districts (PGHWebZoning)",
     "housing_types": [
@@ -10,521 +10,639 @@
       "small_apartment",
       "large_apartment"
     ],
-    "warning": "Every allowance below is a first-pass reading of the district title, not a legal interpretation of the Pittsburgh Zoning Code. reviewed is false on every row. The tool flags these results. It does not determine what may be built."
+    "code_url": "https://ecode360.com/45474054",
+    "zoning_map_url": "https://pittsburghpa.maps.arcgis.com/apps/instant/sidebar/index.html?appid=4bb79ea64bf848b3a0560e3856efeccb",
+    "zoning_page_url": "https://www.pittsburghpa.gov/Business-Development/City-Planning/Zoning",
+    "code_access": "On 2026-09-26, https://ecode360.com/45474054 returned HTTP 403 with cf-mitigated: challenge (Cloudflare). The use tables were not read. No allowance in this file is a code reading.",
+    "warning": "needs_expert_review is true on every row. allowed is empty until a person opens the code, cites the section, sets use_table_read to true, and fills allowed. The app does not filter housing types while use_table_read is false. That is not a finding that every type is allowed."
   },
   "districts": {
     "R1D-VL": {
       "label": "Single-Unit Detached Residential, Very Low Density",
-      "allowed": [
-        "single_family"
-      ],
+      "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Stub from the district title only. Detached single-unit districts are marked single-family only. Confirm attached and ADU rules."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "R1D-L": {
       "label": "Single-Unit Detached Residential, Low Density",
-      "allowed": [
-        "single_family"
-      ],
+      "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Stub from the district title only. Detached single-unit districts are marked single-family only. Confirm attached and ADU rules."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "R1D-M": {
       "label": "Single-Unit Detached Residential, Moderate Density",
-      "allowed": [
-        "single_family"
-      ],
+      "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Stub from the district title only. Detached single-unit districts are marked single-family only. Confirm attached and ADU rules."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "R1D-H": {
       "label": "Single-Unit Detached Residential, High Density",
-      "allowed": [
-        "single_family"
-      ],
+      "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Stub from the district title only. Detached single-unit districts are marked single-family only. Confirm attached and ADU rules."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "R1D-VH": {
       "label": "Single-Unit Detached Residential, Very High Density",
-      "allowed": [
-        "single_family"
-      ],
+      "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Stub from the district title only. Detached single-unit districts are marked single-family only. Confirm attached and ADU rules."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "R1A-M": {
       "label": "Single-Unit Attached Residential, Moderate Density",
-      "allowed": [
-        "single_family",
-        "townhouse_duplex"
-      ],
+      "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Stub from the district title only. Attached single-unit is mapped to single-family and townhouse/duplex. Apartment bins are not marked allowed."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "R1A-H": {
       "label": "Single-Unit Attached Residential, High Density",
-      "allowed": [
-        "single_family",
-        "townhouse_duplex"
-      ],
+      "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Stub from the district title only. Attached single-unit is mapped to single-family and townhouse/duplex. Apartment bins are not marked allowed."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "R1A-VH": {
       "label": "Single-Unit Attached Residential, Very High Density",
-      "allowed": [
-        "single_family",
-        "townhouse_duplex"
-      ],
+      "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Stub from the district title only. Attached single-unit is mapped to single-family and townhouse/duplex. Apartment bins are not marked allowed."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "R2-L": {
       "label": "Two-Unit Residential, Low Density",
-      "allowed": [
-        "single_family",
-        "townhouse_duplex"
-      ],
+      "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Stub from the district title only. Two-unit districts are mapped to single-family and townhouse/duplex, not the 3\u201319 or 20+ bins."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "R2-M": {
       "label": "Two-Unit Residential, Moderate Density",
-      "allowed": [
-        "single_family",
-        "townhouse_duplex"
-      ],
+      "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Stub from the district title only. Two-unit districts are mapped to single-family and townhouse/duplex, not the 3\u201319 or 20+ bins."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "R2-H": {
       "label": "Two-Unit Residential, High Density",
-      "allowed": [
-        "single_family",
-        "townhouse_duplex"
-      ],
+      "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Stub from the district title only. Two-unit districts are mapped to single-family and townhouse/duplex, not the 3\u201319 or 20+ bins."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "R2-VH": {
       "label": "Two-Unit Residential, Very High Density",
-      "allowed": [
-        "single_family",
-        "townhouse_duplex"
-      ],
+      "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Stub from the district title only. Two-unit districts are mapped to single-family and townhouse/duplex, not the 3\u201319 or 20+ bins."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "R3-L": {
       "label": "Three-Unit Residential, Low Density",
-      "allowed": [
-        "single_family",
-        "townhouse_duplex"
-      ],
+      "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Stub from the district title only. This district is named for three-unit buildings. The tool's small-apartment bin is 3\u201319 units, so that bin is not marked allowed. A three-unit building may still be permitted. Confirm the use table."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "R3-M": {
       "label": "Three-Unit Residential, Moderate Density",
-      "allowed": [
-        "single_family",
-        "townhouse_duplex"
-      ],
+      "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Stub from the district title only. This district is named for three-unit buildings. The tool's small-apartment bin is 3\u201319 units, so that bin is not marked allowed. A three-unit building may still be permitted. Confirm the use table."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "RM-VL": {
       "label": "Multi-Unit Residential, Very Low Density",
-      "allowed": [
-        "single_family",
-        "townhouse_duplex",
-        "small_apartment"
-      ],
+      "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Stub from the district title only. Moderate or very-low multi-unit districts are marked for the small-apartment bin (3\u201319) and not the 20+ bin. Confirm height and unit caps."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "RM-M": {
       "label": "Multi-Unit Residential, Moderate Density",
-      "allowed": [
-        "single_family",
-        "townhouse_duplex",
-        "small_apartment"
-      ],
+      "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Stub from the district title only. Moderate or very-low multi-unit districts are marked for the small-apartment bin (3\u201319) and not the 20+ bin. Confirm height and unit caps."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "RM-H": {
       "label": "Multi-Unit Residential, High Density",
-      "allowed": [
-        "single_family",
-        "townhouse_duplex",
-        "small_apartment",
-        "large_apartment"
-      ],
+      "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Stub from the district title only. High and very-high multi-unit titles are marked for all four types, including 20+ units. Confirm the use table before relying on this."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "RM-VH": {
       "label": "Multi-Unit Residential, Very High Density",
-      "allowed": [
-        "single_family",
-        "townhouse_duplex",
-        "small_apartment",
-        "large_apartment"
-      ],
+      "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Stub from the district title only. High and very-high multi-unit titles are marked for all four types, including 20+ units. Confirm the use table before relying on this."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "R-MU": {
       "label": "Residential Mixed Use",
-      "allowed": [
-        "townhouse_duplex",
-        "small_apartment",
-        "large_apartment"
-      ],
+      "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Stub from the district title only. Mixed residential is marked for townhouse and both apartment bins. Single-family may also be allowed."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "LNC": {
       "label": "Local Neighborhood Commercial",
-      "allowed": [
-        "townhouse_duplex",
-        "small_apartment"
-      ],
+      "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Stub from the district title only. Commercial districts sometimes allow upper-story housing or multi-unit buildings. Confirm the use table; this is not a reading of it."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "NDO": {
       "label": "Neighborhood Office",
-      "allowed": [
-        "townhouse_duplex",
-        "small_apartment"
-      ],
+      "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Stub from the district title only. Commercial districts sometimes allow upper-story housing or multi-unit buildings. Confirm the use table; this is not a reading of it."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "UNC": {
       "label": "Urban Neighborhood Commercial",
-      "allowed": [
-        "townhouse_duplex",
-        "small_apartment",
-        "large_apartment"
-      ],
+      "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Stub from the district title only. Commercial districts sometimes allow upper-story housing or multi-unit buildings. Confirm the use table; this is not a reading of it."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "HC": {
       "label": "Highway Commercial",
-      "allowed": [
-        "small_apartment",
-        "large_apartment"
-      ],
+      "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Stub from the district title only. Commercial districts sometimes allow upper-story housing or multi-unit buildings. Confirm the use table; this is not a reading of it."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "NDI": {
       "label": "Neighborhood Industrial",
       "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Stub assumes these four housing types are not by-right. Residential use may still be possible as a special exception, overlay, or site plan. Expert review required."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "UI": {
       "label": "Urban Industrial",
       "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Stub assumes these four housing types are not by-right. Residential use may still be possible as a special exception, overlay, or site plan. Expert review required."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "GI": {
       "label": "General Industrial",
       "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Stub assumes these four housing types are not by-right. Residential use may still be possible as a special exception, overlay, or site plan. Expert review required."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "P": {
       "label": "Parks and Open Space",
       "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Stub assumes these four housing types are not by-right. Residential use may still be possible as a special exception, overlay, or site plan. Expert review required."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "H": {
       "label": "Hillside",
       "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Stub from the district title only. Hillside is marked as not allowing these four types by right. Confirm any housing that exists as nonconforming or by exception."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "EMI": {
       "label": "Educational/Medical Institution",
       "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Stub assumes these four housing types are not by-right. Residential use may still be possible as a special exception, overlay, or site plan. Expert review required."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "RIV-RM": {
       "label": "Riverfront Mixed Residential",
-      "allowed": [
-        "townhouse_duplex",
-        "small_apartment",
-        "large_apartment"
-      ],
+      "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Stub from the district title only. Confirm riverfront use standards and flood overlays, which this file does not encode."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "RIV-MU": {
       "label": "Riverfront Mixed Use",
-      "allowed": [
-        "townhouse_duplex",
-        "small_apartment",
-        "large_apartment"
-      ],
+      "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Stub from the district title only. Confirm the riverfront use table."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "RIV-NS": {
       "label": "Riverfront North Shore",
-      "allowed": [
-        "townhouse_duplex",
-        "small_apartment",
-        "large_apartment"
-      ],
+      "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Stub from the district title only. This district is unlikely in the MVP neighborhoods. Confirm before use."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "RIV-IMU": {
       "label": "Riverfront Industrial Mixed Use",
       "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Stub assumes these four housing types are not by-right. Residential use may still be possible as a special exception, overlay, or site plan. Expert review required."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "RIV-GI": {
       "label": "Riverfront General Industrial",
       "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Stub assumes these four housing types are not by-right. Residential use may still be possible as a special exception, overlay, or site plan. Expert review required."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "SP-1": {
       "label": "Pittsburgh Technology Center",
       "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Specially planned or planned-unit district. Allowances are site-specific. Stub marks none of the four types until the adopted plan is checked."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "SP-4": {
       "label": "Station Square",
       "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Specially planned or planned-unit district. Allowances are site-specific. Stub marks none of the four types until the adopted plan is checked."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "SP-5": {
       "label": "SouthSide Works",
       "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Specially planned or planned-unit district. Allowances are site-specific. Stub marks none of the four types until the adopted plan is checked."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "SP-8": {
       "label": "Riverfront Landing",
       "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Specially planned or planned-unit district. Allowances are site-specific. Stub marks none of the four types until the adopted plan is checked."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "SP-9": {
       "label": "Bakery Square",
       "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Specially planned or planned-unit district. Allowances are site-specific. Stub marks none of the four types until the adopted plan is checked."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "SP-10": {
       "label": "Almono",
       "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Specially planned or planned-unit district. Allowances are site-specific. Stub marks none of the four types until the adopted plan is checked."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "SP-11": {
       "label": "Lower Hill",
       "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Specially planned or planned-unit district. Allowances are site-specific. Stub marks none of the four types until the adopted plan is checked."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "CP": {
       "label": "Commercial Planned Unit Development",
       "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Specially planned or planned-unit district. Allowances are site-specific. Stub marks none of the four types until the adopted plan is checked."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "RP": {
       "label": "Residential Planned Unit Development",
       "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Specially planned or planned-unit district. Allowances are site-specific. Stub marks none of the four types until the adopted plan is checked."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "AP": {
       "label": "Residential/Commercial Planned Unit Development",
       "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Specially planned or planned-unit district. Allowances are site-specific. Stub marks none of the four types until the adopted plan is checked."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "GT-A": {
       "label": "Golden Triangle A",
-      "allowed": [
-        "small_apartment",
-        "large_apartment"
-      ],
+      "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Stub from the district title only. Downtown districts are outside the MVP neighborhoods."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "GT-B": {
       "label": "Golden Triangle B",
-      "allowed": [
-        "small_apartment",
-        "large_apartment"
-      ],
+      "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Stub from the district title only. Downtown districts are outside the MVP neighborhoods."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "GT-C": {
       "label": "Golden Triangle C",
-      "allowed": [
-        "small_apartment",
-        "large_apartment"
-      ],
+      "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Stub from the district title only. Downtown districts are outside the MVP neighborhoods."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "GT-D": {
       "label": "Golden Triangle D",
-      "allowed": [
-        "small_apartment",
-        "large_apartment"
-      ],
+      "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Stub from the district title only. Downtown districts are outside the MVP neighborhoods."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "GT-E": {
       "label": "Golden Triangle E",
-      "allowed": [
-        "small_apartment",
-        "large_apartment"
-      ],
+      "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Stub from the district title only. Downtown districts are outside the MVP neighborhoods."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "GPRA": {
       "label": "Grandview Public Realm A",
       "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Stub. Public-realm district. Confirm any residential permission in the adopted plan."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "GPRB": {
       "label": "Grandview Public Realm B",
       "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Stub. Public-realm district. Confirm any residential permission in the adopted plan."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "GPRC": {
       "label": "Grandview Public Realm C",
       "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Stub. Public-realm district. Confirm any residential permission in the adopted plan."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "UPR-A": {
       "label": "Uptown Public Realm A",
-      "allowed": [
-        "townhouse_duplex",
-        "small_apartment",
-        "large_apartment"
-      ],
+      "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Stub from the district title only. Outside the MVP neighborhoods unless a parcel is mis-tagged."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "UPR-B": {
       "label": "Uptown Public Realm B",
-      "allowed": [
-        "townhouse_duplex",
-        "small_apartment",
-        "large_apartment"
-      ],
+      "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Stub from the district title only. Outside the MVP neighborhoods unless a parcel is mis-tagged."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "UC-E": {
       "label": "Urban Center Employment",
-      "allowed": [
-        "small_apartment",
-        "large_apartment"
-      ],
+      "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Stub from the district title only. Commercial districts sometimes allow upper-story housing or multi-unit buildings. Confirm the use table; this is not a reading of it."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "UC-MU": {
       "label": "Urban Center Mixed Use",
-      "allowed": [
-        "townhouse_duplex",
-        "small_apartment",
-        "large_apartment"
-      ],
+      "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "Stub from the district title only. Commercial districts sometimes allow upper-story housing or multi-unit buildings. Confirm the use table; this is not a reading of it."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: Read this district's use table in the Pittsburgh Zoning Code (Title 9) at https://ecode360.com/45474054, write the section in code_section, set use_table_read to true, and fill allowed from that table. Automated access was blocked by Cloudflare on 2026-09-26. Do not guess from the district title. Overlays, exceptions, and review rules still need a person. needs_expert_review stays true.",
+      "notes": "Use table not read. The label is the name on the city zoning map, not a use-table finding."
     },
     "MTOBOR": {
       "label": "Mount Oliver Borough",
       "allowed": [],
       "reviewed": false,
       "needs_expert_review": true,
-      "notes": "This code is a borough sliver in the city zoning layer, not a Pittsburgh zoning district. No types are marked allowed."
+      "use_table_read": false,
+      "code_section": null,
+      "code_url": "https://ecode360.com/45474054",
+      "todo": "TODO: The city layer labels this Mount Oliver Borough, which is not a Pittsburgh zoning district. Confirm that before citing a Pittsburgh use table. Do not guess allowances. needs_expert_review stays true.",
+      "notes": "Map label only. Not a Pittsburgh Zoning Code use-table reading."
     }
   }
 }

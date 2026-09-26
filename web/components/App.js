@@ -154,7 +154,8 @@ export default function App() {
   return (
     <>
       <header className="banner">
-        <strong>Decision support only.</strong> This is not legal, zoning, financial, or permitting advice.
+        <strong>Screening aid only.</strong> This is not legal, zoning, financial, or permitting advice. A
+        consequential decision should go to City Planning / the Zoning Administrator or a qualified professional.
         <span className="banner-title">Housing typology, equity, and climate matchmaker</span>
       </header>
       <div className="app">

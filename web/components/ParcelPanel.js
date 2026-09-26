@@ -1,9 +1,15 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 
 import { TYPE_COLORS } from "../lib/colors.js"
+import { clearFlag, loadFlags, saveFlag } from "../lib/flags.js"
 import { TYPE_LABELS } from "../lib/rank.js"
+
+const CODE_URL = "https://ecode360.com/45474054"
+const MAP_URL =
+  "https://pittsburghpa.maps.arcgis.com/apps/instant/sidebar/index.html?appid=4bb79ea64bf848b3a0560e3856efeccb"
+const ZONING_PAGE_URL = "https://www.pittsburghpa.gov/Business-Development/City-Planning/Zoning"
 
 function formatScore(value) {
   if (value === null || value === undefined) return "n/a"
@@ -27,7 +33,8 @@ function Bar({ label, value, hint }) {
 }
 
 function ZoningBadge({ row, whatIf, zoningInfo }) {
-  if (whatIf) return <span className="badge scenario">What-if: treated as allowed</span>
+  if (whatIf && zoningInfo?.status === "stub") return <span className="badge scenario">What-if: treated as allowed</span>
+  if (zoningInfo?.status === "use_table_unread") return <span className="badge unknown">Use table not read</span>
   if (!zoningInfo || zoningInfo.status !== "stub") return <span className="badge unknown">Zoning unknown</span>
   if (row.allowed) return <span className="badge allowed">Stub marks this allowed</span>
   return <span className="badge flagged">Flagged by stub rules</span>
@@ -54,7 +61,17 @@ export default function ParcelPanel({
   onExplain,
 }) {
   const [showModel, setShowModel] = useState(false)
+  const [flags, setFlags] = useState({})
+  const [flagNote, setFlagNote] = useState("")
   const failed = summary?.sources_failed || []
+
+  useEffect(() => {
+    setFlags(loadFlags())
+  }, [])
+
+  useEffect(() => {
+    setFlagNote("")
+  }, [selected?.pin])
   const groups = useMemo(() => {
     if (!ranked) return []
     const blocks = []
@@ -82,7 +99,10 @@ export default function ParcelPanel({
           will not tell you what may be built or what a project will cost.
         </p>
         <ul>
-          <li>Zoning allowances are a stub read from district titles. Every rule needs expert review.</li>
+          <li>
+            Zoning use tables were not read. ecode360 blocked automated access, so no housing type is filtered.
+            That is not a finding that every type is allowed. Every district still needs expert review.
+          </li>
           <li>The sliders are value judgments. Confidence is only about thin or missing data.</li>
           <li>
             Climate here is FEMA flood zones, city slopes of 25% or greater used only as a landslide-risk proxy,
@@ -185,6 +205,59 @@ export default function ParcelPanel({
       ) : (
         <section>
           <h2>{selected.address || selected.pin}</h2>
+          <div className="review-box">
+            <p>
+              <strong>Screening aid only.</strong> This result is not a determination of what may be built. A
+              consequential decision should go to City Planning / the Zoning Administrator, or to a qualified
+              professional.
+            </p>
+            <p>
+              <a href={ZONING_PAGE_URL} target="_blank" rel="noreferrer">
+                City Planning zoning page
+              </a>
+              {" · "}
+              <a href={CODE_URL} target="_blank" rel="noreferrer">
+                Zoning code
+              </a>
+              {" · "}
+              <a href={MAP_URL} target="_blank" rel="noreferrer">
+                Zoning map
+              </a>
+              . The zoning page lists 412-255-2621 at the City-County Building, 414 Grant Street.
+            </p>
+            {flags[selected.pin] ? (
+              <p className="warning">
+                Flagged in this browser on {flags[selected.pin].flaggedAt.slice(0, 10)}
+                {flags[selected.pin].note ? `: ${flags[selected.pin].note}` : ""}. The flag is not sent to the City.
+                <button
+                  type="button"
+                  className="text-button"
+                  onClick={() => setFlags(clearFlag(selected.pin))}
+                >
+                  Remove flag
+                </button>
+              </p>
+            ) : (
+              <form
+                className="flag-form"
+                onSubmit={(event) => {
+                  event.preventDefault()
+                  setFlags(saveFlag(selected.pin, { address: selected.address, note: flagNote }))
+                }}
+              >
+                <label>
+                  Flag this result as wrong
+                  <input
+                    value={flagNote}
+                    onChange={(event) => setFlagNote(event.target.value)}
+                    placeholder="What looks wrong? Optional."
+                  />
+                </label>
+                <button type="submit">Save flag on this browser</button>
+                <p className="hint">The flag stays in this browser. It is not sent to City Planning.</p>
+              </form>
+            )}
+          </div>
           <p>
             {selected.neighborhood}
             {selected.land_use ? ` · ${selected.land_use}` : ""}
@@ -194,8 +267,23 @@ export default function ParcelPanel({
             Zoning: {selected.zoning_code || "not matched"}
             {selected.zoning_label ? ` (${selected.zoning_label})` : ""}
           </p>
-          {zoningInfo?.status === "stub" ? (
-            <p className="hint">Stub rules, needs expert review. {zoningInfo.note}</p>
+          {zoningInfo?.status === "use_table_unread" ? (
+            <p className="hint">
+              Use table not read. needs_expert_review is still true. {zoningInfo.note}
+              {zoningInfo.codeUrl ? (
+                <>
+                  {" "}
+                  <a href={zoningInfo.codeUrl} target="_blank" rel="noreferrer">
+                    Open the code
+                  </a>
+                  .
+                </>
+              ) : null}
+            </p>
+          ) : zoningInfo?.status === "stub" ? (
+            <p className="hint">
+              Cited section {zoningInfo.codeSection}. Still needs expert review. {zoningInfo.note}
+            </p>
           ) : (
             <p className="hint">{zoningInfo?.note}</p>
           )}
@@ -215,10 +303,12 @@ export default function ParcelPanel({
             <div key={group.key}>
               <h3>
                 {group.key === "flagged"
-                  ? "Flagged by the zoning stub"
-                  : whatIf
+                  ? "Flagged by the cited stub"
+                  : whatIf && zoningInfo?.status === "stub"
                     ? "Ranked as if zoning allowed all four"
-                    : "Ranked among types the stub marks as allowed"}
+                    : zoningInfo?.status === "use_table_unread"
+                      ? "Ranked without a zoning filter"
+                      : "Ranked among types the cited stub marks as allowed"}
               </h3>
               {group.rows.map((row) => (
                 <article key={row.id} className="type-card" style={{ borderColor: TYPE_COLORS[row.id] }}>

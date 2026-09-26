@@ -25,6 +25,7 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 python test_score.py
+python test_pii.py
 python run_pipeline.py
 ```
 
@@ -39,7 +40,7 @@ npm test
 npm run dev
 ```
 
-Open http://localhost:3000. Click a parcel, move the sliders, and try the zoning what-if toggle.
+Open http://localhost:3000. Click a parcel, move the sliders, and try the zoning what-if toggle. Each parcel result is a screening aid. Flag a result that looks wrong; the flag stays in that browser and is not sent to the City. A consequential decision should go to City Planning / the Zoning Administrator or a qualified professional. See [Human in the loop](#human-in-the-loop).
 
 For a plain-language explanation, click "Explain the top two." With no API key, that uses a deterministic template. To use a model, copy `web/.env.example` to `web/.env.local` and set `LLM_API_KEY`. Optional: `LLM_BASE_URL` (default `https://api.openai.com/v1`) and `LLM_MODEL` (default `gpt-4o-mini`).
 
@@ -69,6 +70,8 @@ shared/rank_vector.json
 The pipeline stores the zoning district code it found on each parcel. The browser reads `zoning.json` and decides what the stub rules allow. Turning on "what if zoning changed" ranks all four types and says so.
 
 Composite score = weighted average of demand, transit, equity, and climate suitability (100 minus climate risk). A missing dimension is skipped. It is not treated as zero.
+
+How the sources are reconciled when they disagree (vintage, geography, join keys, and mismatches) is in [docs/DATA_NOTES.md](docs/DATA_NOTES.md).
 
 ## Data Sources
 
@@ -110,18 +113,26 @@ No paid data product. No model is required for the scores. The optional explanat
 - Cursor cloud agent, model Grok 4.7, used during the hackathon to scaffold the pipeline, the scoring model, and the first web app. The scoring rules are in `pipeline/score.py` and `data/processed/score_model.json` so a person can read and change them.
 - Optional explanation model: any OpenAI-compatible chat endpoint configured with `LLM_API_KEY`. The default model name is `gpt-4o-mini`. If the key is missing or the call fails, `web/lib/explainTemplate.js` writes the explanation from the same numbers. The demo does not depend on a model being up.
 
+## Human in the loop
+
+Every parcel result is a screening aid. It is not a zoning determination, a permit, or an appraisal. The page says so on the result, and it links to the [City Planning zoning page](https://www.pittsburghpa.gov/Business-Development/City-Planning/Zoning), the [zoning code](https://ecode360.com/45474054), and the [zoning map](https://pittsburghpa.maps.arcgis.com/apps/instant/sidebar/index.html?appid=4bb79ea64bf848b3a0560e3856efeccb). The zoning page lists 412-255-2621 at the City-County Building, 414 Grant Street.
+
+A person can flag a result as wrong. The flag, and an optional note, stay in that browser's local storage. They are not uploaded and they are not a filing with the City. Take a consequential question to City Planning / the Zoning Administrator or to a qualified professional.
+
+Zoning allowances are not filled in from district titles. On 2026-09-26 ecode360 returned a Cloudflare challenge, so the use tables were not read. `needs_expert_review` remains true on every district. Chris cites a code section before the app filters any housing type.
+
 ## Limitations
 
 - Decision support only. Not a zoning determination, appraisal, underwriting tool, or permitting screen.
-- Every row in `zoning/districts.json` is a stub inferred from the district title. `needs_expert_review` is true on all of them. R3 districts are not marked as allowing the 3–19 unit bin, because that bin is wider than "three-unit." Chris has to check the current Pittsburgh Zoning Code use table, overlays, and exceptions. Observed codes in this MVP include R1A-H, R1A-VH, H, R1D-M, LNC, UI, RIV-IMU, RIV-MU, P, NDI, and others. None of the allowances have been signed off.
+- No district allowance was read from the Pittsburgh Zoning Code. ecode360 (https://ecode360.com/45474054) returned HTTP 403 with a Cloudflare challenge on 2026-09-26. Every row in `zoning/districts.json` has an empty `allowed` list, `use_table_read: false`, `code_section: null`, and a TODO. `needs_expert_review` is true on all of them. The app does not filter housing types until a person cites a section. That is not a finding that every type is allowed. Observed codes in this MVP include R1A-H, R1A-VH, H, R1D-M, LNC, UI, RIV-IMU, RIV-MU, P, NDI, and others.
 - Weights, lot-fit curves, the equity production/displacement factors, the 50/30/20 flood, steep-slope, and undermined blend, and the small climate penalty by building size are value judgments. Confidence measures missing data only.
 - Climate risk is current FEMA flood zones, overlap with slopes of 25% or greater as a landslide-risk proxy, and overlap with undermined areas as a preliminary mine screen. It is not a site visit, a flood determination, a geotechnical study, future rainfall, or embodied carbon or operating emissions. The brief also asks about infrastructure and marginal carbon; this MVP does not have those layers, so it does not score them. Steep slope is not a landslide inventory. Undermined-area maps can be incomplete and are not a safety determination.
 - Valid sales are county code `0` / description `VALID SALE`, price at least $10,000, on or after 2021-09-26. Love-and-affection and multi-parcel deeds are excluded. This is not an appraisal. Assessed value is not market value (the organizers' caveat on the assessment file) and is not an input. The separate sale-transactions dataset was not downloaded; the validation-code filter from that row of the list is what the assessment sale fields go through.
 - ACS figures are 2020–2024 estimates with margins of error. A block group is not a neighborhood, and a small-area percentage should not be read as exact. HUD CHAS tract cost burden by income is named in the brief and on the organizers' list and is not in this score. Block-group geometries are NAD83 used as WGS84; that shift is small next to a block group, and the 2024 boundary vintage matches the 2024 ACS tables.
-- The zoning district map does not encode overlays, definitions, exceptions, or review procedure. Authoritative interpretation belongs to the City.
+- The zoning district map does not encode overlays, definitions, exceptions, or review procedure. Authoritative interpretation belongs to the City. The code, the map, and the department page are linked from each result.
 - Scores use fixed anchors (for example $80–$350 per square foot), not a citywide percentile. A high score means "high on that anchor," not "better than most of Pittsburgh."
 - Transit is weekday scheduled trips, not delay, crowding, or whether the sidewalk exists.
-- Parcel owner names are not in the output. Do not join this file back to an owner roll for a public demo.
+- Owner names, change-notice mailing addresses, and buyer, seller, grantor, and grantee names are not in the output. The pipeline refuses a parcel file whose keys contain those words. Site addresses and sale prices stay; the parties do not. Do not join this file back to an owner roll or a deed-party file. Details are in [docs/DATA_NOTES.md](docs/DATA_NOTES.md).
 
 ## Team
 

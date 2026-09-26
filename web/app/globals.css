@@ -68,6 +68,15 @@ p, li { line-height: 1.4; }
 .limitations ul { padding-left: 18px; margin: 8px 0 0; }
 .warning { color: #9a3412; }
 
+.review-box {
+  background: #f8fafc;
+  border: 1px solid #cbd2d9;
+  padding: 10px;
+  margin: 8px 0 12px;
+}
+.review-box a { color: #1d4e89; }
+.flag-form button { margin-top: 6px; }
+
 .slider, .toggle, label { display: block; margin: 8px 0; font-size: 14px; }
 .slider input, label input[type="text"], label input:not([type="checkbox"]):not([type="range"]) {
   width: 100%;

@@ -48,17 +48,19 @@ test("template names measured facts and value judgments", () => {
     weights: { demand: 25, transit: 25, equity: 25, climate: 25 },
     whatIf: false,
     zoning: {
-      status: "stub",
+      status: "use_table_unread",
       code: "R1D-L",
-      allowed: ["single_family"],
-      note: "Stub from the district title only.",
+      allowed: null,
+      note: "TODO: read the use table.",
     },
     countyMedianIncome: 76000,
   })
+  assert.match(text, /screening aid/)
   assert.match(text, /not legal, zoning, or financial advice/)
+  assert.match(text, /Zoning Administrator/)
   assert.match(text, /Observed for this place/)
   assert.match(text, /Value judgments/)
-  assert.match(text, /Stub zoning/)
+  assert.match(text, /use table was not read/)
   assert.match(text, /landslide-risk proxy/)
   assert.match(text, /undermined area/)
   assert.match(text, /100 Example St/)

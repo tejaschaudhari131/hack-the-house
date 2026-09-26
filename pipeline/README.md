@@ -10,6 +10,7 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 python test_score.py
+python test_pii.py
 python run_pipeline.py
 ```
 
@@ -22,4 +23,4 @@ Outputs:
 
 Raw downloads stay in `data/raw/` and are gitignored. Pass `--refresh` to pull them again.
 
-Owner names are not in the WPRDC assessment extract. Change-notice mailing addresses are never requested and never written. `build_dataset.py` refuses to emit a parcel file if an output key contains `owner`, `changenotice`, or `mailing`.
+Owner names, change-notice mailing addresses, and buyer, seller, grantor, and grantee names are not requested and not written. `build_dataset.py` refuses a parcel file whose keys contain `owner`, `changenotice`, `mailing`, `buyer`, `seller`, `grantor`, or `grantee`. See `docs/DATA_NOTES.md`.

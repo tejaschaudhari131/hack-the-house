@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "node --test lib/rank.test.js lib/explainTemplate.test.js"
+    "test": "node --test lib/rank.test.js lib/explainTemplate.test.js lib/zoning.test.js"
   },
   "dependencies": {
     "leaflet": "^1.9.4",

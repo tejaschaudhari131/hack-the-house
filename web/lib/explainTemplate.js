@@ -82,7 +82,7 @@ export function explainTemplate({ parcel, ranked, weights, whatIf, zoning, count
 
   const paragraphs = []
   paragraphs.push(
-    `${place} in ${parcel.neighborhood} is a decision-support comparison, not legal, zoning, or financial advice. With your weights (${weightText}), ${top.label} ranks first${top.composite === null ? "" : ` at ${top.composite}`} and ${second ? `${second.label} is next${second.composite === null ? "" : ` at ${second.composite}`}` : "there is no second type"}.`,
+    `${place} in ${parcel.neighborhood} is a screening aid, not legal, zoning, or financial advice. With your weights (${weightText}), ${top.label} ranks first${top.composite === null ? "" : ` at ${top.composite}`} and ${second ? `${second.label} is next${second.composite === null ? "" : ` at ${second.composite}`}` : "there is no second type"}. A consequential decision should go to City Planning / the Zoning Administrator or a qualified professional.`,
   )
   paragraphs.push(
     measured.length
@@ -105,9 +105,13 @@ export function explainTemplate({ parcel, ranked, weights, whatIf, zoning, count
   if (parcel.confidence_notes?.length) {
     paragraphs.push(`Thin-data notes: ${parcel.confidence_notes.join(" ")}`)
   }
-  if (whatIf) {
+  if (zoning?.status === "use_table_unread") {
     paragraphs.push(
-      "The what-if zoning toggle is on, so all four types are ranked as if the stub rules allowed them. That is a scenario, not a rezoning, and the stub rules still need expert review.",
+      `The Pittsburgh Zoning Code use table was not read for ${zoning.code || "this district"}. ecode360 blocked automated access, so no housing type was filtered. That is not a finding that every type is allowed. ${zoning.note || ""}`,
+    )
+  } else if (whatIf) {
+    paragraphs.push(
+      "The what-if zoning toggle is on, so all four types are ranked as if the cited stub rules allowed them. That is a scenario, not a rezoning, and the rules still need expert review.",
     )
   } else if (zoning?.status === "stub") {
     const allowed = [...(zoning.allowed || [])].map((id) => TYPE_LABELS[id] || id)
