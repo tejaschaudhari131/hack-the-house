@@ -325,3 +325,53 @@ test("a triplex keeps three-unit semantics in the compare facts and the Find Sit
   assert.equal(rows.length, 1)
   assert.match(sitesCsv(rows), /Triplex \(3 units, §911\.02 Three-Unit row\)/)
 })
+
+test("provider plan: gateway key first; else LLM_* first then OIDC gateway; none gives the template", async () => {
+  const { providerPlan } = await import("./explainHandler.js")
+  const llm = { LLM_API_KEY: "sk-test-secret-value-123456", LLM_BASE_URL: "https://llm.example/v1", LLM_MODEL: "gpt-4o-mini" }
+  assert.deepEqual(providerPlan({ AI_GATEWAY_API_KEY: "g", ...llm }).providers.map((p) => p.id), ["gateway", "openai-compatible"])
+  assert.deepEqual(providerPlan({ ...llm, VERCEL: "1" }).providers.map((p) => p.id), ["openai-compatible", "gateway"])
+  assert.deepEqual(providerPlan({ ...llm }).providers.map((p) => p.id), ["openai-compatible"])
+  assert.deepEqual(providerPlan({ VERCEL: "1" }).providers.map((p) => p.id), ["gateway"])
+  assert.equal(providerPlan({ LLM_API_KEY: "x" }).providers.length, 0)
+  assert.equal(providerPlan({ ...llm, AI_EXPLANATIONS: "off" }).providers.length, 0)
+  assert.equal(providerPlan({ ...llm, LLM_MODEL: "" }).providers[0].model, "gpt-4o-mini")
+})
+
+test("without a gateway key the LLM_* endpoint answers; a gateway 401 falls through; all failing gives the template", async () => {
+  const llm = { LLM_API_KEY: "sk-test-secret-value-123456", LLM_BASE_URL: "https://llm.example/v1", LLM_MODEL: "gpt-4o-mini" }
+  const rejecting = (status) =>
+    new MockLanguageModelV4({
+      doStream: async () => {
+        throw Object.assign(new Error(`Unauthorized: bad key sk-test-secret-value-123456`), { statusCode: status })
+      },
+    })
+  const logs = []
+  const original = console.error
+  console.error = (...args) => logs.push(args.join(" "))
+  try {
+    const first = createExplainHandler({ loadData, env: { ...llm, VERCEL: "1" }, models: { "openai-compatible": mockModel(["from the LLM endpoint"]), gateway: rejecting(401) } })
+    const response = await first(post({ pin: featureA.properties.pin, weights: WEIGHTS }, "192.0.2.60"))
+    assert.equal(response.headers.get("x-explain-source"), "ai")
+    assert.equal(response.headers.get("x-explain-provider"), "openai-compatible")
+    assert.equal(response.headers.get("x-explain-model"), "gpt-4o-mini")
+    assert.equal(await response.text(), "from the LLM endpoint")
+
+    const second = createExplainHandler({ loadData, env: { AI_GATEWAY_API_KEY: "gw-key-1234567890", ...llm }, models: { gateway: rejecting(401), "openai-compatible": mockModel(["fallback text"]) } })
+    const fell = await second(post({ pin: featureA.properties.pin, weights: WEIGHTS }, "192.0.2.61"))
+    assert.equal(fell.headers.get("x-explain-provider"), "openai-compatible")
+    assert.equal(await fell.text(), "fallback text")
+    const gatewayLog = logs.find((line) => line.includes('"provider":"gateway"'))
+    assert.match(gatewayLog, /"status":401/)
+    assert.doesNotMatch(logs.join("\n"), /sk-test-secret-value-123456|gw-key-1234567890/)
+
+    const third = createExplainHandler({ loadData, env: { ...llm, VERCEL: "1" }, models: { "openai-compatible": rejecting(403), gateway: rejecting(401) } })
+    const failed = await third(post({ pin: featureA.properties.pin, weights: WEIGHTS }, "192.0.2.62"))
+    assert.equal(failed.headers.get("x-explain-source"), "template")
+    const notice = decodeURIComponent(failed.headers.get("x-explain-notice"))
+    assert.match(notice, /OpenAI-compatible API rejected the credentials; then Vercel AI Gateway rejected the credentials/)
+    assert.match(await failed.text(), /screening aid/)
+  } finally {
+    console.error = original
+  }
+})

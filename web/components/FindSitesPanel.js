@@ -85,6 +85,8 @@ export default function FindSitesPanel({
   activeExample,
   onExample,
   onCompareSite,
+  onAntiDisplacement = null,
+  share = null,
   guide = null,
 }) {
   const [shown, setShown] = useState(PAGE)
@@ -317,7 +319,7 @@ export default function FindSitesPanel({
       <section>
         <h2>Weights</h2>
         <p className="hint">The list is ranked by the weighted score of the chosen type, or of the best type the zoning filter lets through.</p>
-        <WeightPresets weights={weights} onWeights={onWeights} />
+        <WeightPresets weights={weights} onWeights={onWeights} onAntiDisplacement={onAntiDisplacement} />
         <WeightSliders weights={weights} onWeights={onWeights} />
       </section>
 
@@ -343,6 +345,7 @@ export default function FindSitesPanel({
             Download CSV
           </button>
         </div>
+        {share}
         <button
           type="button"
           className="explain"

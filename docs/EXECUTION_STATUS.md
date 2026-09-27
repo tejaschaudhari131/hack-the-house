@@ -4,9 +4,8 @@ Single integrator log for the owner's implementation spec (Sun Sep 27 2026). Tim
 
 ## Current state
 
-- Branch: `cursor/ai-explanations-gateway-ded8` (PR #2 against `main`). Main at `866a8cd` (PR #3 merged). This branch contains all of main; GitHub reports PR #2 mergeable.
-- Production (https://hack-the-house.vercel.app) still serves the pre-PR-#2 build (page title "Housing typology matchmaker") until PR #2 is merged.
-- Head SHA for Checkpoint 1: see the PR; recorded in the checkpoint report.
+- Checkpoint 1 merged: PR #2 → main at `88aa9cb`. Production served the new title ("Housing Typology, Equity & Climate Matchmaker · Pittsburgh") at the start of Checkpoint 2.
+- Checkpoint 2 branch: `cursor/checkpoint2-sensitivity-evidence-ded8`, from `88aa9cb`, with a new PR against main.
 
 ## Checkpoint 1 (spec D steps 1–4)
 
@@ -44,6 +43,31 @@ Screenshots and the brief PDF are in the agent artifacts (`/opt/cursor/artifacts
 - MODEL_CARD, VALIDATION, DEMO_SCRIPT, SUBMISSION, PILOT_PLAN, and the recording are Checkpoint 3.
 - Expert zoning review and eligibility/attestation fields: unresolved. They need people; the AI does not attest or review.
 
+## Checkpoint 2 (spec I, J, L incl. performance)
+
+| Item | Status | Evidence |
+| --- | --- | --- |
+| Illustrative priorities | Done, tested | Balanced (25/25/25/25/15/15), Transit, Housing-need, Lower-hazard, and Lower-carbon emphasis (`web/lib/presets.js`), labeled as team-authored, not measured stakeholder preferences. A "Show the weights behind each priority" table lists the raw weights. The CDC anti-displacement example stays visible: it opens Find Sites with the high-risk-tract example and sets the displacement weight to 0, and it says this is a different objective, not a lower risk. |
+| One-factor sweep | Done, tested | `sweepPair()` moves one raw weight from 0 to 100 in steps of 1 with the others fixed. `solveCrossings()` solves exactly where the two unrounded scores are equal (a polynomial of degree ≤ 2 in w, so unequal coverage is handled); a test checks the scores are equal at the root. The sampled first change (on displayed one-decimal scores) is reported separately. Shared factors on one parcel say "cannot reorder". Shown in the compare and parcel views; included in the AI facts (`sensitivity`) and the brief. Demo parcel: equity crosses at 30.85 (solved), sampled change at 31; demand 21.35; carbon 23.84; climate has no crossing; transit and displacement cannot reorder. |
+| Evidence drawer | Done, tested | `web/lib/evidence.js` + `EvidenceDrawer`: for each of the six factors it lists the score, geography, sources with https links from `sources.json`, vintage, observed inputs from the parcel record, assumptions (factor meaning + `score_model.json` normative choices), missing inputs (a missing score says the weights renormalize), and the sources' own limits. It appears in the parcel view (first-listed type) and the compare view (scenario A, plus B on a different parcel). |
+| Reproducible scenario state | Done, tested, browser-checked | `web/lib/scenarioState.js` v1: mode, weights, what-if, parcel, the two drops with building type (so unit count and triplex are kept), Find Sites filters and sort, model version, and data pull date, encoded as base64url JSON (`?s=`, ≤ 4000 characters). Import validates the version, mode, all six weights, pins against the loaded data, building types, and filter keys and choices (shared with the API in `lib/validate.js`); unknown keys are dropped. A model or data mismatch gives a warning. Copy link, download JSON, and load JSON (≤ 20 KB). The brief and parcel report print the reproduce link. Browser: a 603-character link restored triplex vs townhouse; a stale version showed two warnings; a bad link was rejected with the reason. |
+| L.10 stale / out-of-order explanations | Done, tested | `createRequestGuard()` + `streamExplanation()` in `web/lib/explainClient.js`. Tests: an older slow response for scenario A finishing after B's does not overwrite B; an invalidation (weights or scenario change) drops an in-flight response. |
+| L.12 keyboard / narrow / non-color | Checked | Headless run: Tab order starts at "Skip to the results panel", then the header controls, all with a visible outline. At 390 px: 0 px horizontal overflow, 0 tables wider than the viewport. Permission, verdict, and contribution direction are text (badge labels, "+x A/B"), not color alone. The Leaflet map is still not keyboard-operable; address search and Find Sites are the keyboard path. |
+| Performance | Done, measured | Transfer is small (production: 1.66–1.78 MB brotli for the 27.8 MB `parcels.geojson`; geometry is 1.3 MB of it). The measured cost was the slider: each move restyled all 8,645 polygons with a full re-rank. The fix: compute each parcel's #1 type directly, cache zoning per district, and call `setStyle` only when a parcel's #1 type or selection changes. Analytical data unchanged. Headless Chrome on this VM, local `next start`, 3 runs each, performance marks and longtask observer: five slider moves went from 5–6 long tasks totaling 324–429 ms (max 72–89 ms) to 1 long task totaling 54–57 ms (max 54–57 ms). Load was unchanged: data parsed ~370–400 ms; first map draw 856–877 ms before vs 835–873 ms after; load long task 159–171 ms before vs 148–157 ms after. These are not real-device timings. |
+
+### Production AI fix (added to Checkpoint 2)
+
+- Owner's report: production `/api/explain` (commit 88aa9cb) always fell back with "AI Gateway rejected the credentials" (~1.3 s). The project has no `AI_GATEWAY_API_KEY`, so it relied on OIDC, which was rejected; the legacy `LLM_API_KEY`, `LLM_BASE_URL`, and `LLM_MODEL` were ignored.
+- Change: `providerPlan()` in `web/lib/explainHandler.js`. With a gateway key: gateway, then `LLM_*`. Without one: `LLM_*` first (via `@ai-sdk/openai-compatible` 3.0.57, which pins the same `@ai-sdk/provider` 4.0.18 as `ai` 7.0.116), then the gateway through OIDC. Each failure before the first token falls through; if all fail, the labeled template names each failure. `X-Explain-Provider` and `X-Explain-Model` report what answered, and the UI label says "via Vercel AI Gateway" or "via an OpenAI-compatible API".
+- Server logs: `[explain] provider error {stage, provider, model, status, name, message}`, with the message redacted against the configured keys and key-like strings. No IP or request body.
+- Tests: plan order for each environment combination; `LLM_*` answering without a gateway key; a gateway 401 falling through to `LLM_*`; both failing → template; logs contain the status and no key. Also checked against a local HTTP server speaking the OpenAI streaming protocol (not a mock model): the real `createOpenAICompatible` path streamed text; a wrong key logged status 401 and returned the template.
+- Not verified: a real call on production. That needs the merge and the owner's re-test.
+- Also fixed from the owner's verification: the compare sentence lists every weighted factor (favoring A, favoring B, held constant, negligible, or not comparable); one rounding rule (Python-style one decimal, ties to even) in the table, sentence, and brief, stated on screen; the double space before "The mapping…" is gone; the browser title is "Hack the House · Pittsburgh housing-site decision support".
+
+### Tests at Checkpoint 2
+
+- JS `npm test`: see the checkpoint report (63 at the last run). Python: `test_score` 18, `test_pii` 5, `test_sites` 5. `next build` green.
+
 ## Next action
 
-Owner's assistant: merge PR #2 once CI and build pass, then check the production deploy. Agent: continue to Checkpoint 2 on the go.
+Owner's assistant: merge PR #2 once CI and build pass, then check the production deploy. Agent: Checkpoint 3 (docs and demo) on the owner's go.

@@ -10,12 +10,14 @@ import ParcelPanel from "./ParcelPanel.js"
 import ParcelReport from "./ParcelReport.js"
 import DecisionBrief from "./DecisionBrief.js"
 import GuideBanner from "./GuideBanner.js"
+import ScenarioShare from "./ScenarioShare.js"
+import { decodeState, encodeState, makeState, validateState } from "../lib/scenarioState.js"
 import { GUIDE_QUERY_ID, alternativeBuilding, buildingForSiteType, resolveGuide } from "../lib/guide.js"
 import { useExplanation } from "../lib/explainClient.js"
 import { buildParcelContext } from "../lib/explainFacts.js"
 import { explainTemplate } from "../lib/explainTemplate.js"
 import { DEFAULT_WEIGHTS, rankTypes } from "../lib/rank.js"
-import { DEFAULT_SITE_FILTERS, findSites } from "../lib/sites.js"
+import { DEFAULT_SITE_FILTERS, EXAMPLE_QUERIES, filtersFor, findSites } from "../lib/sites.js"
 import { resolveZoning } from "../lib/zoning.js"
 
 const MapView = dynamic(() => import("./MapView.js"), {
@@ -49,10 +51,12 @@ export default function App() {
   const [guide, setGuide] = useState(null)
   const [compareState, setCompareState] = useState(null)
   const [shortlist, setShortlist] = useState(null)
+  const [stateNotice, setStateNotice] = useState(null)
   const mapWeights = useDeferredValue(weights)
 
   useEffect(() => {
-    const linked = new URLSearchParams(window.location.search).has("pin")
+    const params = new URLSearchParams(window.location.search)
+    const linked = params.has("pin") || params.has("s")
     if (!linked && !hasOnboarded()) setOnboardingOpen(true)
   }, [])
   const [siteFilters, setSiteFilters] = useState(DEFAULT_SITE_FILTERS)
@@ -80,6 +84,7 @@ export default function App() {
           responses.map((response) => response.json()),
         )
         if (!cancelled) {
+          performance.mark("htm:parcels-parsed")
           setParcels(parcelJson)
           setNeighborhoods(neighborhoodJson)
           setZoning(zoningJson)
@@ -124,6 +129,22 @@ export default function App() {
     const pin = new URLSearchParams(window.location.search).get("pin")
     if (pin && byPin.has(pin)) setSelectedPin(pin)
   }, [parcels, byPin])
+
+  const [linkChecked, setLinkChecked] = useState(false)
+  useEffect(() => {
+    if (!parcels || !model || !summary || linkChecked) return
+    setLinkChecked(true)
+    const url = new URL(window.location.href)
+    const encoded = url.searchParams.get("s")
+    if (!encoded) return
+    url.searchParams.delete("s")
+    window.history.replaceState(null, "", url)
+    try {
+      applyState(decodeState(encoded), "scenario link")
+    } catch {
+      setStateNotice({ kind: "error", lines: ["The scenario link is not valid, so the default view is shown."] })
+    }
+  }, [parcels, model, summary, linkChecked])
 
   useEffect(() => {
     if (!parcels) return
@@ -228,9 +249,57 @@ export default function App() {
     }
   }
 
+  function openAntiDisplacement() {
+    const example = EXAMPLE_QUERIES.find((item) => item.id === "anti-displacement")
+    if (!example) return
+    setSiteFilters(filtersFor(example))
+    setSiteExample(example.id)
+    setWeights((current) => ({ ...current, ...(example.weights || {}) }))
+    setGuide(null)
+    setMode("sites")
+  }
+
+  function applyState(raw, origin) {
+    const result = validateState(raw, { hasPin: (pin) => byPin.has(pin), modelVersion: model?.version, dataVersion: summary?.pulled_at })
+    if (!result.ok) {
+      setStateNotice({ kind: "error", lines: [`The ${origin} could not be loaded.`, ...result.errors] })
+      return
+    }
+    const next = result.state
+    setGuide(null)
+    setWeights(next.weights)
+    setWhatIf(next.whatIf)
+    if (next.sites) {
+      setSiteFilters(next.sites.filters)
+      setSiteSort(next.sites.sort)
+    }
+    if (next.pin) setSelectedPin(next.pin)
+    if (next.drops.length) {
+      setDrops(next.drops)
+      setActiveSlot("A")
+      setShortlist(next.sites ? { filters: next.sites.filters, count: null } : null)
+    }
+    setMode(next.mode)
+    setStateNotice({ kind: result.warnings.length ? "warning" : "ok", lines: [`Loaded the ${origin}.`, ...result.warnings] })
+  }
+
   function printBrief() {
     window.print()
   }
+
+  const scenarioState = makeState({
+    mode,
+    pin: selectedPin,
+    whatIf,
+    weights,
+    drops,
+    siteFilters: mode === "sites" ? siteFilters : shortlist?.filters || null,
+    siteSort,
+    modelVersion: model?.version,
+    dataVersion: summary?.pulled_at,
+  })
+  const shareUrl = typeof window === "undefined" ? "" : `${window.location.origin}/?s=${encodeState(scenarioState)}`
+  const shareControls = <ScenarioShare shareUrl={shareUrl} state={scenarioState} onLoadState={(raw) => applyState(raw, "scenario file")} />
 
   const guideBanner = guide ? (
     <GuideBanner guide={guide} onNext={guideNext} onExit={() => setGuide(null)} onPrint={printBrief} />
@@ -274,6 +343,16 @@ export default function App() {
           with City Planning / the Zoning Administrator or a qualified professional.
         </p>
       </header>
+      {stateNotice ? (
+        <div className={`state-notice ${stateNotice.kind}`} role={stateNotice.kind === "error" ? "alert" : "status"}>
+          {stateNotice.lines.map((line) => (
+            <span key={line}>{line} </span>
+          ))}
+          <button type="button" className="text-button" onClick={() => setStateNotice(null)}>
+            Dismiss
+          </button>
+        </div>
+      ) : null}
       <Onboarding open={onboardingOpen} onClose={() => setOnboardingOpen(false)} onExample={startGuide} />
       <div className={mode === "drop" ? "app drop-mode" : mode === "sites" ? "app sites-mode" : "app"}>
         <div className="map-wrap" role="region" aria-label="Parcel map. Keyboard users can pick a parcel with Address search in the panel.">
@@ -355,7 +434,9 @@ export default function App() {
             activeExample={siteExample}
             onExample={setSiteExample}
             onCompareSite={(pin, siteType) => compareOnParcel(pin, siteType, true)}
+            onAntiDisplacement={openAntiDisplacement}
             guide={guideBanner}
+            share={shareControls}
           />
         ) : mode === "drop" ? (
           <DropPanel
@@ -379,7 +460,11 @@ export default function App() {
             onClear={(slot) => setDrops((current) => current.filter((item) => item.slot !== slot))}
             byPin={byPin}
             onCompareState={setCompareState}
+            onAntiDisplacement={openAntiDisplacement}
+            sources={sources}
+            model={model}
             onPrintBrief={printBrief}
+            share={shareControls}
             guide={guideBanner}
           />
         ) : (
@@ -408,6 +493,9 @@ export default function App() {
           onBackToSites={openedFromSites ? () => setMode("sites") : null}
           siteType={openedFromSites ? siteFilters.typeId : null}
           onCompareSite={(pin, siteType) => compareOnParcel(pin, siteType, openedFromSites)}
+          onAntiDisplacement={openAntiDisplacement}
+          zoning={zoning}
+          share={shareControls}
         />
         )}
       </div>
@@ -419,6 +507,7 @@ export default function App() {
           zoning={zoning}
           summary={summary}
           explanation={explanation}
+          shareUrl={shareUrl}
         />
       ) : null}
       {mode === "drop" && compareState ? (
@@ -431,6 +520,7 @@ export default function App() {
           summary={summary}
           model={model}
           shortlist={shortlist}
+          shareUrl={shareUrl}
         />
       ) : null}
     </div>

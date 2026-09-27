@@ -1,18 +1,19 @@
 "use client"
 
 import { NOT_EVALUATED } from "../lib/explainFacts.js"
-import { describeComparison } from "../lib/comparison.js"
+import { ROUNDING_NOTE, describeComparison } from "../lib/comparison.js"
+import { round1 } from "../lib/factors.js"
 
-function fmt(value, digits = 1) {
+function fmt(value) {
   if (value === null || value === undefined) return "—"
-  return Number(value).toFixed(digits)
+  return round1(value).toFixed(1)
 }
 
 function signed(value) {
   if (value === null || value === undefined) return "—"
-  const text = Math.abs(value).toFixed(1)
-  if (text === "0.0") return "0.0"
-  return value > 0 ? `+${text} A` : `+${text} B`
+  const size = round1(Math.abs(value))
+  if (size === 0) return "0.0"
+  return value > 0 ? `+${size.toFixed(1)} A` : `+${size.toFixed(1)} B`
 }
 
 function ScenarioHead({ side }) {
@@ -55,7 +56,7 @@ export default function ComparisonView({ result, onPrint }) {
         <table className="contrib-table">
           <caption>
             Points each factor adds to each score. Contribution = weight × suitability ÷ the sum of weights of that
-            scenario&apos;s available factors. Risk factors count as 100 minus the value.
+            scenario&apos;s available factors. Risk factors count as 100 minus the value. {ROUNDING_NOTE}
           </caption>
           <thead>
             <tr>
