@@ -257,7 +257,7 @@
     "pulled_at": "2026-09-27",
     "license": "Public",
     "status": "ok",
-    "notes": "Project name, total units, low-income units, and year placed in service, within about 2 km of the MVP area. Contact and company fields are not requested. Used as nearby affordable-stock context (projects and low-income units within 800 m). Not a score input.",
+    "notes": "Project name, total units, low-income units, and year placed in service, queried within about 2 km of the MVP area. Contact and company fields are not requested. Used as nearby affordable-stock context (projects and low-income units within 800 m of a parcel). lihtc.geojson keeps only projects within 800 m of an MVP parcel. Not a score input.",
     "catalog_priority": "Useful",
     "catalog_name": "HUD LIHTC Database",
     "catalog_url": "https://hudgis-hud.opendata.arcgis.com/datasets/HUD::low-income-housing-tax-credit-properties",

@@ -893,6 +893,7 @@ def attach_context(parcels, census_tables, tenure, rent_2019, matches, qct, city
         units = 0
         for project in lihtc:
             if math.hypot(px - project["x"], py - project["y"]) <= radius:
+                project["near_mvp"] = True
                 projects += 1
                 units += int(project.get("li_units") or project.get("units") or 0)
         record["lihtc_projects_800m"] = projects
@@ -1324,6 +1325,8 @@ def _chas_status(parcels):
 def _lihtc_collection(projects):
     features = []
     for project in projects or []:
+        if not project.get("near_mvp"):
+            continue
         features.append(
             {
                 "type": "Feature",
@@ -1807,7 +1810,7 @@ def main(refresh=False):
         config.LIHTC_DATASET_URL,
         "U.S. Department of Housing and Urban Development",
         "Public",
-        "Project name, total units, low-income units, and year placed in service, within about 2 km of the MVP area. Contact and company fields are not requested. Used as nearby affordable-stock context (projects and low-income units within 800 m). Not a score input.",
+        "Project name, total units, low-income units, and year placed in service, queried within about 2 km of the MVP area. Contact and company fields are not requested. Used as nearby affordable-stock context (projects and low-income units within 800 m of a parcel). lihtc.geojson keeps only projects within 800 m of an MVP parcel. Not a score input.",
         lambda: download_lihtc(neighborhoods, refresh),
         extra={
             "catalog_priority": "Useful",
