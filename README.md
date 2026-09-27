@@ -23,6 +23,8 @@ Studio is at `/`. The original parcel Explorer remains at `/explore` for referen
 
 The two study areas are **Hazelwood** and **Lawrenceville** (Lower, Central and Upper). The map covers 8,645 parcels; that is data coverage, not a proposal to redevelop every parcel. Existing building colours show recorded use, not recommendations.
 
+Studio navigation is limited to Pennsylvania's bounding rectangle. Neighboring areas can appear along its irregular borders; this does not expand the study data coverage.
+
 There is one editable **next-building draft**. Use **Compare to** to add other housing types to the comparison; all selected types share the same costs, priorities and evidence coverage. Each visitor has their own local Studio scenario. This is not a shared multiplayer session; export before reloading to keep a copy.
 
 Priority sliders are relative: all 1s, all 50s or all 100s give the same result. Each slider shows its percentage of the score after excluding missing evidence. Turning every priority off disables ranking.

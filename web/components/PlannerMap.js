@@ -11,6 +11,9 @@ import { buildingHeightDescription, buildingHeightSource } from '../lib/building
 
 const empty = () => ({ type: 'FeatureCollection', features: [] })
 const fc = features => ({ type: 'FeatureCollection', features })
+// Rounded outward from PennDOT's state extent; navigation bounds, not a polygon mask.
+// https://mapservices.pasda.psu.edu/server/rest/services/pasda/PennDOT/MapServer
+const PENNSYLVANIA_BOUNDS = [[-80.52, 39.71], [-74.68, 42.27]]
 
 export default function PlannerMap({ parcels, neighborhoods, stops, existingBuildings, showExisting, selected, buildingPreview, stop, proposed, additionalDepartures, view3d, onSelect, onStop, tool, placing, onPlace, onHover, placedBuildings = [], network, networkResult, reservations, connections, drawing, draftNode, onDraw, discoveryPins = [] }) {
   const container = useRef(null), mapRef = useRef(null), callbacks = useRef({ onSelect, onStop, tool, placing, onPlace })
@@ -26,6 +29,7 @@ export default function PlannerMap({ parcels, neighborhoods, stops, existingBuil
     try {
       configureMapWorkers()
       map = new GLMap({ container: container.current, center: [-79.9437, 40.4113], zoom: 17.5, pitch: 55, bearing: -25, attributionControl: true,
+        maxBounds: PENNSYLVANIA_BOUNDS, renderWorldCopies: false,
         style: { version: 8, sources: { basemap: { type: 'raster', tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize: 256, attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' } }, layers: [
           { id: 'background', type: 'background', paint: { 'background-color': '#dde5df' } },
           { id: 'basemap', type: 'raster', source: 'basemap', paint: { 'raster-saturation': -.7, 'raster-opacity': .75 } },
