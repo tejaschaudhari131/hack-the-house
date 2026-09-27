@@ -2,7 +2,7 @@
 
 Explore housing and infrastructure decisions on a 3D map of Pittsburgh.
 
-**[Current production site](https://hack-the-house.vercel.app)** · Built for the AI Horizons 2026 AI for Housing Hackathon. Playhouse release work is on `playhouse-release`; use its Vercel preview until it is merged.
+**[Playhouse](https://hack-the-house.vercel.app)** · Built for the AI Horizons 2026 AI for Housing Hackathon. The Studio is released from `main`; feature branches use Vercel previews.
 
 ## What it does
 
