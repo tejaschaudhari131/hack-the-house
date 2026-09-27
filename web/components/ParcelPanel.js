@@ -1,8 +1,11 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 
 import Explanation from "./Explanation.js"
+import Robustness from "./Robustness.js"
+import WeightPresets from "./WeightPresets.js"
+import { describeRobustness, parcelRobustness } from "../lib/robustness.js"
 import { TYPE_COLORS } from "../lib/colors.js"
 import { clearFlag, loadFlags, saveFlag } from "../lib/flags.js"
 import { TYPE_LABELS } from "../lib/rank.js"
@@ -66,8 +69,20 @@ export default function ParcelPanel({
   explanation,
   explaining,
   onExplain,
+  onPrint,
 }) {
   const [showModel, setShowModel] = useState(false)
+  const headingRef = useRef(null)
+  const robustness = useMemo(
+    () => (selected ? parcelRobustness(selected.scores, zoningInfo, weights, whatIf) : null),
+    [selected, zoningInfo, weights, whatIf],
+  )
+
+  useEffect(() => {
+    if (!selected?.pin || !headingRef.current) return
+    headingRef.current.focus({ preventScroll: true })
+    headingRef.current.scrollIntoView({ block: "start", behavior: "smooth" })
+  }, [selected?.pin])
   const [flags, setFlags] = useState({})
   const [flagNote, setFlagNote] = useState("")
   const failed = summary?.sources_failed || []
@@ -98,9 +113,11 @@ export default function ParcelPanel({
   }, [ranked, whatIf, zoningInfo])
 
   return (
-    <aside className="panel">
-      <section className="limitations" aria-labelledby="limits-heading">
-        <h2 id="limits-heading">Limitations / what this tool can&apos;t tell you</h2>
+    <aside className="panel" id="panel">
+      <details className="limitations" open={!selected}>
+        <summary>
+          <h2 id="limits-heading">Limitations / what this tool can&apos;t tell you</h2>
+        </summary>
         <p>
           This is decision support. It is not legal, zoning, financial, or permitting advice, and it
           will not tell you what may be built or what a project will cost.
@@ -136,11 +153,12 @@ export default function ParcelPanel({
             These sources failed and were not filled in with made-up numbers: {failed.map((item) => item.name).join("; ")}.
           </p>
         ) : null}
-      </section>
+      </details>
 
       <section>
         <h2>Weights</h2>
         <p className="hint">These are choices. They re-rank every parcel on the map.</p>
+        <WeightPresets weights={weights} onWeights={onWeights} />
         {Object.entries(weights).map(([key, value]) => (
           <label key={key} className="slider">
             <span>
@@ -214,7 +232,9 @@ export default function ParcelPanel({
         </section>
       ) : (
         <section>
-          <h2>{selected.address || selected.pin}</h2>
+          <h2 ref={headingRef} tabIndex={-1} className="parcel-heading">
+            {selected.address || selected.pin}
+          </h2>
           <div className="review-box">
             <p>
               <strong>Screening aid only.</strong> This result is not a determination of what may be built. A
@@ -345,9 +365,28 @@ export default function ParcelPanel({
             </div>
           ))}
 
-          <button type="button" className="explain" onClick={onExplain} disabled={explaining}>
-            {explaining ? "Writing explanation…" : "Explain the top two"}
-          </button>
+          {robustness ? (
+            <Robustness
+              analysis={robustness.analysis}
+              note={robustness.note}
+              secondary={
+                robustness.whatIfAnalysis ? (
+                  <p className="hint">
+                    <strong>If zoning were not binding (what-if):</strong> {describeRobustness(robustness.whatIfAnalysis)}
+                  </p>
+                ) : null
+              }
+            />
+          ) : null}
+
+          <div className="action-row">
+            <button type="button" className="explain" onClick={onExplain} disabled={explaining}>
+              {explaining ? "Writing explanation…" : "Explain the top two"}
+            </button>
+            <button type="button" className="secondary" onClick={onPrint}>
+              Print one-page report
+            </button>
+          </div>
           <Explanation explanation={explanation} />
         </section>
       )}

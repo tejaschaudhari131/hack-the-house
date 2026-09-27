@@ -1,10 +1,13 @@
 "use client"
 
 import dynamic from "next/dynamic"
-import { useEffect, useMemo, useState } from "react"
+import { useDeferredValue, useEffect, useMemo, useState } from "react"
 
 import DropPanel from "./DropPanel.js"
+import Onboarding, { hasOnboarded } from "./Onboarding.js"
 import ParcelPanel from "./ParcelPanel.js"
+import ParcelReport from "./ParcelReport.js"
+import { DEMO_EXAMPLE } from "../lib/example.js"
 import { useExplanation } from "../lib/explainClient.js"
 import { buildParcelContext } from "../lib/explainFacts.js"
 import { explainTemplate } from "../lib/explainTemplate.js"
@@ -38,6 +41,13 @@ export default function App() {
   const [activeType, setActiveType] = useState("townhouse_duplex")
   const [activeSlot, setActiveSlot] = useState("A")
   const [drops, setDrops] = useState([])
+  const [onboardingOpen, setOnboardingOpen] = useState(false)
+  const [exampleNote, setExampleNote] = useState(null)
+  const mapWeights = useDeferredValue(weights)
+
+  useEffect(() => {
+    if (!hasOnboarded()) setOnboardingOpen(true)
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -120,31 +130,71 @@ export default function App() {
     setActiveSlot((current) => (current === "A" ? "B" : current))
   }
 
+  function loadExample() {
+    setMode("drop")
+    setWeights(DEFAULT_WEIGHTS)
+    setFocus(null)
+    setQuery("")
+    setDrops([DEMO_EXAMPLE.a, DEMO_EXAMPLE.b])
+    setActiveSlot("A")
+    setExampleNote(DEMO_EXAMPLE.story)
+  }
+
   return (
-    <>
+    <div className="page">
+      <a className="skip-link" href="#panel">
+        Skip to the results panel
+      </a>
       <header className="banner">
-        <strong>Screening aid only.</strong> This is not legal, zoning, financial, or permitting advice. A
-        consequential decision should go to City Planning / the Zoning Administrator or a qualified professional.
-        <span className="mode-switch">
-          <button type="button" className={mode === "inspect" ? "on" : ""} onClick={() => setMode("inspect")}>
+        <div className="banner-main">
+          <h1 className="banner-title">Housing Typology, Equity &amp; Climate Matchmaker</h1>
+          <p className="banner-sub">
+            Compare four housing types on real Hazelwood and Lawrenceville parcels by demand, transit, equity, and
+            climate risk. For planners, CDCs, developers, and residents.
+          </p>
+        </div>
+        <span className="mode-switch" role="group" aria-label="Mode">
+          <button type="button" className={mode === "inspect" ? "on" : ""} aria-pressed={mode === "inspect"} onClick={() => setMode("inspect")}>
             Click a parcel
           </button>
-          <button type="button" className={mode === "drop" ? "on" : ""} onClick={() => setMode("drop")}>
+          <button type="button" className={mode === "drop" ? "on" : ""} aria-pressed={mode === "drop"} onClick={() => setMode("drop")}>
             Drop a building
           </button>
         </span>
-        <span className="banner-title">Housing typology, equity, and climate matchmaker</span>
+        <span className="banner-help">
+          <button type="button" onClick={loadExample}>
+            Try an example
+          </button>
+          <button type="button" onClick={() => setOnboardingOpen(true)}>
+            How it works
+          </button>
+        </span>
+        <p className="banner-note">
+          <strong>Screening aid only.</strong> Not legal, zoning, financial, or permitting advice. Confirm real decisions
+          with City Planning / the Zoning Administrator or a qualified professional.
+        </p>
       </header>
+      <Onboarding open={onboardingOpen} onClose={() => setOnboardingOpen(false)} onExample={loadExample} />
       <div className={mode === "drop" ? "app drop-mode" : "app"}>
-        <div className="map-wrap">
-          {error ? <p className="map-loading">{error}. Run the pipeline, then reload.</p> : null}
-          {!error && !parcels ? <p className="map-loading">Loading parcels…</p> : null}
+        <div className="map-wrap" role="region" aria-label="Parcel map. Keyboard users can pick a parcel with Address search in the panel.">
+          {error ? (
+            <p className="map-loading" role="alert">
+              Parcel data did not load ({error}). Reload the page. If this keeps happening, the files in
+              web/public/data are missing from the deployment.
+            </p>
+          ) : null}
+          {!error && !parcels ? (
+            <div className="map-loading" role="status">
+              <span className="spinner" aria-hidden="true" /> Loading about 8,600 parcels with their scores. This can
+              take a few seconds on a slow connection.
+            </div>
+          ) : null}
           {parcels && neighborhoods && mode === "inspect" ? (
             <MapView
               parcels={parcels}
               neighborhoods={neighborhoods}
               zoning={zoning}
-              weights={weights}
+              weights={mapWeights}
               whatIf={whatIf}
               selectedPin={selectedPin}
               focus={focus}
@@ -161,7 +211,8 @@ export default function App() {
               onDrop={dropOn}
             />
           ) : null}
-          <ul className="legend">
+          <ul className="legend" aria-label="Map legend">
+            {mode === "inspect" ? <li className="legend-note">Color: #1 type under your weights</li> : null}
             <li><i style={{ background: "#1d4e89" }} /> Single-family</li>
             <li><i style={{ background: "#0f766e" }} /> Townhouse / duplex</li>
             <li><i style={{ background: "#c2410c" }} /> Small apartment</li>
@@ -194,6 +245,8 @@ export default function App() {
             onSlot={setActiveSlot}
             onClear={(slot) => setDrops((current) => current.filter((item) => item.slot !== slot))}
             byPin={byPin}
+            exampleNote={exampleNote}
+            onDismissExample={() => setExampleNote(null)}
           />
         ) : (
         <ParcelPanel
@@ -215,9 +268,20 @@ export default function App() {
           explanation={explanation}
           explaining={explaining}
           onExplain={onExplain}
+          onPrint={() => window.print()}
         />
         )}
       </div>
-    </>
+      {mode === "inspect" && selectedFeature ? (
+        <ParcelReport
+          feature={selectedFeature}
+          weights={weights}
+          whatIf={whatIf}
+          zoning={zoning}
+          summary={summary}
+          explanation={explanation}
+        />
+      ) : null}
+    </div>
   )
 }
