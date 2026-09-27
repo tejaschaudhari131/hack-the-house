@@ -465,3 +465,7 @@ button.explain { font-weight: 700; }
 .studio .zoning-checks.compact > summary { display: block; }
 .studio .zoning-checks.compact > summary span { display: block; }
 .studio .zoning-inputs small { display: block; line-height: 1.5; color: #52616b; }
+
+.neighborhood-picker { display:flex; flex-direction:column; gap:3px; font-size:11px; min-width:170px; max-width:280px; }
+.neighborhood-picker select { width:100%; padding:8px 10px; border:1px solid #cbd5e1; border-radius:7px; color:#183147; background:white; font:inherit; font-size:13px; }
+.city-neighborhood-status { padding:8px 16px; background:#edf4f8; color:#183147; font-size:13px; }

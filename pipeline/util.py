@@ -27,10 +27,19 @@ def fetch_bytes(url, timeout=180, retries=3):
 
 
 def fetch_json(url, params=None, timeout=180):
+    raw = None
     if params:
         query = urllib.parse.urlencode(params)
-        url = url + ("&" if "?" in url else "?") + query
-    raw = fetch_bytes(url, timeout=timeout)
+        # ArcGIS/IIS rejects long GET query strings (large object-ID batches).
+        # A form POST is the same read-only query, with no URL length limit.
+        if len(query) > 1600 and url.endswith('/query'):
+            request = urllib.request.Request(url, data=query.encode(), headers={"User-Agent": USER_AGENT, "Accept": "application/json"})
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                raw = response.read()
+        else:
+            url = url + ("&" if "?" in url else "?") + query
+    if raw is None:
+        raw = fetch_bytes(url, timeout=timeout)
     try:
         return json.loads(raw.decode("utf-8"))
     except json.JSONDecodeError as error:

@@ -3,6 +3,9 @@
 import dynamic from "next/dynamic"
 import { useDeferredValue, useEffect, useMemo, useState } from "react"
 
+import NeighborhoodPicker from './NeighborhoodPicker.js'
+import { locateNeighborhood, loadNeighborhood } from '../lib/neighborhoodLoader.js'
+import { collection } from '../lib/studioData.js'
 import DropPanel from "./DropPanel.js"
 import Onboarding, { hasOnboarded } from "./Onboarding.js"
 import FindSitesPanel from "./FindSitesPanel.js"
@@ -37,20 +40,64 @@ const STEPS = [
   { mode: "brief", label: "Get the brief" },
 ]
 
-export default function App() {
-  const [parcels, setParcels] = useState(null)
-  const [neighborhoods, setNeighborhoods] = useState(null)
-  const [zoning, setZoning] = useState(null)
-  const [summary, setSummary] = useState(null)
-  const [model, setModel] = useState(null)
+export default function Explorer() {
+  const [data, setData] = useState(null), [neighborhoodId, setNeighborhoodId] = useState(null)
+  const [chunk, setChunk] = useState(null), [error, setError] = useState(null), [attempt, setAttempt] = useState(0)
+  useEffect(() => {
+    const controller = new AbortController()
+    const names = ['studio/manifest.json','neighborhoods.geojson','zoning.json','summary.json','score_model.json','stops.geojson','sources.json','lihtc.geojson']
+    Promise.all(names.map(async name => {
+      const r=await fetch(`/data/${name}`,{signal:controller.signal})
+      if (!r.ok) throw new Error(`${name}: ${r.status}`)
+      return r.json()
+    })).then(async ([manifest,neighborhoods,zoning,summary,model,stops,sources,lihtc]) => {
+      const params=new URLSearchParams(window.location.search)
+      let linked=params.get('pin')
+      if (!linked && params.get('s')) { try { const saved=decodeState(params.get('s')); linked=saved.pin || saved.drops?.[0]?.pin } catch {} }
+      const descriptor=await locateNeighborhood(manifest,linked,controller.signal) || manifest.neighborhoods.find(n=>n.id==='hazelwood')
+      if (controller.signal.aborted) return
+      setData({manifest,neighborhoods,zoning,summary,model,stops,sources,lihtc})
+      setNeighborhoodId(descriptor.id)
+    }).catch(e=>{if(e.name!=='AbortError') setError(e.message)})
+    return ()=>controller.abort()
+  },[attempt])
+  useEffect(() => {
+    if (!data || !neighborhoodId) return
+    const controller=new AbortController(); setError(null)
+    loadNeighborhood(data.manifest.neighborhoods.find(n=>n.id===neighborhoodId),controller.signal,fetch,false)
+      .then(value=>{if(!controller.signal.aborted) setChunk({id:neighborhoodId,...value})})
+      .catch(e=>{if(e.name!=='AbortError') setError(e.message)})
+    return ()=>controller.abort()
+  },[data,neighborhoodId,attempt])
+  if (!data || !chunk) return <main className="planner-loading"><h1>Playhouse Explorer</h1><p>{error || 'Loading your Pittsburgh neighborhood…'}</p>{error && <button onClick={()=>setAttempt(n=>n+1)}>Retry</button>}</main>
+  const pending=chunk.id!==neighborhoodId
+  async function additionalParcels(pins) {
+    const descriptors=await Promise.all(pins.map(pin=>locateNeighborhood(data.manifest,pin)))
+    const ids=[...new Set(descriptors.filter(Boolean).map(n=>n.id))]
+    const chunks=await Promise.all(ids.map(id=>loadNeighborhood(data.manifest.neighborhoods.find(n=>n.id===id),undefined,fetch,false)))
+    return collection(chunks.flatMap(c=>c.parcels.features))
+  }
+  function choose(id) {
+    const url=new URL(window.location.href); url.searchParams.delete('pin'); url.searchParams.delete('s'); window.history.replaceState(null,'',url)
+    setNeighborhoodId(id)
+  }
+  return <><div className="city-neighborhood-status"><NeighborhoodPicker neighborhoods={data.manifest.neighborhoods} value={neighborhoodId} onChange={choose}/>{pending && <span role="status">Loading selected neighborhood…</span>}{error && <span role="alert">{error} <button onClick={()=>setAttempt(n=>n+1)}>Retry</button></span>}</div><div inert={pending ? true : undefined} aria-busy={pending}><App key={chunk.id} data={data} chunk={chunk} additionalParcels={additionalParcels}/></div></>
+}
+
+function App({ data, chunk, additionalParcels }) {
+  const [parcels, setParcels] = useState(chunk.parcels)
+  const [neighborhoods, setNeighborhoods] = useState(data.neighborhoods)
+  const [zoning, setZoning] = useState(data.zoning)
+  const [summary, setSummary] = useState(data.summary)
+  const [model, setModel] = useState(data.model)
   const [error, setError] = useState(null)
   const [selectedPin, setSelectedPin] = useState(null)
   const [weights, setWeights] = useState(DEFAULT_WEIGHTS)
   const [whatIf, setWhatIf] = useState(false)
-  const [focus, setFocus] = useState(null)
+  const [focus, setFocus] = useState(data.manifest.neighborhoods.find(n=>n.id===chunk.id).name)
   const [query, setQuery] = useState("")
   const [mode, setMode] = useState("sites")
-  const [stops, setStops] = useState(null)
+  const [stops, setStops] = useState(data.stops)
   const [activeType, setActiveType] = useState("townhouse_duplex")
   const [activeSlot, setActiveSlot] = useState("A")
   const [drops, setDrops] = useState([])
@@ -66,64 +113,13 @@ export default function App() {
     const linked = params.has("pin") || params.has("s")
     if (!linked && !hasOnboarded()) setOnboardingOpen(true)
   }, [])
-  const [siteFilters, setSiteFilters] = useState(DEFAULT_SITE_FILTERS)
+  const currentNeighborhood = data.manifest.neighborhoods.find(n=>n.id===chunk.id).name
+  const [siteFilters, setSiteFilters] = useState({ ...DEFAULT_SITE_FILTERS, area: currentNeighborhood })
   const [siteSort, setSiteSort] = useState("score")
   const [siteExample, setSiteExample] = useState(null)
-  const [sources, setSources] = useState(null)
-  const [lihtc, setLihtc] = useState(null)
+  const [sources, setSources] = useState(data.sources)
+  const [lihtc, setLihtc] = useState(data.lihtc)
   const [openedFromSites, setOpenedFromSites] = useState(false)
-
-  useEffect(() => {
-    let cancelled = false
-    async function load() {
-      try {
-        const paths = [
-          "/data/parcels.geojson",
-          "/data/neighborhoods.geojson",
-          "/data/zoning.json",
-          "/data/summary.json",
-          "/data/score_model.json",
-        ]
-        const responses = await Promise.all(paths.map((path) => fetch(path)))
-        const failed = responses.find((response) => !response.ok)
-        if (failed) throw new Error(`${failed.url} returned ${failed.status}`)
-        const [parcelJson, neighborhoodJson, zoningJson, summaryJson, modelJson] = await Promise.all(
-          responses.map((response) => response.json()),
-        )
-        if (!cancelled) {
-          performance.mark("htm:parcels-parsed")
-          setParcels(parcelJson)
-          setNeighborhoods(neighborhoodJson)
-          setZoning(zoningJson)
-          setSummary(summaryJson)
-          setModel(modelJson)
-        }
-      } catch (loadError) {
-        if (!cancelled) setError(loadError.message)
-      }
-    }
-    load()
-    fetch("/data/stops.geojson")
-      .then((response) => (response.ok ? response.json() : null))
-      .then((json) => {
-        if (!cancelled && json) setStops(json)
-      })
-      .catch(() => {})
-    for (const [path, setter] of [
-      ["/data/sources.json", setSources],
-      ["/data/lihtc.geojson", setLihtc],
-    ]) {
-      fetch(path)
-        .then((response) => (response.ok ? response.json() : null))
-        .then((json) => {
-          if (!cancelled && json) setter(json)
-        })
-        .catch(() => {})
-    }
-    return () => {
-      cancelled = true
-    }
-  }, [])
 
   const byPin = useMemo(() => {
     const index = new Map()
@@ -221,9 +217,9 @@ export default function App() {
     const resolved = resolveGuide(parcels.features, zoning, DEFAULT_WEIGHTS)
     setOnboardingOpen(false)
     setWeights(DEFAULT_WEIGHTS)
-    setFocus(null)
+    setFocus(currentNeighborhood)
     setQuery("")
-    setSiteFilters(resolved.filters)
+    setSiteFilters({ ...resolved.filters, area: currentNeighborhood })
     setSiteSort("score")
     setSiteExample(GUIDE_QUERY_ID)
     setSelectedPin(resolved.pin)
@@ -263,15 +259,24 @@ export default function App() {
   function openAntiDisplacement() {
     const example = EXAMPLE_QUERIES.find((item) => item.id === "anti-displacement")
     if (!example) return
-    setSiteFilters(filtersFor(example))
+    setSiteFilters({ ...filtersFor(example), area: currentNeighborhood })
     setSiteExample(example.id)
     setWeights((current) => ({ ...current, ...(example.weights || {}) }))
     setGuide(null)
     setMode("sites")
   }
 
-  function applyState(raw, origin) {
-    const result = validateState(raw, { hasPin: (pin) => byPin.has(pin), modelVersion: model?.version, dataVersion: summary?.pulled_at })
+  async function applyState(raw, origin) {
+    const pins=[raw?.pin,...(Array.isArray(raw?.drops) ? raw.drops.slice(0,2).map(d=>d.pin) : [])].filter(Boolean)
+    let available=byPin
+    if (pins.some(pin=>!available.has(pin))) {
+      try {
+        const extra=await additionalParcels(pins)
+        available=new Map([...byPin,...extra.features.map(f=>[f.properties.pin,f])])
+        setParcels(collection([...available.values()]))
+      } catch (error) { setStateNotice({kind:'error',lines:[`Scenario data could not load: ${error.message}`]}); return }
+    }
+    const result = validateState(raw, { hasPin: (pin) => available.has(pin), modelVersion: model?.version, dataVersion: summary?.pulled_at })
     if (!result.ok) {
       setStateNotice({ kind: "error", lines: [`The ${origin} could not be loaded.`, ...result.errors] })
       return
@@ -343,7 +348,7 @@ export default function App() {
           <h1 className="banner-title">Playhouse</h1>
           <p className="banner-sub">
             Find a lot, compare two housing options on it, and get a one-page brief.{" "}
-            {summary?.parcel_count ? summary.parcel_count.toLocaleString() : "…"} lots in Hazelwood and Lawrenceville,
+            {summary?.parcel_count ? summary.parcel_count.toLocaleString() : "…"} lots across 90 Pittsburgh neighborhoods. Showing {currentNeighborhood},
             Pittsburgh.
           </p>
         </div>
@@ -411,7 +416,7 @@ export default function App() {
           ) : null}
           {!error && !parcels ? (
             <div className="map-loading" role="status">
-              <span className="spinner" aria-hidden="true" /> Loading 8,645 lots and their scores… This can take a few
+              <span className="spinner" aria-hidden="true" /> Loading this neighborhood’s parcels and scores… This can take a few
               seconds on a slow connection.
             </div>
           ) : null}
@@ -424,7 +429,7 @@ export default function App() {
               weights={mapWeights}
               whatIf={mode === "sites" ? false : whatIf}
               selectedPin={selectedPin}
-              focus={mode === "sites" ? siteFilters.area || null : focus}
+              focus={currentNeighborhood}
               onSelect={setSelectedPin}
               highlight={siteHighlight}
               lihtc={mode === "sites" ? lihtc : null}
@@ -436,7 +441,7 @@ export default function App() {
               neighborhoods={neighborhoods}
               stops={stops}
               drops={drops}
-              focus={focus}
+              focus={currentNeighborhood}
               onDrop={dropOn}
             />
           ) : null}
@@ -464,7 +469,7 @@ export default function App() {
         {mode === "sites" ? (
           <FindSitesPanel
             filters={siteFilters}
-            onFilters={setSiteFilters}
+            onFilters={filters => setSiteFilters({ ...filters, area: currentNeighborhood })}
             sort={siteSort}
             onSort={setSiteSort}
             rows={siteRows}

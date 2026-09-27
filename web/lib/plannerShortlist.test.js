@@ -22,7 +22,7 @@ function fixture() {
 }
 
 test('both real examples screen all five templates with identical no-op states and shared coverage', () => {
-  const read = name => JSON.parse(readFileSync(new URL(`../public/data/${name}`, import.meta.url)))
+  const read = name => JSON.parse(readFileSync(new URL(`../testdata/study/${name}`, import.meta.url)))
   const parcels = read('parcels.geojson'), stops = read('stops.geojson'), buildings = read('existing-buildings.geojson'), zoning = read('zoning.json'), networkContext = prepareNetwork(read('walking-network.json'))
   for (const example of EXAMPLES) {
     const feature = parcels.features.find(f => f.properties.pin === example.pin), stop = preferredStop(nearbyStops(feature, stops))

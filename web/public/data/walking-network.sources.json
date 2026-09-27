@@ -1,18 +1,28 @@
 {
   "source": "https://overpass-api.de/api/interpreter",
-  "query": "[out:json][timeout:90];(way[highway](40.39,-79.971,40.435,-79.911);way[highway](40.449,-79.995,40.494,-79.925);way[leisure=park](40.39,-79.971,40.435,-79.911);way[leisure=park](40.449,-79.995,40.494,-79.925););(._;>;);out body;",
+  "query": [
+    "[out:json][timeout:90];(way[highway](40.3315219591393,-80.1353313487956,40.398029632900105,-80.03216965851253);way[leisure=park](40.3315219591393,-80.1353313487956,40.398029632900105,-80.03216965851253););(._;>;);out body;",
+    "[out:json][timeout:90];(way[highway](40.3315219591393,-80.03216965851253,40.398029632900105,-79.92900796822947);way[leisure=park](40.3315219591393,-80.03216965851253,40.398029632900105,-79.92900796822947););(._;>;);out body;",
+    "[out:json][timeout:90];(way[highway](40.3315219591393,-79.92900796822947,40.398029632900105,-79.8258462779464);way[leisure=park](40.3315219591393,-79.92900796822947,40.398029632900105,-79.8258462779464););(._;>;);out body;",
+    "[out:json][timeout:90];(way[highway](40.398029632900105,-80.1353313487956,40.4645373066609,-80.03216965851253);way[leisure=park](40.398029632900105,-80.1353313487956,40.4645373066609,-80.03216965851253););(._;>;);out body;",
+    "[out:json][timeout:90];(way[highway](40.398029632900105,-80.03216965851253,40.4645373066609,-79.92900796822947);way[leisure=park](40.398029632900105,-80.03216965851253,40.4645373066609,-79.92900796822947););(._;>;);out body;",
+    "[out:json][timeout:90];(way[highway](40.398029632900105,-79.92900796822947,40.4645373066609,-79.8258462779464);way[leisure=park](40.398029632900105,-79.92900796822947,40.4645373066609,-79.8258462779464););(._;>;);out body;",
+    "[out:json][timeout:90];(way[highway](40.4645373066609,-80.1353313487956,40.531044980421704,-80.03216965851253);way[leisure=park](40.4645373066609,-80.1353313487956,40.531044980421704,-80.03216965851253););(._;>;);out body;",
+    "[out:json][timeout:90];(way[highway](40.4645373066609,-80.03216965851253,40.531044980421704,-79.92900796822947);way[leisure=park](40.4645373066609,-80.03216965851253,40.531044980421704,-79.92900796822947););(._;>;);out body;",
+    "[out:json][timeout:90];(way[highway](40.4645373066609,-79.92900796822947,40.531044980421704,-79.8258462779464);way[leisure=park](40.4645373066609,-79.92900796822947,40.531044980421704,-79.8258462779464););(._;>;);out body;"
+  ],
   "license": "ODbL-1.0",
   "attribution": "\u00a9 OpenStreetMap contributors",
   "license_url": "https://www.openstreetmap.org/copyright",
-  "osm_base_timestamp": "2026-09-27T09:16:21Z",
-  "retrieved_at": "2026-09-27T09:19:09.461910+00:00",
-  "input_sha256": "2cbffaeecd20ef32b4f5d013c6c79216989157661c09e801d373d6cdebb43d58",
-  "sha256": "6923e886de8b5998e03c35985cc44f66758fca9999ecd8733054ffb81f3e5782",
+  "osm_base_timestamp": "2026-09-27T21:56:00Z",
+  "retrieved_at": "2026-09-27T21:57:18.165559+00:00",
+  "input_sha256": "4a8a2b6909bbb660b5c8581ef2f38736bbbfbfb06714d4e75371e4455a15a89c",
+  "sha256": "f8bc4784860286ae435885b37c504b64f1a3e2cd8efdac6496c3be255d64e51d",
   "counts": {
-    "nodes": 53089,
-    "directed_edges": 127136,
-    "parks_with_mapped_access": 42,
-    "parks_omitted_without_valid_polygon_or_access": 17
+    "nodes": 371689,
+    "directed_edges": 845872,
+    "parks_with_mapped_access": 311,
+    "parks_omitted_without_valid_polygon_or_access": 94
   },
   "walking_metres_per_minute": 80,
   "steps_metres_per_minute": 40,

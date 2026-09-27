@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import { Map as MapLibreMap, Marker, NavigationControl } from "maplibre-gl"
 import "maplibre-gl/dist/maplibre-gl.css"
 
+import { PITTSBURGH_BOUNDS } from '../lib/pittsburgh.js'
 import { BUILDINGS } from "../lib/buildings.js"
 import { configureMapWorkers } from "../lib/maplibreSetup.js"
 import { TYPE_COLORS } from "../lib/colors.js"
@@ -48,7 +49,7 @@ function walkBounds(geometry, bounds) {
 function collectionBounds(collection, group) {
   const bounds = { minLon: 180, minLat: 90, maxLon: -180, maxLat: -90 }
   for (const feature of collection?.features || []) {
-    if (group && feature.properties?.group !== group && feature.properties?.area !== group) continue
+    if (group && feature.properties?.group !== group && feature.properties?.area !== group && feature.properties?.name !== group && feature.properties?.neighborhood !== group) continue
     walkBounds(feature.geometry, bounds)
   }
   if (bounds.minLon > bounds.maxLon) return null
@@ -78,6 +79,7 @@ export default function DropMap({ parcels, neighborhoods, stops, drops, focus, o
       style: OSM_STYLE,
       center: [-79.96, 40.45],
       zoom: 13,
+      maxBounds: PITTSBURGH_BOUNDS, renderWorldCopies: false,
       pitch: 50,
       bearing: -18,
     })

@@ -1,4 +1,4 @@
-"""Download, clean, and score the MVP parcels.
+"""Download, clean, and score the city parcels.
 
 Run from the repo root or from pipeline/:
 
@@ -11,11 +11,14 @@ Outputs land in data/processed and web/public/data.
 from __future__ import annotations
 
 import csv
+import hashlib
 import io
 import json
+import re
 import math
 import shutil
 import zipfile
+from data_io import write_parcels
 from collections import defaultdict
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
@@ -132,33 +135,51 @@ def load_neighborhoods(refresh):
     dest = config.RAW_DIR / "neighborhoods.geojson"
     cached_download(config.NEIGHBORHOODS_URL, dest, refresh=refresh)
     payload = json.loads(dest.read_text())
-    wanted = {item["name"]: item["group"] for item in config.MVP_NEIGHBORHOODS}
     selected = []
-    for feature in payload["features"]:
-        name = feature["properties"].get("hood")
-        if name not in wanted:
-            continue
-        geometry = geojson_to_shape(feature["geometry"])
-        if geometry is None:
-            continue
-        selected.append(
-            {
-                "name": name,
-                "group": wanted[name],
-                "geom": geometry,
-                "acres_attribute": feature["properties"].get("acres"),
-            }
-        )
-    found = {item["name"] for item in selected}
-    missing = sorted(set(wanted) - found)
-    if missing:
-        raise RuntimeError(f"Neighborhood polygons missing: {missing}")
-    return selected
+    for feature in payload.get("features", []):
+        props = feature.get("properties") or {}
+        name = props.get("hood")
+        geom = geojson_to_shape(feature.get("geometry"))
+        if not name or geom is None:
+            raise RuntimeError("Official neighborhood is missing a name or polygon")
+        selected.append({"name": name, "group": config.STUDY_GROUPS.get(name, name),
+                         "geom": geom, "acres_attribute": props.get("acres")})
+    if len({item["name"] for item in selected}) != 90:
+        raise RuntimeError("Expected 90 unique Pittsburgh neighborhoods; review boundary source changes")
+    print(f"  neighborhoods: {len(selected)}", flush=True)
+    return sorted(selected, key=lambda item: item["name"])
+
+
+def assign_neighborhood(geometry, neighborhoods, tree=None, city=None):
+    """Preserve complete parcel outlines; deterministic assignment at city/hood edges."""
+    if geometry is None or geometry.is_empty or geometry.area <= 0:
+        return None
+    tree = tree if tree is not None else STRtree([n["geom"] for n in neighborhoods])
+    hits = tree.query(geometry, predicate="intersects")
+    if not len(hits):
+        return None
+    point = geometry.representative_point()
+    if not any(neighborhoods[int(i)]["geom"].covers(point) for i in hits):
+        city = city if city is not None else shapely.union_all([n["geom"] for n in neighborhoods])
+        if city.intersection(geometry).area < .5 * geometry.area:
+            return None
+    candidates = [(geometry.intersection(neighborhoods[int(i)]["geom"]).area, neighborhoods[int(i)]) for i in hits]
+    candidates = [item for item in candidates if item[0] > 0]
+    return sorted(candidates, key=lambda item: (-item[0], item[1]["name"]))[0][1] if candidates else None
+
+
+def parcel_identity(feature):
+    """Retain anonymous/shared-ground polygons without collapsing different places."""
+    pin = str((feature.get('properties') or {}).get('PIN') or '').strip()
+    if re.fullmatch(r'[0-9A-Z]{6,24}', pin):
+        return pin
+    digest = hashlib.sha256(json.dumps(feature['geometry'], sort_keys=True, separators=(',', ':')).encode()).hexdigest()[:16].upper()
+    return 'SITE' + digest
 
 
 def download_parcels(neighborhoods, refresh):
     print("Parcels", flush=True)
-    cache = config.RAW_DIR / "parcels_bbox.geojson"
+    cache = config.RAW_DIR / "parcels_citywide_bbox_v2.geojson"
     if cache.exists() and not refresh:
         payload = json.loads(cache.read_text())
         print(f"  using cache {cache.name} ({len(payload['features'])} features)", flush=True)
@@ -176,9 +197,16 @@ def download_parcels(neighborhoods, refresh):
             "spatialRel": "esriSpatialRelIntersects",
             "outFields": "PIN,MAPBLOCKLOT,MUNICODE,CALCACREAGE",
         }
-        for feature in arcgis_features(config.PARCEL_QUERY_URL, extra, page_size=1000):
-            pin = str((feature.get("properties") or {}).get("PIN") or "").strip()
-            if not pin or pin in seen:
+        part = config.RAW_DIR / "citywide_parcels" / (re.sub(r"[^a-z0-9]+", "-", neighborhood["name"].lower()) + ".geojson")
+        part.parent.mkdir(parents=True, exist_ok=True)
+        if part.exists() and not refresh:
+            page = json.loads(part.read_text())["features"]
+        else:
+            page = list(arcgis_features(config.PARCEL_QUERY_URL, extra, page_size=1000))
+            part.write_text(json.dumps({"type": "FeatureCollection", "features": page}))
+        for feature in page:
+            pin = parcel_identity(feature)
+            if pin in seen:
                 continue
             seen.add(pin)
             features.append(feature)
@@ -199,64 +227,24 @@ def _assessment_from_record(record):
     return parid, keep
 
 
-def download_assessments(refresh):
-    """Pull assessment rows for the MVP zips. The clip decides which parcels count."""
-    print("Assessments", flush=True)
-    cache = config.RAW_DIR / "assessments_mvp.json"
-    if cache.exists() and not refresh:
-        payload = json.loads(cache.read_text())
-        print(f"  using cache ({len(payload)} rows)", flush=True)
-        return payload
-
+def download_assessments(refresh, pins=None):
+    """Stream only the approved columns; retain city parcel IDs, never owner fields."""
+    print("Assessments (city parcel IDs, approved columns only)", flush=True)
+    dest = config.RAW_DIR / "assessment_fields_citywide.csv"
+    url = config.WPRDC_DUMP_URL.format(resource_id=config.ASSESSMENT_RESOURCE_ID) + "?fields=" + config.ASSESSMENT_FIELDS
+    cached_download(url, dest, refresh=refresh)
     rows = {}
-    for zip_code in config.ASSESSMENT_ZIPS:
-        offset = 0
-        while True:
-            payload = fetch_json(
-                config.ASSESSMENT_SEARCH_URL,
-                {
-                    "resource_id": config.ASSESSMENT_RESOURCE_ID,
-                    "filters": json.dumps({"PROPERTYZIP": zip_code}),
-                    "fields": config.ASSESSMENT_FIELDS,
-                    "limit": 5000,
-                    "offset": offset,
-                },
-                timeout=180,
-            )
-            if not payload.get("success"):
-                raise RuntimeError(f"Assessment search failed: {payload.get('error')}")
-            records = payload["result"]["records"]
-            print(f"  zip {zip_code} offset {offset}: {len(records)}", flush=True)
-            for record in records:
-                parsed = _assessment_from_record(record)
-                if parsed:
-                    rows[parsed[0]] = parsed[1]
-            if len(records) < 5000:
-                break
-            offset += len(records)
-    cache.write_text(json.dumps(rows))
-    print(f"  assessment rows in MVP zips: {len(rows)}", flush=True)
-    return rows
-
-
-def _fill_assessments_from_csv(rows, missing_pins, refresh):
-    dest = config.RAW_DIR / "assessments.csv"
-    cached_download(config.ASSESSMENT_CSV_URL, dest, refresh=refresh)
-    found = 0
-    with dest.open(newline="", encoding="utf-8", errors="replace") as handle:
+    with dest.open(newline="", encoding="utf-8-sig", errors="replace") as handle:
         reader = csv.DictReader(handle)
+        if not set(reader.fieldnames or []).issubset(set(config.ASSESSMENT_FIELDS.split(",")) | {"_id"}):
+            raise RuntimeError("Assessment dump returned unexpected fields")
         for record in reader:
-            parid = str(record.get("PARID") or "").strip()
-            if parid not in missing_pins:
+            if pins is not None and str(record.get("PARID") or "").strip() not in pins:
                 continue
             parsed = _assessment_from_record(record)
-            if not parsed:
-                continue
-            rows[parsed[0]] = parsed[1]
-            found += 1
-            if found == len(missing_pins):
-                break
-    print(f"  CSV filled {found} additional parcels", flush=True)
+            if parsed:
+                rows[parsed[0]] = parsed[1]
+    print(f"  city parcel assessment matches: {len(rows)}", flush=True)
     return rows
 
 
@@ -307,7 +295,7 @@ def _features_in_neighborhoods(neighborhoods, query_url, out_fields, page_size=5
 
 def download_steep_slopes(neighborhoods, refresh):
     print("Steep slopes, 25 percent or greater", flush=True)
-    cache = config.RAW_DIR / "steep_slopes.geojson"
+    cache = config.RAW_DIR / "steep_slopes_citywide.geojson"
     if cache.exists() and not refresh:
         return json.loads(cache.read_text())["features"]
     features = _features_in_neighborhoods(
@@ -320,7 +308,7 @@ def download_steep_slopes(neighborhoods, refresh):
 
 def download_undermined(neighborhoods, refresh):
     print("Undermined areas", flush=True)
-    cache = config.RAW_DIR / "undermined.geojson"
+    cache = config.RAW_DIR / "undermined_citywide.geojson"
     if cache.exists() and not refresh:
         return json.loads(cache.read_text())["features"]
     features = _features_in_neighborhoods(neighborhoods, config.UNDERMINED_QUERY_URL, "undermined,objectid")
@@ -331,7 +319,7 @@ def download_undermined(neighborhoods, refresh):
 
 def download_flood(neighborhoods, refresh):
     print("FEMA flood zones", flush=True)
-    cache = config.RAW_DIR / "flood.geojson"
+    cache = config.RAW_DIR / "flood_citywide.geojson"
     if cache.exists() and not refresh:
         return json.loads(cache.read_text())["features"]
     features = []
@@ -552,7 +540,7 @@ def download_transit(neighborhoods, refresh):
         )
     trip_rows = sum(stop["trips"] for stop in kept)
     print(
-        f"  stops near MVP area: {len(kept)}; weekday trip-stop rows among them: {trip_rows}",
+        f"  stops near city area: {len(kept)}; weekday trip-stop rows among them: {trip_rows}",
         flush=True,
     )
     return {"stops": kept, "service_date": ref.isoformat(), "feed_end": feed_end.isoformat() if feed_end else None}
@@ -676,7 +664,7 @@ def download_condemned(refresh):
 
 def download_lihtc(neighborhoods, refresh):
     print("HUD LIHTC properties", flush=True)
-    cache = config.RAW_DIR / "lihtc.geojson"
+    cache = config.RAW_DIR / "lihtc_citywide.geojson"
     if cache.exists() and not refresh:
         features = json.loads(cache.read_text())["features"]
     else:
@@ -711,7 +699,7 @@ def download_lihtc(neighborhoods, refresh):
                 "y": point[1],
             }
         )
-    print(f"  LIHTC projects near the MVP area: {len(projects)}", flush=True)
+    print(f"  LIHTC projects near the city area: {len(projects)}", flush=True)
     return projects
 
 
@@ -882,7 +870,8 @@ def attach_context(parcels, census_tables, tenure, rent_2019, matches, qct, city
             tract_displacement_inputs(record.get("tract_geoid"), tenure, rent_2019, matches, census_tables)
         )
         record["qct_2026"] = None if qct is None or not record.get("tract_geoid") else record["tract_geoid"] in qct
-        record.update(site_flags(record["pin"], record.get("land_use"), city, delinquent, condemned))
+        records = (None, None, None) if record.get('internal_map_id') else (city, delinquent, condemned)
+        record.update(site_flags(record["pin"], record.get("land_use"), *records))
         if lihtc is None:
             record["lihtc_projects_800m"] = None
             record["lihtc_units_800m"] = None
@@ -918,7 +907,40 @@ def _zone_kind(properties):
     return None
 
 
+class HazardIndex:
+    def __init__(self, shapes):
+        self.shapes = shapes
+        self.tree = STRtree(shapes)
+
+    def overlap(self, parcel):
+        hits = self.tree.query(parcel, predicate="intersects")
+        if not len(hits):
+            return 0.0
+        # Union intersections, not areas: overlapping source polygons count once.
+        intersections = [parcel.intersection(self.shapes[int(i)]) for i in hits]
+        return float(shapely.union_all(intersections).area / parcel.area)
+
+
+class TransitIndex:
+    def __init__(self, stops):
+        self.stops = stops
+        self.points = [shapely.Point(s["x"], s["y"]) for s in stops]
+        self.tree = STRtree(self.points)
+        self.frequent = [i for i,s in enumerate(stops) if s["trips"] >= config.FREQUENT_STOP_MIN_TRIPS]
+        self.frequent_tree = STRtree([self.points[i] for i in self.frequent])
+
+    def candidates(self, point):
+        x,y = point
+        ids = set(map(int,self.tree.query(shapely.box(x-800,y-800,x+800,y+800))))
+        p=shapely.Point(point)
+        ids.update(map(int,self.tree.query_nearest(p)))
+        ids.update(self.frequent[int(i)] for i in self.frequent_tree.query_nearest(p))
+        return [self.stops[i] for i in sorted(ids)]
+
+
 def _overlap(parcel, hazard):
+    if isinstance(hazard, HazardIndex):
+        return hazard.overlap(parcel)
     if hazard is None or hazard.is_empty or parcel.is_empty or parcel.area == 0:
         return 0.0
     if not parcel.intersects(hazard):
@@ -927,6 +949,8 @@ def _overlap(parcel, hazard):
 
 
 def _transit_for_point(point_xy, stops):
+    if isinstance(stops, TransitIndex):
+        stops = stops.candidates(point_xy)
     px, py = point_xy
     nearest = None
     frequent = None
@@ -995,9 +1019,7 @@ def _union_features(features):
         geometry = geojson_to_shape(feature.get("geometry"))
         if geometry is not None and not geometry.is_empty:
             parts.append(geometry)
-    if not parts:
-        return None
-    return shapely.union_all(parts)
+    return HazardIndex(parts)
 
 
 def assemble(
@@ -1016,6 +1038,7 @@ def assemble(
     print("Joining parcels to neighborhoods and layers", flush=True)
     hood_geoms = [item["geom"] for item in neighborhoods]
     hood_tree = STRtree(hood_geoms)
+    city = shapely.union_all(hood_geoms)
     zone_shapes = []
     zone_props = []
     for feature in zoning_features or []:
@@ -1042,38 +1065,31 @@ def assemble(
             sfha_parts.append(geometry)
         else:
             shaded_parts.append(geometry)
-    sfha = shapely.union_all(sfha_parts) if sfha_parts else None
-    shaded = shapely.union_all(shaded_parts) if shaded_parts else None
+    sfha = HazardIndex(sfha_parts)
+    shaded = HazardIndex(shaded_parts)
     steep = _union_features(slope_features) if slope_features is not None else None
     undermined = _union_features(undermined_features) if undermined_features is not None else None
-    stops = transit["stops"] if transit else []
+    stops = TransitIndex(transit["stops"]) if transit else []
 
     parcels = []
-    for feature in parcel_features:
+    for progress, feature in enumerate(parcel_features):
+        if progress % 10000 == 0:
+            print(f"  joined {progress}/{len(parcel_features)} source parcels; kept {len(parcels)}", flush=True)
         geometry = geojson_to_shape(feature.get("geometry"))
         if geometry is None or geometry.area == 0:
             continue
-        hits = hood_tree.query(geometry, predicate="intersects")
-        if len(hits) == 0:
-            continue
-        point = geometry.representative_point()
-        best = None
-        best_area = 0
-        for index in hits:
-            hood = neighborhoods[int(index)]
-            area = hood["geom"].intersection(geometry).area
-            if area > best_area:
-                best_area = area
-                best = hood
+        best = assign_neighborhood(geometry, neighborhoods, hood_tree, city)
         if best is None:
             continue
-        if not best["geom"].covers(point) and best_area < 0.5 * geometry.area:
-            continue
+        point = geometry.representative_point()
         props = feature.get("properties") or {}
-        pin = str(props.get("PIN") or "").strip()
+        source_pin = str(props.get("PIN") or "").strip()
+        pin = parcel_identity(feature)
         assessment = assessments.get(pin)
         record = {
             "pin": pin,
+            "source_pin": source_pin if pin != source_pin else None,
+            "internal_map_id": pin != source_pin,
             "geometry": geometry,
             "neighborhood": best["name"],
             "area": best["group"],
@@ -1083,7 +1099,8 @@ def assemble(
         }
         if assessment:
             record["address"] = build_address(assessment)
-            record["zip"] = assessment.get("PROPERTYZIP")
+            zipcode = number_or_none(assessment.get("PROPERTYZIP"))
+            record["zip"] = int(zipcode) if zipcode is not None else None
             record["land_use"] = (assessment.get("USEDESC") or "").strip() or None
             record["land_use_class"] = (assessment.get("CLASSDESC") or "").strip() or None
             record["lot_sqft"] = number_or_none(assessment.get("LOTAREA"))
@@ -1186,7 +1203,7 @@ def assemble(
             record["frequent_stop_m"] = None
             record["walk_min_frequent"] = None
         parcels.append(record)
-    print(f"  parcels inside MVP neighborhoods: {len(parcels)}", flush=True)
+    print(f"  parcels inside city neighborhoods: {len(parcels)}", flush=True)
     return parcels
 
 
@@ -1256,7 +1273,19 @@ def _public_feature(record):
         "confidence_label": record["score"]["confidence_label"],
         "confidence_notes": record["score"]["confidence_notes"],
     }
-    blob = json.dumps(properties).lower()
+    if record.get('internal_map_id'):
+        properties['source_pin'] = record['source_pin']
+        properties['internal_map_id'] = True
+        properties['confidence_notes'] = [*properties['confidence_notes'], 'County polygon has no unique parcel PIN. The SITE identifier is an internal map ID, not a legal parcel number; assessment and ownership evidence are unavailable.']
+    # Check field names, not values: "Sellers St" is a legitimate site address.
+    # Every scalar above is selected explicitly from the safe source columns.
+    def field_names(value):
+        if isinstance(value, dict):
+            return [str(k) for k in value] + [k for v in value.values() for k in field_names(v)]
+        if isinstance(value, list):
+            return [k for v in value for k in field_names(v)]
+        return []
+    blob = ' '.join(field_names(properties)).lower()
     for fragment in config.FORBIDDEN_OUTPUT_FRAGMENTS:
         if fragment in blob:
             raise RuntimeError(f"Refusing to write parcel output that contains '{fragment}'")
@@ -1386,7 +1415,7 @@ def write_outputs(
     config.PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
     config.WEB_DATA_DIR.mkdir(parents=True, exist_ok=True)
     features = [_public_feature(record) for record in parcels]
-    parcels_fc = {"type": "FeatureCollection", "features": features}
+    write_parcels(features, neighborhoods)
     hood_features = []
     for neighborhood in neighborhoods:
         hood_features.append(
@@ -1412,7 +1441,7 @@ def write_outputs(
     known = set(rules.get("districts", {}))
     unmapped = sorted(code for code in zoning_counts if code not in known and code != "(none)")
     summary = {
-        "project": "Housing Typology, Equity & Climate Matchmaker",
+        "project": "Playhouse",
         "pulled_at": pulled_at(),
         "why_these_places": config.WHY_THESE_PLACES,
         "sale_cutoff": config.SALE_CUTOFF_ISO,
@@ -1420,6 +1449,7 @@ def write_outputs(
         "county_median_income": county_income,
         "county_median_income_source": "ACS 2024 5-year B19013 for Allegheny County (GEOID 0500000US42003)",
         "parcel_count": len(parcels),
+        "internal_map_id_count": sum(bool(p.get('internal_map_id')) for p in parcels),
         "parcels_by_area": dict(by_area),
         "neighborhoods": [
             {
@@ -1446,7 +1476,6 @@ def write_outputs(
     }
     card = model_card()
     files = {
-        "parcels.geojson": parcels_fc,
         "neighborhoods.geojson": hood_fc,
         "summary.json": summary,
         "sources.json": sources,
@@ -1501,7 +1530,7 @@ def main(refresh=False):
         config.NEIGHBORHOODS_URL,
         "City of Pittsburgh, via Western Pennsylvania Regional Data Center",
         "Creative Commons Attribution (CC BY) on the WPRDC neighborhoods dataset",
-        "Official neighborhood polygons. MVP keeps Hazelwood plus Lower, Central, and Upper Lawrenceville.",
+        "All 90 official city neighborhood polygons. Their union defines the city coverage boundary; largest overlap assigns each retained parcel.",
         lambda: load_neighborhoods(refresh),
     )
     if not neighborhoods:
@@ -1535,8 +1564,8 @@ def main(refresh=False):
         "https://data.wprdc.org/dataset/property-assessments",
         "Allegheny County Office of Property Assessments, redistributed by the Western Pennsylvania Regional Data Center",
         "Creative Commons CC0",
-        "Land use, lot area, year built, living area, and sale fields for zips 15201 and 15207. If more than 10 percent of clipped parcels are still unmatched, the pipeline streams the county CSV for those parcel IDs only. Owner names are not in this extract. CHANGENOTICE address fields are never requested or written. Assessed value is not read and is not treated as market value.",
-        lambda: download_assessments(refresh),
+        "Land use, lot area, year built, living area, and sale fields streamed from the county datastore with an explicit safe-column list; only city parcel IDs are retained. Owner names are not in this extract. CHANGENOTICE address fields are never requested or written. Assessed value is not read and is not treated as market value.",
+        lambda: download_assessments(refresh, {str(f["properties"].get("PIN") or "").strip() for f in parcel_features}),
         extra={
             "catalog_priority": "Core",
             "catalog_name": "Allegheny County Property Assessments",
@@ -1588,7 +1617,7 @@ def main(refresh=False):
         "https://data.wprdc.org/dataset/25-or-greater-slope",
         "City of Pittsburgh / WPRDC",
         "License not specified on the WPRDC steep-slope resource",
-        "Polygons of slopes 25 percent or greater inside the MVP neighborhood boxes. Overlap is the measured input. The score uses this as a landslide-risk proxy because the organizers' list has no landslide-inventory layer. It is not a landslide map.",
+        "Polygons of slopes 25 percent or greater inside the city neighborhood boxes. Overlap is the measured input. The score uses this as a landslide-risk proxy because the organizers' list has no landslide-inventory layer. It is not a landslide map.",
         lambda: download_steep_slopes(neighborhoods, refresh),
         extra={
             "catalog_priority": "Core",
@@ -1606,7 +1635,7 @@ def main(refresh=False):
         "https://data.wprdc.org/dataset/undermined-areas",
         "City / County / WPRDC",
         "License not specified on the WPRDC undermined-areas resource",
-        "Mine-influence polygons inside the MVP neighborhood boxes. Overlap is a preliminary screen only.",
+        "Mine-influence polygons inside the city neighborhood boxes. Overlap is a preliminary screen only.",
         lambda: download_undermined(neighborhoods, refresh),
         extra={
             "catalog_priority": "Core",
@@ -1810,7 +1839,7 @@ def main(refresh=False):
         config.LIHTC_DATASET_URL,
         "U.S. Department of Housing and Urban Development",
         "Public",
-        "Project name, total units, low-income units, and year placed in service, queried within about 2 km of the MVP area. Contact and company fields are not requested. Used as nearby affordable-stock context (projects and low-income units within 800 m of a parcel). lihtc.geojson keeps only projects within 800 m of an MVP parcel. Not a score input.",
+        "Project name, total units, low-income units, and year placed in service, queried within about 2 km of the city area. Contact and company fields are not requested. Used as nearby affordable-stock context (projects and low-income units within 800 m of a parcel). lihtc.geojson keeps only projects within 800 m of an city parcel. Not a score input.",
         lambda: download_lihtc(neighborhoods, refresh),
         extra={
             "catalog_priority": "Useful",
@@ -1858,17 +1887,7 @@ def main(refresh=False):
         missing_pins = {record["pin"] for record in parcels if not record["assessment_joined"]}
         miss_rate = len(missing_pins) / len(parcels)
         print(f"Assessment match after clip: {len(parcels) - len(missing_pins)}/{len(parcels)}", flush=True)
-        if miss_rate > 0.10:
-            print("More than 10% unmatched. Streaming the assessment CSV for the missing parcel IDs.", flush=True)
-            try:
-                _fill_assessments_from_csv(assessments, missing_pins, refresh)
-                cache = config.RAW_DIR / "assessments_mvp.json"
-                cache.write_text(json.dumps(assessments))
-                parcels = clip_once()
-            except Exception as error:  # noqa: BLE001
-                message = f"{type(error).__name__}: {error}"
-                print(f"FAILED assessment CSV fill: {message}", flush=True)
-                failures.append({"name": "Assessment CSV fill", "error": message})
+        # The complete safe-column county extract has already been checked for every PIN.
     if not parcels:
         raise SystemExit("Spatial clip produced zero parcels.")
     attach_context(
@@ -1889,7 +1908,7 @@ def main(refresh=False):
                 "Allegheny County / WPRDC",
                 "Public",
                 "not_downloaded",
-                "Sale prices in this MVP come from sale fields on the property-assessment extract, not from this separate transactions file. The same caveat is applied: only SALECODE 0 / SALEDESC beginning with VALID SALE, price at least $10,000, on or after 2021-09-26. The organizers' URL returned HTTP 404 on 2026-09-26. The live WPRDC page is https://data.wprdc.org/dataset/real-estate-sales.",
+                "Sale prices in this extract come from sale fields on the property-assessment extract, not from this separate transactions file. The same caveat is applied: only SALECODE 0 / SALEDESC beginning with VALID SALE, price at least $10,000, on or after 2021-09-26. The organizers' URL returned HTTP 404 on 2026-09-26. The live WPRDC page is https://data.wprdc.org/dataset/real-estate-sales.",
                 {
                     "catalog_priority": "Core",
                     "catalog_name": "Allegheny County Property Sale Transactions",
@@ -2015,7 +2034,7 @@ def main(refresh=False):
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="Build the MVP parcel dataset")
+    parser = argparse.ArgumentParser(description="Build the city parcel dataset")
     parser.add_argument("--refresh", action="store_true", help="Ignore cached raw downloads")
     args = parser.parse_args()
     main(refresh=args.refresh)

@@ -1,4 +1,4 @@
-"""MVP area and public endpoints. Tejas owns this pipeline."""
+"""City of Pittsburgh coverage and public source endpoints."""
 
 from pathlib import Path
 
@@ -8,25 +8,21 @@ PROCESSED_DIR = REPO_ROOT / "pipeline" / "data" / "processed"
 WEB_DATA_DIR = REPO_ROOT / "web" / "public" / "data"
 ZONING_RULES_PATH = REPO_ROOT / "zoning" / "districts.json"
 
-# Official city neighborhoods. "Lawrenceville" is three neighborhoods.
-MVP_NEIGHBORHOODS = (
-    {"name": "Hazelwood", "group": "Hazelwood"},
-    {"name": "Lower Lawrenceville", "group": "Lawrenceville"},
-    {"name": "Central Lawrenceville", "group": "Lawrenceville"},
-    {"name": "Upper Lawrenceville", "group": "Lawrenceville"},
-)
-
+# Keep the original study group labels stable for existing scenario links.
+STUDY_GROUPS = {
+    "Hazelwood": "Hazelwood",
+    "Lower Lawrenceville": "Lawrenceville",
+    "Central Lawrenceville": "Lawrenceville",
+    "Upper Lawrenceville": "Lawrenceville",
+}
 WHY_THESE_PLACES = (
-    "Hazelwood and Lawrenceville are the two places the scores can actually separate. "
-    "In this pull, slopes of 25 percent or greater (a landslide-risk proxy, not a landslide "
-    "inventory) touch about 57 percent of Hazelwood parcels and about 15 percent of "
-    "Lawrenceville parcels. Mapped undermined areas show up in Hazelwood (about 13 percent "
-    "of parcels) and not in these Lawrenceville parcels. Mapped FEMA flood zones run the "
-    "other way: about 6 percent of Lawrenceville parcels and under 1 percent of Hazelwood "
-    "parcels. Incomes are lower in Hazelwood. Lawrenceville (Lower, Central, and Upper) has "
-    "frequent bus service and higher sale prices, which is the displacement pressure the "
-    "equity score is meant to show. Glen Hazel is left out on purpose: it is its own "
-    "neighborhood, not part of the Hazelwood boundary."
+    "All 90 official City of Pittsburgh neighborhoods are included. County parcels are "
+    "screened against the union of the city neighborhood boundaries and assigned to "
+    "the neighborhood with the largest polygon overlap. City-edge parcels are retained "
+    "when their interior representative point is inside the city or at least half their "
+    "area overlaps it. Original parcel outlines are retained for physical-fit checks. "
+    "Scores compare housing scenarios at a selected parcel; they do not recommend "
+    "replacing a neighborhood. Missing evidence and unreviewed zoning stay explicit."
 )
 
 # Fixed window so a Sunday rerun does not silently change the sales sample.
@@ -45,10 +41,6 @@ ASSESSMENT_CSV_URL = (
     "https://data.wprdc.org/dataset/2b3df818-601e-4f06-b150-643557229491/"
     "resource/9a1c60bd-f9f7-4aba-aeb7-af8c3aaa44e5/download/assessments.csv"
 )
-# Zips that cover the MVP neighborhoods. The spatial clip is what defines the area.
-# A CSV fallback fills parcel IDs these zips miss.
-ASSESSMENT_ZIPS = (15201, 15207)
-
 ZONING_QUERY_URL = (
     "https://services1.arcgis.com/YZCmUqbcsUpOKfj7/arcgis/rest/services/"
     "PGHWebZoning/FeatureServer/0/query"

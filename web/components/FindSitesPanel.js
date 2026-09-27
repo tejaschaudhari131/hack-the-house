@@ -321,11 +321,7 @@ export default function FindSitesPanel({
           </label>
           <label>
             Area
-            <select value={filters.area} onChange={(event) => set({ area: event.target.value })}>
-              <option value="">Hazelwood and Lawrenceville</option>
-              <option value="Hazelwood">Hazelwood</option>
-              <option value="Lawrenceville">Lawrenceville (Lower, Central, Upper)</option>
-            </select>
+            <span>{filters.area || 'Choose a neighborhood above'}</span>
           </label>
         </fieldset>
         <button

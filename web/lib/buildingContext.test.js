@@ -4,9 +4,9 @@ import { readFileSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 
 test('committed building context has provenance, unique footprints and honest heights', () => {
-  const raw = readFileSync(new URL('../public/data/existing-buildings.geojson', import.meta.url))
+  const raw = readFileSync(new URL('../testdata/study/existing-buildings.geojson', import.meta.url))
   const data = JSON.parse(raw)
-  const manifest = JSON.parse(readFileSync(new URL('../public/data/existing-buildings.sources.json', import.meta.url)))
+  const manifest = JSON.parse(readFileSync(new URL('../testdata/study/existing-buildings.sources.json', import.meta.url)))
   assert.equal(createHash('sha256').update(raw).digest('hex'), manifest.sha256)
   assert.equal(data.features.length, manifest.count)
   assert.equal(new Set(data.features.map(f => f.id)).size, manifest.count)
@@ -46,7 +46,7 @@ test('committed building context has provenance, unique footprints and honest he
 })
 
 test('relative massing differentiates large apartments, recorded houses and auxiliary buildings', () => {
-  const data = JSON.parse(readFileSync(new URL('../public/data/existing-buildings.geojson', import.meta.url)))
+  const data = JSON.parse(readFileSync(new URL('../testdata/study/existing-buildings.geojson', import.meta.url)))
   const byId = Object.fromEntries(data.features.map(f => [f.id, f.properties]))
   assert.ok(byId['600881'].height_m > byId['418309'].height_m)
   assert.equal(byId['600881'].height_method, 'typology_estimate')

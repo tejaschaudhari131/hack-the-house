@@ -1,0 +1,128 @@
+{
+  "project": "Housing Typology, Equity & Climate Matchmaker",
+  "pulled_at": "2026-09-27",
+  "why_these_places": "Hazelwood and Lawrenceville are the two places the scores can actually separate. In this pull, slopes of 25 percent or greater (a landslide-risk proxy, not a landslide inventory) touch about 57 percent of Hazelwood parcels and about 15 percent of Lawrenceville parcels. Mapped undermined areas show up in Hazelwood (about 13 percent of parcels) and not in these Lawrenceville parcels. Mapped FEMA flood zones run the other way: about 6 percent of Lawrenceville parcels and under 1 percent of Hazelwood parcels. Incomes are lower in Hazelwood. Lawrenceville (Lower, Central, and Upper) has frequent bus service and higher sale prices, which is the displacement pressure the equity score is meant to show. Glen Hazel is left out on purpose: it is its own neighborhood, not part of the Hazelwood boundary.",
+  "sale_cutoff": "2021-09-26",
+  "sale_rule": "SALECODE 0 or SALEDESC starting with VALID SALE, price at least $10,000, on or after the cutoff. Nominal and multi-parcel sales are excluded.",
+  "county_median_income": 78548.0,
+  "county_median_income_source": "ACS 2024 5-year B19013 for Allegheny County (GEOID 0500000US42003)",
+  "parcel_count": 8645,
+  "parcels_by_area": {
+    "Lawrenceville": 5045,
+    "Hazelwood": 3600
+  },
+  "neighborhoods": [
+    {
+      "name": "Lower Lawrenceville",
+      "group": "Lawrenceville",
+      "parcel_count": 1349,
+      "valid_sales": 81,
+      "price_per_sqft": 274.3,
+      "turnover_per_100": 6.0
+    },
+    {
+      "name": "Central Lawrenceville",
+      "group": "Lawrenceville",
+      "parcel_count": 2219,
+      "valid_sales": 207,
+      "price_per_sqft": 266.9,
+      "turnover_per_100": 9.33
+    },
+    {
+      "name": "Hazelwood",
+      "group": "Hazelwood",
+      "parcel_count": 3600,
+      "valid_sales": 74,
+      "price_per_sqft": 153.1,
+      "turnover_per_100": 2.06
+    },
+    {
+      "name": "Upper Lawrenceville",
+      "group": "Lawrenceville",
+      "parcel_count": 1477,
+      "valid_sales": 115,
+      "price_per_sqft": 248.4,
+      "turnover_per_100": 7.79
+    }
+  ],
+  "zoning_codes_observed": {
+    "R1A-H": 2655,
+    "R1A-VH": 2454,
+    "H": 896,
+    "R1D-M": 741,
+    "LNC": 721,
+    "R1D-H": 384,
+    "UI": 198,
+    "RIV-IMU": 196,
+    "RIV-MU": 90,
+    "P": 89,
+    "NDI": 63,
+    "GI": 60,
+    "R2-L": 37,
+    "SP-10": 24,
+    "RIV-GI": 19,
+    "EMI": 9,
+    "RM-M": 5,
+    "SP-1": 2,
+    "RP": 1,
+    "R1D-L": 1
+  },
+  "zoning_codes_unmapped": [],
+  "transit_service_date": "2026-09-25",
+  "sources_failed": [],
+  "decision_support_only": true,
+  "chas_status": "Loaded HUD CHAS 2018-2022 Table 8, census tract summary level 140, Allegheny County. 8641 of 8645 parcels have a tract share (13 tracts). The measured input is the share of renter households at or below 80% of HAMFI with housing cost burden greater than 30%, among households whose cost burden was computed. Joined on the 11-digit tract GEOID (the suffix of geoid 1400000US\u2026). ACS 2024 rent burden stays a separate input. CHAS lags that ACS release by several years.",
+  "sites": {
+    "totals": {
+      "tax_delinquent": 1491,
+      "tax_delinquent_prior_years": 1164,
+      "vacant_lot": 1911,
+      "city_owned": 986,
+      "city_open_space": 436,
+      "condemned_or_dead_end": 190,
+      "qct_2026": 3599
+    },
+    "unknown": {
+      "vacant_lot": 390
+    },
+    "by_neighborhood": {
+      "Central Lawrenceville": {
+        "tax_delinquent": 318,
+        "tax_delinquent_prior_years": 229,
+        "vacant_lot": 91,
+        "city_owned": 6,
+        "condemned_or_dead_end": 9,
+        "city_open_space": 1
+      },
+      "Lower Lawrenceville": {
+        "tax_delinquent": 200,
+        "tax_delinquent_prior_years": 155,
+        "vacant_lot": 119,
+        "city_owned": 39,
+        "city_open_space": 8,
+        "condemned_or_dead_end": 6
+      },
+      "Upper Lawrenceville": {
+        "vacant_lot": 176,
+        "tax_delinquent": 221,
+        "tax_delinquent_prior_years": 173,
+        "city_owned": 57,
+        "city_open_space": 27,
+        "condemned_or_dead_end": 9
+      },
+      "Hazelwood": {
+        "condemned_or_dead_end": 166,
+        "qct_2026": 3599,
+        "vacant_lot": 1525,
+        "city_owned": 884,
+        "city_open_space": 400,
+        "tax_delinquent": 752,
+        "tax_delinquent_prior_years": 607
+      }
+    },
+    "frequent_stop_min_trips": 60,
+    "walk_meters_per_minute": 80,
+    "nearby_affordable_meters": 800,
+    "caveat": "Ownership, vacancy, delinquency, and condemnation records are not availability. Verify with the Urban Redevelopment Authority, the Pittsburgh Land Bank, or the City before acting."
+  }
+}

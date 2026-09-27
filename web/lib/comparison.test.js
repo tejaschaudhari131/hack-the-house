@@ -5,7 +5,7 @@ import { readFileSync } from "node:fs"
 import { buildScenario, compareScenarios, describeComparison } from "./comparison.js"
 import { DEFAULT_WEIGHTS } from "./rank.js"
 
-const rules = JSON.parse(readFileSync(new URL("../public/data/zoning.json", import.meta.url)))
+const rules = JSON.parse(readFileSync(new URL("../testdata/study/zoning.json", import.meta.url)))
 
 const props = {
   pin: "0000A00001000000",
@@ -85,7 +85,7 @@ test("next actions follow fixed rules: permission, records, then hazards or acce
 
 test("the guided example is resolved from data and keeps three-unit semantics", async () => {
   const { resolveGuide, buildingForSiteType } = await import("./guide.js")
-  const parcels = JSON.parse(readFileSync(new URL("../public/data/parcels.geojson", import.meta.url)))
+  const parcels = JSON.parse(readFileSync(new URL("../testdata/study/parcels.geojson", import.meta.url)))
   const guide = resolveGuide(parcels.features, rules, DEFAULT_WEIGHTS)
   assert.ok(guide.count > 0)
   assert.equal(guide.a.typeId, "triplex")

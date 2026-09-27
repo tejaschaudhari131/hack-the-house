@@ -1,0 +1,27 @@
+{
+  "source": "https://overpass-api.de/api/interpreter",
+  "query": "[out:json][timeout:90];(way[highway](40.39,-79.971,40.435,-79.911);way[highway](40.449,-79.995,40.494,-79.925);way[leisure=park](40.39,-79.971,40.435,-79.911);way[leisure=park](40.449,-79.995,40.494,-79.925););(._;>;);out body;",
+  "license": "ODbL-1.0",
+  "attribution": "\u00a9 OpenStreetMap contributors",
+  "license_url": "https://www.openstreetmap.org/copyright",
+  "osm_base_timestamp": "2026-09-27T09:16:21Z",
+  "retrieved_at": "2026-09-27T09:19:09.461910+00:00",
+  "input_sha256": "2cbffaeecd20ef32b4f5d013c6c79216989157661c09e801d373d6cdebb43d58",
+  "sha256": "6923e886de8b5998e03c35985cc44f66758fca9999ecd8733054ffb81f3e5782",
+  "counts": {
+    "nodes": 53089,
+    "directed_edges": 127136,
+    "parks_with_mapped_access": 42,
+    "parks_omitted_without_valid_polygon_or_access": 17
+  },
+  "walking_metres_per_minute": 80,
+  "steps_metres_per_minute": 40,
+  "assumptions": [
+    "Allowed untagged local streets are assumed walkable; sidewalks, slopes, crossings, accessibility and opening hours are not audited.",
+    "Connections use shared OSM node IDs; geometric crossings do not create junctions. Closed or conditionally accessible ways and blocked barrier nodes are excluded.",
+    "Origin and transit-stop access snap to a ground-level node within 100 m; this final straight connector is an assumption, not a verified entrance or crossing.",
+    "Park targets are mapped walking nodes inside closed park ways. Relation-only parks and parks without such nodes are omitted; inventory and entrances are incomplete.",
+    "Finite buffered extracts can miss paths leaving the analysis area. Unreachable means no path in this extract, not proof of no real-world access.",
+    "No wheelchair, motor traffic, timetable, utility, emissions or cost model."
+  ]
+}

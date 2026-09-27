@@ -161,7 +161,7 @@ export function passesRecordFilters(props, filters) {
     if (!ok) return false
   }
   if (filters.excludeOpenSpace && (props.city_open_space === true || props.land_use === "PUBLIC PARK")) return false
-  if (filters.area && props.area !== filters.area) return false
+  if (filters.area && props.area !== filters.area && props.neighborhood !== filters.area) return false
   if (filters.flood === "none") {
     if (props.sfha_overlap === null || props.sfha_overlap === undefined) return false
     if ((props.sfha_overlap || 0) > 0 || (props.flood_02_overlap || 0) > 0) return false

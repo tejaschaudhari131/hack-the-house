@@ -1,5 +1,6 @@
 /** Validation shared by the explain API and scenario import. Unknown keys are dropped; bad values are rejected. */
 
+import { PITTSBURGH_NEIGHBORHOODS } from './pittsburgh.js'
 import { BUILDING_IDS } from "./buildings.js"
 import { DEFAULT_WEIGHTS } from "./rank.js"
 import { DEFAULT_SITE_FILTERS, SORT_OPTIONS, TYPE_OPTIONS } from "./sites.js"
@@ -34,7 +35,7 @@ const FILTER_CHOICES = {
   permission: ["any", "by_right", "by_right_or_special"],
   flood: ["any", "none", "no_sfha"],
   displacement: ["any", "high", "not_high"],
-  area: ["", "Hazelwood", "Lawrenceville"],
+  area: ["", "Lawrenceville", ...PITTSBURGH_NEIGHBORHOODS],
 }
 
 /** Accepts only the Find Sites filter keys, with their default types and known choices. */

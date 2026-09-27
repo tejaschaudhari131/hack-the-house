@@ -75,8 +75,8 @@ test('missing or disconnected network produces unknown transit rather than strai
 })
 
 test('real study examples have reproducible routed access and a hash-matched network', () => {
-  const read = name => JSON.parse(readFileSync(new URL(`../public/data/${name}`, import.meta.url)))
-  const raw = readFileSync(new URL('../public/data/walking-network.json', import.meta.url))
+  const read = name => JSON.parse(readFileSync(new URL(`../testdata/study/${name}`, import.meta.url)))
+  const raw = readFileSync(new URL('../testdata/study/walking-network.json', import.meta.url))
   const actual = JSON.parse(raw), manifest = read('walking-network.sources.json')
   assert.equal(createHash('sha256').update(raw).digest('hex'), manifest.sha256)
   assert.equal(actual.nodes.length, manifest.counts.nodes)

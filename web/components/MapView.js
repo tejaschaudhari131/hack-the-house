@@ -5,6 +5,7 @@ import { CircleMarker, GeoJSON, MapContainer, TileLayer, Tooltip, useMap } from 
 import L from "leaflet"
 import "leaflet/dist/leaflet.css"
 
+import { PITTSBURGH_BOUNDS } from '../lib/pittsburgh.js'
 import { TYPE_COLORS } from "../lib/colors.js"
 import { featurePoint } from "../lib/geo.js"
 import { HOUSING_TYPES, composite } from "../lib/rank.js"
@@ -12,7 +13,7 @@ import { resolveZoning } from "../lib/zoning.js"
 
 function boundsFor(collection, group) {
   const features = group
-    ? collection.features.filter((feature) => feature.properties.group === group || feature.properties.area === group)
+    ? collection.features.filter((feature) => feature.properties.group === group || feature.properties.area === group || feature.properties.name === group || feature.properties.neighborhood === group)
     : collection.features
   if (!features.length) return null
   const bounds = L.geoJSON({ type: "FeatureCollection", features }).getBounds()
@@ -163,6 +164,9 @@ export default function MapView({
     <MapContainer
       center={[40.45, -79.95]}
       zoom={13}
+      maxBounds={PITTSBURGH_BOUNDS.map(([lon,lat])=>[lat,lon])}
+      maxBoundsViscosity={1}
+      minZoom={11}
       preferCanvas
       style={{ height: "100%", width: "100%" }}
     >
@@ -178,6 +182,7 @@ export default function MapView({
         interactive={false}
       />
       <GeoJSON
+        key={`${focus}-${parcels.features.length}`}
         ref={geoRef}
         data={parcels}
         style={(feature) => {

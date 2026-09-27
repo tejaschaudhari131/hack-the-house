@@ -1,11 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { mergeNeighborhoods, retainNeighborhoods, visibleNeighborhoods } from '../lib/studioData.js'
 
-export async function fetchNeighborhood(descriptor, signal) {
-  const response = await fetch(`/data/studio/${descriptor.file}`, { signal })
-  if (!response.ok) throw new Error(`${descriptor.name}: ${response.status}`)
-  return response.json()
-}
+export { loadNeighborhood as fetchNeighborhood } from '../lib/neighborhoodLoader.js'
+import { loadNeighborhood as fetchNeighborhood } from '../lib/neighborhoodLoader.js'
 
 export default function useNeighborhoodData(manifest, initialChunk, requiredIds, viewport, extraIds = []) {
   const cache = useRef(new Map([[initialChunk.id, initialChunk.data]]))

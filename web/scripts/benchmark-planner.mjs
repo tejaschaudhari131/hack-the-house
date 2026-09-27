@@ -6,7 +6,8 @@ import { initialScenario, EXAMPLES } from '../lib/plannerState.js'
 import { prepareNetwork } from '../lib/networkModel.js'
 import { geometryBounds, boundsOverlap } from '../lib/plannerGeometry.js'
 
-const raw = name => readFileSync(new URL(`../public/data/${name}`, import.meta.url), 'utf8')
+// The frozen production study is a stable CPU benchmark; city transport sizes use benchmark:studio.
+const raw = name => readFileSync(new URL(`../testdata/study/${name}`, import.meta.url), 'utf8')
 const read = name => JSON.parse(raw(name))
 const measure = (fn, count = 20) => {
   for (let i = 0; i < 3; i++) fn()

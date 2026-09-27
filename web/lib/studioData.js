@@ -8,7 +8,7 @@ export const containsBounds = (outer, inner) => outer[0] <= inner[0] && outer[1]
 
 export function visibleNeighborhoods(manifest, viewport) {
   if (!viewport || viewport.zoom < DETAIL_ZOOM) return []
-  return manifest.neighborhoods.filter(n => boundsOverlap(n.bounds, viewport.bounds)).map(n => n.id).sort()
+  return manifest.neighborhoods.filter(n => boundsOverlap(n.viewBounds || n.bounds, viewport.bounds)).map(n => n.id).sort()
 }
 
 export function mergeNeighborhoods(chunks, field) {

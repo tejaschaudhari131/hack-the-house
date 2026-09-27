@@ -1,5 +1,7 @@
 "use client"
 
+import { PITTSBURGH_BOUNDS } from '../lib/pittsburgh.js'
+
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Map as GLMap, Marker, Popup, NavigationControl, ScaleControl } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
@@ -12,11 +14,10 @@ import { DETAIL_ZOOM, spatialIndex } from '../lib/studioData.js'
 
 const empty = () => ({ type: 'FeatureCollection', features: [] })
 const fc = features => ({ type: 'FeatureCollection', features })
-// Rounded outward from PennDOT's state extent; navigation bounds, not a polygon mask.
-// https://mapservices.pasda.psu.edu/server/rest/services/pasda/PennDOT/MapServer
-const PENNSYLVANIA_BOUNDS = [[-80.52, 39.71], [-74.68, 42.27]]
+// Official neighborhood union extent: navigation bounds, not a polygon mask.
 
-export default function PlannerMap({ parcels, neighborhoods, stops, existingBuildings, showExisting, selected, buildingPreview, stop, proposed, additionalDepartures, view3d, onSelect, onStop, tool, placing, onPlace, onHover, placedBuildings = [], network, networkResult, reservations, connections, drawing, draftNode, onDraw, discoveryPins = [], onViewport }) {
+
+export default function PlannerMap({ parcels, neighborhoods, stops, existingBuildings, showExisting, selected, buildingPreview, stop, proposed, additionalDepartures, view3d, onSelect, onStop, tool, placing, onPlace, onHover, placedBuildings = [], network, roadsFile, networkResult, reservations, connections, drawing, draftNode, onDraw, discoveryPins = [], onViewport }) {
   const container = useRef(null), mapRef = useRef(null), callbacks = useRef({ onSelect, onStop, tool, placing, onPlace })
   const [ready, setReady] = useState(false), [error, setError] = useState(null)
   const [viewport, setViewport] = useState(null)
@@ -35,7 +36,7 @@ export default function PlannerMap({ parcels, neighborhoods, stops, existingBuil
     try {
       configureMapWorkers()
       map = new GLMap({ container: container.current, center: geometryCenter(selected.geometry), zoom: 17.6, pitch: 55, bearing: -25, attributionControl: true,
-        maxBounds: PENNSYLVANIA_BOUNDS, renderWorldCopies: false,
+        maxBounds: PITTSBURGH_BOUNDS, renderWorldCopies: false,
         style: { version: 8, sources: { basemap: { type: 'raster', tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize: 256, attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' } }, layers: [
           { id: 'background', type: 'background', paint: { 'background-color': '#dde5df' } },
           { id: 'basemap', type: 'raster', source: 'basemap', paint: { 'raster-saturation': -.7, 'raster-opacity': .75 } },
@@ -154,11 +155,11 @@ export default function PlannerMap({ parcels, neighborhoods, stops, existingBuil
   useEffect(() => {
     if (!ready) return
     const map = mapRef.current, visible = tool === 'network', point = selected && geometryCenter(selected.geometry)
-    if (visible && !networkDisplayed.current) { map.getSource('walking-network').setData('/data/walking-network.geojson'); networkDisplayed.current = true }
+    if (visible && roadsFile && networkDisplayed.current !== roadsFile) { map.getSource('walking-network').setData(`/data/studio/${roadsFile}`); networkDisplayed.current = roadsFile }
     map.setLayoutProperty('network-line', 'visibility', visible ? 'visible' : 'none')
     map.getSource('network-nodes').setData(visible && network && point ? fc(network.nodes.flatMap((coordinates, id) => network.ground[id] && haversineMeters(...point, ...coordinates) < 600 ? [{ type: 'Feature', properties: { node: id }, geometry: { type: 'Point', coordinates } }] : [])) : empty())
     map.getSource('parks').setData(visible && network ? fc(network.parks.map(p => ({ type: 'Feature', properties: { name: p.name }, geometry: p.geometry }))) : empty())
-  }, [ready, tool, network, selected])
+  }, [ready, tool, network, roadsFile, selected])
 
   useEffect(() => {
     if (!ready) return

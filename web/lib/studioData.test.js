@@ -8,7 +8,7 @@ import { evaluatePlanner, nearbyStops, preferredStop } from './plannerModel.js'
 import { EXAMPLES, initialStudioScenario } from './plannerState.js'
 import { prepareNetwork } from './networkModel.js'
 
-const read = name => JSON.parse(readFileSync(new URL(`../public/data/${name}`, import.meta.url)))
+const read = name => JSON.parse(readFileSync(new URL(`../testdata/study/${name}`, import.meta.url)))
 const parcels = read('parcels.geojson'), buildings = read('existing-buildings.geojson'), neighborhoods = read('neighborhoods.geojson')
 const { manifest, chunks } = partitionStudioData(parcels, buildings, neighborhoods)
 const originals = new Map(parcels.features.map(f => [f.properties.pin, f]))
