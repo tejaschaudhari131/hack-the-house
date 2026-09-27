@@ -51,3 +51,33 @@ test("weights are relative; shares are derived, and transit's total share includ
   assert.ok(Math.abs(Object.values(shares).reduce((a, b) => a + b, 0) - 1) < 1e-12)
   assert.ok(Math.abs(transitTotalShare(DEFAULT_WEIGHTS, 0.4) - (25 + 0.4 * 15) / 130) < 1e-12)
 })
+
+test("the evidence drawer lists sources with links, observed inputs, assumptions, and missing data for all six factors", async () => {
+  const { buildEvidence } = await import("./evidence.js")
+  const sources = JSON.parse(readFileSync(new URL("../public/data/sources.json", import.meta.url)))
+  const model = JSON.parse(readFileSync(new URL("../public/data/score_model.json", import.meta.url)))
+  const props = {
+    pin: "1",
+    lot_sqft: 5100,
+    trips_within_400m: 270,
+    nearest_stop_name: "SECOND AVE + GLENWOOD",
+    nearest_stop_m: 90,
+    sfha_overlap: 0,
+    steep_slope_overlap: 0.08,
+    undermined_overlap: null,
+    renter_share: 0.49,
+    factors: { price_per_sqft: 153.1, lot_fit: { small_apartment: 0.4 } },
+    scores: { small_apartment: { demand: 47.2, transit: 97.5, equity: null, climate_risk: 2.5, displacement_risk: 30.3, carbon_index: 35.9 } },
+  }
+  const evidence = buildEvidence({ props, typeId: "small_apartment", sources, summary: { county_median_income: 78548 }, zoningRules: null, model })
+  assert.equal(evidence.length, 6)
+  for (const entry of evidence) {
+    assert.ok(entry.sources.length, entry.id)
+    assert.ok(entry.assumptions.length >= 2, entry.id)
+  }
+  const climate = evidence.find((entry) => entry.id === "climate")
+  assert.ok(climate.sources.some((source) => source.url?.startsWith("https://")))
+  assert.ok(climate.missing.some((line) => /Undermined/.test(line)))
+  assert.ok(evidence.find((entry) => entry.id === "equity").missing[0].includes("renormalize"))
+  assert.ok(!JSON.stringify(evidence).match(/owner|grantor|mailing/i))
+})

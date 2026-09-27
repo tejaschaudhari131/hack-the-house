@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 
+import EvidenceDrawer from "./EvidenceDrawer.js"
 import Explanation from "./Explanation.js"
 import Robustness from "./Robustness.js"
 import WeightPresets from "./WeightPresets.js"
@@ -192,6 +193,8 @@ export default function DropPanel({
   onCompareState,
   onPrintBrief,
   onAntiDisplacement = null,
+  sources = null,
+  model = null,
   guide = null,
 }) {
   const dropA = drops.find((item) => item.slot === "A")
@@ -248,6 +251,18 @@ export default function DropPanel({
         <section className="review-box" id="comparison" tabIndex={-1}>
           <h2>Compare A and B</h2>
           <ComparisonView result={result} onPrint={onPrintBrief} />
+          {[result.a, ...(result.sameParcel ? [] : [result.b])].map((side) => (
+            <EvidenceDrawer
+              key={side.slot}
+              props={byPin.get(side.pin)?.properties}
+              typeId={side.scoreType}
+              typeLabel={`scenario ${side.slot} (${side.label})`}
+              sources={sources}
+              summary={summary}
+              zoning={zoning}
+              model={model}
+            />
+          ))}
           <Robustness
             analysis={compareRobustness}
             title="Does the winner hold?"

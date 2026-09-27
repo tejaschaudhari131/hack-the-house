@@ -27,7 +27,8 @@ function sourceByName(sources, name) {
 function cite(sources, name, vintage) {
   const row = sourceByName(sources, name)
   const caveat = row?.caveat ? String(row.caveat).slice(0, 220) : null
-  return { name, vintage, pulled: row?.pulled_at || null, caveat }
+  const url = row?.access_url || row?.url || null
+  return { name, vintage, pulled: row?.pulled_at || null, caveat, url: /^https:\/\//.test(url || "") ? url : null }
 }
 
 /** Source names match data/processed/sources.json. Vintages follow docs/DATA_NOTES.md. */

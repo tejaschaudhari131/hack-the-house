@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 
 import Explanation from "./Explanation.js"
+import EvidenceDrawer from "./EvidenceDrawer.js"
 import Robustness from "./Robustness.js"
 import WeightPresets from "./WeightPresets.js"
 import { NOT_EVALUATED } from "../lib/explainFacts.js"
@@ -77,6 +78,7 @@ export default function ParcelPanel({
   onBackToSites,
   siteType = null,
   onAntiDisplacement = null,
+  zoning = null,
   onCompareSite = null,
 }) {
   const [showModel, setShowModel] = useState(false)
@@ -416,6 +418,18 @@ export default function ParcelPanel({
               ))}
             </div>
           ))}
+
+          {ranked?.length ? (
+            <EvidenceDrawer
+              props={selected}
+              typeId={(ranked.find((row) => row.composite !== null) || ranked[0]).id}
+              typeLabel={(ranked.find((row) => row.composite !== null) || ranked[0]).label}
+              sources={sources}
+              summary={summary}
+              zoning={zoning}
+              model={model}
+            />
+          ) : null}
 
           {robustness ? (
             <Robustness

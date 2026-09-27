@@ -392,6 +392,8 @@ export default function App() {
             byPin={byPin}
             onCompareState={setCompareState}
             onAntiDisplacement={openAntiDisplacement}
+            sources={sources}
+            model={model}
             onPrintBrief={printBrief}
             guide={guideBanner}
           />
@@ -422,6 +424,7 @@ export default function App() {
           siteType={openedFromSites ? siteFilters.typeId : null}
           onCompareSite={(pin, siteType) => compareOnParcel(pin, siteType, openedFromSites)}
           onAntiDisplacement={openAntiDisplacement}
+          zoning={zoning}
         />
         )}
       </div>
