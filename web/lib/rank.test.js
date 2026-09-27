@@ -30,6 +30,26 @@ test("current rules sort allowed types ahead of flagged types", () => {
   assert.deepEqual(order, vector.expected_order_current_rules)
 })
 
+test("six-factor composite matches the shared rank vector", () => {
+  const six = vector.six_factor
+  for (const [housingType, expected] of Object.entries(six.expected_composite)) {
+    assert.equal(composite(six.scores[housingType], six.weights), expected)
+  }
+  const order = rankTypes(six.scores, six.weights, { whatIf: true }).map((row) => row.id)
+  assert.deepEqual(order, six.expected_order_what_if)
+})
+
+test("higher displacement risk or carbon lowers the composite; missing is skipped", () => {
+  const weights = { demand: 1, transit: 1, equity: 1, climate: 1, displacement: 1, carbon: 1 }
+  const base = { demand: 50, transit: 50, equity: 50, climate_risk: 20, displacement_risk: 30, carbon_index: 40 }
+  assert.ok(composite({ ...base, displacement_risk: 10 }, weights) > composite({ ...base, displacement_risk: 90 }, weights))
+  assert.ok(composite({ ...base, carbon_index: 10 }, weights) > composite({ ...base, carbon_index: 90 }, weights))
+  assert.equal(
+    composite({ ...base, carbon_index: null }, weights),
+    composite(base, { ...weights, carbon: 0 }),
+  )
+})
+
 test("a missing climate score is skipped instead of counted as zero", () => {
   const withClimate = composite(
     { demand: 80, transit: 80, equity: 80, climate_risk: 0 },

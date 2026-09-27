@@ -1,10 +1,12 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 
+import SiteFacts from "./SiteFacts.js"
+import SourcesList from "./SourcesList.js"
 import { TYPE_COLORS } from "../lib/colors.js"
 import { clearFlag, loadFlags, saveFlag } from "../lib/flags.js"
-import { TYPE_LABELS } from "../lib/rank.js"
+import { TYPE_LABELS, WEIGHT_LABELS } from "../lib/rank.js"
 import { dropZoningBadge } from "../lib/zoning.js"
 
 const CODE_URL = "https://ecode360.com/45474054"
@@ -65,6 +67,8 @@ export default function ParcelPanel({
   explanation,
   explaining,
   onExplain,
+  sources,
+  onBackToSites,
 }) {
   const [showModel, setShowModel] = useState(false)
   const [flags, setFlags] = useState({})
@@ -78,6 +82,13 @@ export default function ParcelPanel({
   useEffect(() => {
     setFlagNote("")
   }, [selected?.pin])
+
+  const selectedRef = useRef(null)
+  useEffect(() => {
+    const node = selectedRef.current
+    const panel = node?.closest(".panel")
+    if (onBackToSites && selected?.pin && panel) panel.scrollTop = node.offsetTop - panel.offsetTop
+  }, [onBackToSites, selected?.pin])
   const groups = useMemo(() => {
     if (!ranked) return []
     const blocks = []
@@ -115,7 +126,20 @@ export default function ParcelPanel({
           <li>
             Climate here is FEMA flood zones, city slopes of 25% or greater used only as a landslide-risk proxy,
             and mapped undermined areas as a preliminary mine screen. It is not a survey, a flood determination,
-            a geotechnical study, future rainfall, or building emissions.
+            a geotechnical study, or future rainfall.
+          </li>
+          <li>
+            Displacement risk is a tract-level screening signal (renter share, low-income renter cost burden, and rent
+            growth versus the county). It is not a prediction that anyone will be displaced, and it is the same for all
+            four types.
+          </li>
+          <li>
+            Marginal carbon is a relative estimate, not tonnes of CO2: published per-household energy by building type
+            (EIA RECS 2020, Northeast), a coarse embodied-carbon tier, and transit access as a travel proxy.
+          </li>
+          <li>
+            Site records (vacant, City-owned, tax-delinquent, condemned) are not availability. Verify with the URA, the
+            Land Bank, or the City before acting.
           </li>
           <li>
             Assessed value is not market value and is not used. Demand uses valid sale prices from the assessment
@@ -143,7 +167,7 @@ export default function ParcelPanel({
         {Object.entries(weights).map(([key, value]) => (
           <label key={key} className="slider">
             <span>
-              {key === "climate" ? "Climate (prefer lower hazard)" : key[0].toUpperCase() + key.slice(1)}{" "}
+              {WEIGHT_LABELS[key] || key}{" "}
               <strong>{value}</strong>
             </span>
             <input
@@ -212,7 +236,12 @@ export default function ParcelPanel({
           </ul>
         </section>
       ) : (
-        <section>
+        <section ref={selectedRef}>
+          {onBackToSites ? (
+            <button type="button" className="text-button" onClick={onBackToSites}>
+              ← Back to Find Sites results
+            </button>
+          ) : null}
           <h2>{selected.address || selected.pin}</h2>
           <div className="review-box">
             <p>
@@ -311,6 +340,8 @@ export default function ParcelPanel({
             </ul>
           ) : null}
 
+          <SiteFacts props={selected} />
+
           {groups.map((group) => (
             <div key={group.key}>
               <h3>
@@ -338,6 +369,16 @@ export default function ParcelPanel({
                     label="Climate risk"
                     value={row.climate_risk}
                     hint="Flood, steep-slope proxy, and undermined area. Higher means more mapped hazard."
+                  />
+                  <Bar
+                    label="Displacement risk (screen)"
+                    value={row.displacement_risk}
+                    hint="Tract renters, cost burden, and rent growth versus the county. Same for every type. Higher means more risk."
+                  />
+                  <Bar
+                    label="Marginal carbon (estimate)"
+                    value={row.carbon_index}
+                    hint="Relative index per new home: building energy and embodied tier, plus transit access. Higher means more."
                   />
                 </article>
               ))}
@@ -381,6 +422,7 @@ export default function ParcelPanel({
             ))}
           </div>
         ) : null}
+        <SourcesList sources={sources} />
       </section>
     </aside>
   )

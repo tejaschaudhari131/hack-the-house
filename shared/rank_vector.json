@@ -24,5 +24,26 @@
     "townhouse_duplex",
     "small_apartment",
     "large_apartment"
-  ]
+  ],
+  "six_factor": {
+    "weights": {"demand": 1, "transit": 1, "equity": 1, "climate": 1, "displacement": 1, "carbon": 1},
+    "scores": {
+      "single_family": {"demand": 40, "transit": 50, "equity": 60, "climate_risk": 10, "displacement_risk": 40, "carbon_index": 70},
+      "townhouse_duplex": {"demand": 80, "transit": 50, "equity": 30, "climate_risk": null, "displacement_risk": 40, "carbon_index": 44},
+      "small_apartment": {"demand": 70, "transit": 50, "equity": 55, "climate_risk": 25, "displacement_risk": 40, "carbon_index": 40},
+      "large_apartment": {"demand": 20, "transit": 50, "equity": 40, "climate_risk": 30, "displacement_risk": 40, "carbon_index": 30}
+    },
+    "expected_composite": {
+      "single_family": 55.0,
+      "townhouse_duplex": 55.2,
+      "small_apartment": 61.7,
+      "large_apartment": 51.7
+    },
+    "expected_order_what_if": [
+      "small_apartment",
+      "townhouse_duplex",
+      "single_family",
+      "large_apartment"
+    ]
+  }
 }

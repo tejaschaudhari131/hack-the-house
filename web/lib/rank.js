@@ -14,19 +14,33 @@ export const TYPE_LABELS = {
   large_apartment: "Large apartment (20+ units)",
 }
 
-export const DEFAULT_WEIGHTS = { demand: 25, transit: 25, equity: 25, climate: 25 }
+export const DEFAULT_WEIGHTS = { demand: 25, transit: 25, equity: 25, climate: 25, displacement: 15, carbon: 15 }
 
-export function climateSuitability(risk) {
-  if (risk === null || risk === undefined || Number.isNaN(Number(risk))) return null
-  return Math.round((100 - Number(risk)) * 10) / 10
+export const WEIGHT_LABELS = {
+  demand: "Demand",
+  transit: "Transit",
+  equity: "Equity",
+  climate: "Climate (prefer lower hazard)",
+  displacement: "Displacement (prefer lower risk, screening signal)",
+  carbon: "Carbon (prefer lower, estimate)",
 }
+
+/** 100 minus a "higher is worse" score. Used for climate, displacement, and carbon. */
+export function inverted(value) {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return null
+  return Math.round((100 - Number(value)) * 10) / 10
+}
+
+export const climateSuitability = inverted
 
 export function composite(typeScore, weights) {
   const parts = [
     [typeScore?.demand, weights?.demand],
     [typeScore?.transit, weights?.transit],
     [typeScore?.equity, weights?.equity],
-    [climateSuitability(typeScore?.climate_risk), weights?.climate],
+    [inverted(typeScore?.climate_risk), weights?.climate],
+    [inverted(typeScore?.displacement_risk), weights?.displacement],
+    [inverted(typeScore?.carbon_index), weights?.carbon],
   ]
   let num = 0
   let den = 0
@@ -51,6 +65,8 @@ export function rankTypes(scores, weights, { allowed = null, whatIf = false } = 
       equity: score.equity ?? null,
       climate_risk: score.climate_risk ?? null,
       climate_suitability: climateSuitability(score.climate_risk),
+      displacement_risk: score.displacement_risk ?? null,
+      carbon_index: score.carbon_index ?? null,
       confidence: score.confidence ?? null,
       confidence_label: score.confidence_label ?? null,
       allowed: allowed ? allowed.has(id) : null,

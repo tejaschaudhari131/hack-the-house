@@ -4,8 +4,10 @@ import dynamic from "next/dynamic"
 import { useEffect, useMemo, useState } from "react"
 
 import DropPanel from "./DropPanel.js"
+import FindSitesPanel from "./FindSitesPanel.js"
 import ParcelPanel from "./ParcelPanel.js"
 import { DEFAULT_WEIGHTS, rankTypes } from "../lib/rank.js"
+import { DEFAULT_SITE_FILTERS, findSites } from "../lib/sites.js"
 import { resolveZoning } from "../lib/zoning.js"
 
 const MapView = dynamic(() => import("./MapView.js"), {
@@ -37,6 +39,12 @@ export default function App() {
   const [activeType, setActiveType] = useState("townhouse_duplex")
   const [activeSlot, setActiveSlot] = useState("A")
   const [drops, setDrops] = useState([])
+  const [siteFilters, setSiteFilters] = useState(DEFAULT_SITE_FILTERS)
+  const [siteSort, setSiteSort] = useState("score")
+  const [siteExample, setSiteExample] = useState(null)
+  const [sources, setSources] = useState(null)
+  const [lihtc, setLihtc] = useState(null)
+  const [openedFromSites, setOpenedFromSites] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -73,6 +81,17 @@ export default function App() {
         if (!cancelled && json) setStops(json)
       })
       .catch(() => {})
+    for (const [path, setter] of [
+      ["/data/sources.json", setSources],
+      ["/data/lihtc.geojson", setLihtc],
+    ]) {
+      fetch(path)
+        .then((response) => (response.ok ? response.json() : null))
+        .then((json) => {
+          if (!cancelled && json) setter(json)
+        })
+        .catch(() => {})
+    }
     return () => {
       cancelled = true
     }
@@ -90,6 +109,15 @@ export default function App() {
   const ranked = selected
     ? rankTypes(selected.scores, weights, { allowed: zoningInfo?.allowed || null, whatIf })
     : null
+
+  const siteRows = useMemo(() => {
+    if (mode !== "sites" || !parcels) return []
+    return findSites(parcels.features, siteFilters, weights, zoning, siteSort)
+  }, [mode, parcels, siteFilters, weights, zoning, siteSort])
+  const siteHighlight = useMemo(
+    () => (mode === "sites" ? new Map(siteRows.map((row) => [row.pin, row.scoreType])) : null),
+    [mode, siteRows],
+  )
 
   const matches = useMemo(() => {
     const needle = query.trim().toLowerCase()
@@ -193,23 +221,29 @@ export default function App() {
           <button type="button" className={mode === "drop" ? "on" : ""} onClick={() => setMode("drop")}>
             Drop a building
           </button>
+          <button type="button" className={mode === "sites" ? "on" : ""} onClick={() => setMode("sites")}>
+            Find sites
+          </button>
         </span>
         <span className="banner-title">Housing typology, equity, and climate matchmaker</span>
       </header>
-      <div className={mode === "drop" ? "app drop-mode" : "app"}>
+      <div className={mode === "drop" ? "app drop-mode" : mode === "sites" ? "app sites-mode" : "app"}>
         <div className="map-wrap">
           {error ? <p className="map-loading">{error}. Run the pipeline, then reload.</p> : null}
           {!error && !parcels ? <p className="map-loading">Loading parcels…</p> : null}
-          {parcels && neighborhoods && mode === "inspect" ? (
+          {parcels && neighborhoods && (mode === "inspect" || mode === "sites") ? (
             <MapView
+              key={mode}
               parcels={parcels}
               neighborhoods={neighborhoods}
               zoning={zoning}
               weights={weights}
-              whatIf={whatIf}
+              whatIf={mode === "sites" ? false : whatIf}
               selectedPin={selectedPin}
-              focus={focus}
+              focus={mode === "sites" ? siteFilters.area || null : focus}
               onSelect={setSelectedPin}
+              highlight={siteHighlight}
+              lihtc={mode === "sites" ? lihtc : null}
             />
           ) : null}
           {parcels && neighborhoods && mode === "drop" ? (
@@ -233,9 +267,36 @@ export default function App() {
                 <li><i style={{ background: "#111827" }} /> Stop inside the ring</li>
               </>
             ) : null}
+            {mode === "sites" ? (
+              <>
+                <li><i style={{ background: "#cbd2d9" }} /> Does not match the filters</li>
+                <li><i className="dot" style={{ background: "#ede9fe", borderColor: "#4c1d95" }} /> HUD LIHTC project (context)</li>
+                <li className="legend-note">Matches are colored by the type they are ranked as.</li>
+              </>
+            ) : null}
           </ul>
         </div>
-        {mode === "drop" ? (
+        {mode === "sites" ? (
+          <FindSitesPanel
+            filters={siteFilters}
+            onFilters={setSiteFilters}
+            sort={siteSort}
+            onSort={setSiteSort}
+            rows={siteRows}
+            weights={weights}
+            onWeights={setWeights}
+            selectedPin={selectedPin}
+            onSelectPin={setSelectedPin}
+            onOpenParcel={(pin) => {
+              setSelectedPin(pin)
+              setOpenedFromSites(true)
+              setMode("inspect")
+            }}
+            sources={sources}
+            activeExample={siteExample}
+            onExample={setSiteExample}
+          />
+        ) : mode === "drop" ? (
           <DropPanel
             summary={summary}
             weights={weights}
@@ -276,6 +337,8 @@ export default function App() {
           explanation={explanation}
           explaining={explaining}
           onExplain={onExplain}
+          sources={sources}
+          onBackToSites={openedFromSites ? () => setMode("sites") : null}
         />
         )}
       </div>
