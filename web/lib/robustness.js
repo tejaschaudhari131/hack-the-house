@@ -68,10 +68,21 @@ export function describeFlip(flip) {
   return `Flips to ${shortType(flip.to.label)} if the ${name} weight ${verb} ${flip.at} (now ${flip.from}).`
 }
 
-/** How many types the zoning filter leaves in the ranked group, or null when nothing is filtered. */
-export function candidateCount(allowed, whatIf) {
-  if (whatIf || !allowed) return null
-  return allowed.size
+/** Robustness for one parcel, plus a zoning-off view when §911.02 leaves one type or none. */
+export function parcelRobustness(scores, zoningInfo, weights, whatIf = false) {
+  const allowed = whatIf ? null : zoningInfo?.allowed || null
+  const analysis = analyzeRobustness(parcelWinner(scores, { allowed, whatIf }), weights)
+  let note = null
+  let whatIfAnalysis = null
+  if (allowed && allowed.size <= 1) {
+    const only = [...allowed][0]
+    note =
+      allowed.size === 1
+        ? `§911.02 permits only ${TYPE_LABELS[only]} by right in ${zoningInfo.code}, so zoning, not the weights, puts it first.`
+        : `§911.02 permits none of the four types by right in ${zoningInfo.code}, so this ranks types that need special approval or are not permitted.`
+    whatIfAnalysis = analyzeRobustness(parcelWinner(scores, { allowed: null, whatIf: true }), weights)
+  }
+  return { analysis, note, whatIfAnalysis }
 }
 
 export function describeRobustness(analysis) {

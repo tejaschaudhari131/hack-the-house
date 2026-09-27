@@ -3,6 +3,9 @@
 import { useEffect, useMemo, useState } from "react"
 
 import Explanation from "./Explanation.js"
+import Robustness from "./Robustness.js"
+import WeightPresets from "./WeightPresets.js"
+import { analyzeRobustness, compareWinner } from "../lib/robustness.js"
 import { BUILDINGS, SCORE_TAGS, WALK_RADIUS_M } from "../lib/buildings.js"
 import { TYPE_COLORS } from "../lib/colors.js"
 import { compareDrops } from "../lib/compare.js"
@@ -173,6 +176,8 @@ export default function DropPanel({
   onSlot,
   onClear,
   byPin,
+  exampleNote,
+  onDismissExample,
 }) {
   const cards = useMemo(() => {
     return ["A", "B"].map((slot) => {
@@ -203,6 +208,19 @@ export default function DropPanel({
   const dropB = drops.find((item) => item.slot === "B")
   const compareKey = `${dropA?.pin}:${dropA?.typeId}|${dropB?.pin}:${dropB?.typeId}|${JSON.stringify(weights)}`
   const compareAi = useExplanation(compareKey)
+  const compareRobustness = useMemo(() => {
+    if (!comparison || !dropA || !dropB) return null
+    const featureA = byPin.get(dropA.pin)
+    const featureB = byPin.get(dropB.pin)
+    if (!featureA || !featureB) return null
+    return analyzeRobustness(
+      compareWinner(
+        { scores: featureA.properties.scores, typeId: dropA.typeId },
+        { scores: featureB.properties.scores, typeId: dropB.typeId },
+      ),
+      weights,
+    )
+  }, [comparison, dropA, dropB, byPin, weights])
 
   function onExplainCompare() {
     if (!comparison || !dropA || !dropB) return
@@ -226,7 +244,20 @@ export default function DropPanel({
   }
 
   return (
-    <aside className="panel">
+    <aside className="panel" id="panel">
+      {exampleNote ? (
+        <section className="example-note" role="status">
+          <h2>Example loaded</h2>
+          <p>{exampleNote}</p>
+          <p>
+            <a href="#comparison">Jump to the comparison</a>
+            {" · "}
+            <button type="button" className="text-button" onClick={onDismissExample}>
+              Dismiss
+            </button>
+          </p>
+        </section>
+      ) : null}
       <section className="limitations">
         <h2>Screening aid only</h2>
         <p>
@@ -279,6 +310,7 @@ export default function DropPanel({
       <section>
         <h2>Weights</h2>
         <p className="hint">These weights are choices. They change the total for both buildings.</p>
+        <WeightPresets weights={weights} onWeights={onWeights} />
         {Object.entries(weights).map(([key, value]) => (
           <label key={key} className="slider">
             <span>
@@ -326,9 +358,10 @@ export default function DropPanel({
       </section>
 
       {comparison ? (
-        <section className="review-box">
+        <section className="review-box" id="comparison" tabIndex={-1}>
           <h2>Why they rank differently</h2>
           <p>{comparison}</p>
+          <Robustness analysis={compareRobustness} title="Does the winner hold?" />
           <button type="button" className="explain" onClick={onExplainCompare} disabled={compareAi.explaining}>
             {compareAi.explaining ? "Writing explanation…" : "Explain A vs B"}
           </button>
