@@ -11,6 +11,15 @@ import { describeRobustness, parcelRobustness } from "../lib/robustness.js"
 
 const ZONING_PAGE_URL = "https://www.pittsburghpa.gov/Business-Development/City-Planning/Zoning"
 
+/** Template paragraphs the report tables already show. */
+const TABLE_COVERS = [
+  "Observed for this place",
+  "Value judgments, not measurements",
+  "Thin-data notes",
+  "§911.02 for",
+  "The what-if zoning toggle",
+]
+
 function fmt(value, suffix = "") {
   if (value === null || value === undefined || value === "") return "missing"
   return `${typeof value === "number" ? value.toLocaleString("en-US") : value}${suffix}`
@@ -35,11 +44,16 @@ function Outline({ geometry }) {
 
 function inputRows(inputs) {
   const pctText = (value) => (value === null || value === undefined ? "missing" : `${value}%`)
+  const stop = inputs.transit.nearest_stop_name
+    ? `; nearest ${inputs.transit.nearest_stop_name}, ${fmt(inputs.transit.nearest_stop_meters, " m")}`
+    : ""
   return [
-    ["Median valid sale price per sq ft (neighborhood)", fmt(inputs.demand.neighborhood_median_valid_sale_price_per_sqft, " $/sq ft"), inputs.demand.source],
-    ["Valid sales per 100 parcels (neighborhood)", fmt(inputs.demand.neighborhood_valid_sales_per_100_parcels), inputs.demand.source],
-    ["Weekday scheduled trips within 400 m", fmt(inputs.transit.weekday_scheduled_trips_within_400m), inputs.transit.source],
-    ["Nearest stop", inputs.transit.nearest_stop_name ? `${inputs.transit.nearest_stop_name}, ${fmt(inputs.transit.nearest_stop_meters, " m")}` : "missing", inputs.transit.source],
+    [
+      "Neighborhood valid sales",
+      `${fmt(inputs.demand.neighborhood_median_valid_sale_price_per_sqft, " $/sq ft")} median; ${fmt(inputs.demand.neighborhood_valid_sales_per_100_parcels)} per 100 parcels`,
+      inputs.demand.source,
+    ],
+    ["Weekday scheduled trips within 400 m", `${fmt(inputs.transit.weekday_scheduled_trips_within_400m)}${stop}`, inputs.transit.source],
     [`Median household income (${inputs.equity.census_geography})`, inputs.equity.median_household_income ? `$${fmt(inputs.equity.median_household_income)} (county $${fmt(inputs.equity.county_median_income)})` : "missing", inputs.equity.sources[0]],
     ["Renters paying 30%+ of income (ACS, all renters)", pctText(inputs.equity.acs_renters_paying_30pct_or_more_percent), inputs.equity.sources[0]],
     ["Low-income renters paying over 30% (CHAS, tract)", pctText(inputs.equity.chas_low_income_renters_paying_over_30pct_percent), inputs.equity.sources[1]],
@@ -85,7 +99,13 @@ export default function ParcelReport({ feature, weights, whatIf, zoning, summary
   const { facts } = context
   const preset = matchPreset(weights)
   const ai = explanation?.source === "ai" && !explanation.streaming
-  const summaryText = ai ? explanation.text : explainTemplate(context.templateInput)
+  const summaryText = ai
+    ? explanation.text
+    : explainTemplate(context.templateInput)
+        .split("\n\n")
+        .filter((paragraph) => !TABLE_COVERS.some((prefix) => paragraph.startsWith(prefix)))
+        .join("\n\n")
+  const pulled = [...new Set(inputRows(facts.inputs).map(([, , source]) => source?.pulled).filter(Boolean))]
   const generated = new Date().toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })
 
   return (
@@ -109,7 +129,7 @@ export default function ParcelReport({ feature, weights, whatIf, zoning, summary
 
       <section>
         <h2>Housing types ranked, with the §911.02 reading</h2>
-        <table>
+        <table className="report-ranking">
           <thead>
             <tr>
               <th>#</th>
@@ -160,9 +180,11 @@ export default function ParcelReport({ feature, weights, whatIf, zoning, summary
           <h2>Does #1 hold under other weights?</h2>
           <p>{describeRobustness(robustness.analysis)}</p>
           {robustness.note ? <p className="report-small">{robustness.note}</p> : null}
-          <p className="report-small">
-            {robustness.analysis.presets.map((row) => `${row.label}: ${row.winner?.label || "n/a"}`).join(" · ")}
-          </p>
+          {robustness.analysis.agree < robustness.analysis.total ? (
+            <p className="report-small">
+              {robustness.analysis.presets.map((row) => `${row.label}: ${row.winner?.label || "n/a"}`).join(" · ")}
+            </p>
+          ) : null}
         </div>
         <div>
           <h2>Data confidence</h2>
@@ -197,7 +219,6 @@ export default function ParcelReport({ feature, weights, whatIf, zoning, summary
                 <td>{value}</td>
                 <td>
                   {source?.name} · {source?.vintage}
-                  {source?.pulled ? ` · pulled ${source.pulled}` : ""}
                 </td>
               </tr>
             ))}
@@ -210,7 +231,7 @@ export default function ParcelReport({ feature, weights, whatIf, zoning, summary
         <p className="report-small">
           {ai
             ? `Written by ${explanation.model} via Vercel AI Gateway from the numbers above only. A model can misstate a number; the tables above are authoritative.`
-            : "Written by fixed rules from the same numbers. No language model was used."}
+            : "Written by fixed rules from the same numbers. No language model was used. Paragraphs that repeat the tables above are left out."}
         </p>
         {summaryText
           .split("\n")
@@ -226,7 +247,8 @@ export default function ParcelReport({ feature, weights, whatIf, zoning, summary
         applied. Flood, 25%+ slope, and undermined overlaps are map screens, not a survey, flood determination, or
         geotechnical study. ACS estimates have margins of error; CHAS 2018–2022 is older and counts only lower-income
         renters. Transit is scheduled service, not reliability. Assessed value is not used. No owner names are in this
-        data. Generated {generated} from the committed data files; results change if the weights change.
+        data. {pulled.length ? `Layers pulled ${pulled.join(", ")} (sources.json). ` : ""}Generated {generated} from the
+        committed data files; results change if the weights change.
       </footer>
     </article>
   )

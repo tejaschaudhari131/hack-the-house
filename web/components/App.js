@@ -46,7 +46,8 @@ export default function App() {
   const mapWeights = useDeferredValue(weights)
 
   useEffect(() => {
-    if (!hasOnboarded()) setOnboardingOpen(true)
+    const linked = new URLSearchParams(window.location.search).has("pin")
+    if (!linked && !hasOnboarded()) setOnboardingOpen(true)
   }, [])
 
   useEffect(() => {
@@ -94,6 +95,20 @@ export default function App() {
     for (const feature of parcels?.features || []) index.set(feature.properties.pin, feature)
     return index
   }, [parcels])
+
+  useEffect(() => {
+    if (!parcels) return
+    const pin = new URLSearchParams(window.location.search).get("pin")
+    if (pin && byPin.has(pin)) setSelectedPin(pin)
+  }, [parcels, byPin])
+
+  useEffect(() => {
+    if (!parcels) return
+    const url = new URL(window.location.href)
+    if (selectedPin && mode === "inspect") url.searchParams.set("pin", selectedPin)
+    else url.searchParams.delete("pin")
+    window.history.replaceState(null, "", url)
+  }, [parcels, selectedPin, mode])
 
   const selectedFeature = selectedPin ? byPin.get(selectedPin) : null
   const selected = selectedFeature?.properties || null
