@@ -2,7 +2,7 @@
 
 Explore housing and infrastructure decisions on a 3D map of Pittsburgh.
 
-**[Open Playhouse](https://hack-the-house.vercel.app)** · Built for the AI Horizons 2026 AI for Housing Hackathon.
+**[Current production site](https://hack-the-house.vercel.app)** · Built for the AI Horizons 2026 AI for Housing Hackathon. Playhouse release work is on `playhouse-release`; use its Vercel preview until it is merged.
 
 ## What it does
 
@@ -48,7 +48,7 @@ The committed data is ready to use. You do not need to run Python or download da
 
 ## Hosting
 
-**Use the existing Vercel project for the initial 1–30-user demo.** It is connected to this repository and deploys `main` automatically. The product is Playhouse; the repository and existing URL keep their current names.
+**Use the existing Vercel project for the initial 1–30-user demo.** It is connected to this repository. Branch pushes create previews; `main` deploys to production. The product is Playhouse; the repository and existing URL keep their current names.
 
 For a new Vercel project: import this repository, select **Next.js**, set the root directory to **web**, and deploy. No database is required. GitHub Pages would need a static-only build because Explorer's `/api/explain` endpoint needs a server.
 
