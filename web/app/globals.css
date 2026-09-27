@@ -61,7 +61,10 @@ body {
 .tag.measured { background: #dbeafe; color: #1e3a8a; }
 .tag.choice { background: #fef3c7; color: #92400e; }
 .badge.allowed { background: #d1fae5; }
-.badge.variance { background: #ffedd5; }
+.badge.variance,
+.badge.approval,
+.badge.partial { background: #ffedd5; }
+.badge.partial { border-radius: 6px; white-space: normal; }
 .badge.not_allowed { background: #fee2e2; }
 .badge.unreviewed { background: #fef3c7; }
 

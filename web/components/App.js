@@ -157,6 +157,7 @@ export default function App() {
                 code: zoningInfo.code,
                 allowed: zoningInfo.allowed ? [...zoningInfo.allowed] : null,
                 note: zoningInfo.note,
+                use_notes: zoningInfo.district?.use_notes || null,
               }
             : null,
           countyMedianIncome: summary?.county_median_income ?? null,

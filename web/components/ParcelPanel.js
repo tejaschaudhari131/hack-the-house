@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react"
 import { TYPE_COLORS } from "../lib/colors.js"
 import { clearFlag, loadFlags, saveFlag } from "../lib/flags.js"
 import { TYPE_LABELS } from "../lib/rank.js"
+import { dropZoningBadge } from "../lib/zoning.js"
 
 const CODE_URL = "https://ecode360.com/45474054"
 const MAP_URL =
@@ -33,11 +34,16 @@ function Bar({ label, value, hint }) {
 }
 
 function ZoningBadge({ row, whatIf, zoningInfo }) {
-  if (whatIf && zoningInfo?.status === "stub") return <span className="badge scenario">What-if: treated as allowed</span>
-  if (zoningInfo?.status === "use_table_unread") return <span className="badge unknown">Use table not read</span>
-  if (!zoningInfo || zoningInfo.status !== "stub") return <span className="badge unknown">Zoning unknown</span>
-  if (row.allowed) return <span className="badge allowed">Stub marks this allowed</span>
-  return <span className="badge flagged">Flagged by stub rules</span>
+  if (whatIf && zoningInfo?.status === "use_table") {
+    return <span className="badge scenario">What-if: treated as allowed</span>
+  }
+  const badge = dropZoningBadge(row.id, zoningInfo)
+  return (
+    <p className="zoning-badge">
+      <span className={`badge ${badge.id}`}>{badge.label}</span>
+      <span className="hint">{badge.detail}</span>
+    </p>
+  )
 }
 
 export default function ParcelPanel({
@@ -78,7 +84,7 @@ export default function ParcelPanel({
     let current = null
     let place = 0
     for (const row of ranked) {
-      const flagged = !whatIf && zoningInfo?.status === "stub" && row.allowed === false
+      const flagged = !whatIf && zoningInfo?.status === "use_table" && row.allowed === false
       const key = flagged ? "flagged" : "ranked"
       if (!current || current.key !== key) {
         current = { key, rows: [] }
@@ -100,8 +106,10 @@ export default function ParcelPanel({
         </p>
         <ul>
           <li>
-            Zoning use tables were not read. ecode360 blocked automated access, so no housing type is filtered.
-            That is not a finding that every type is allowed. Every district still needs expert review.
+            Zoning permissions come from Pittsburgh Zoning Code §911.02, mapped onto four housing types by an
+            assumption (detached, attached or two-unit, three-unit versus 4+ units). A, S, and C mean special
+            approval, not a variance. Districts that are not in that table say to check with the City. This is
+            not a zoning determination. Every district still needs expert review.
           </li>
           <li>The sliders are value judgments. Confidence is only about thin or missing data.</li>
           <li>
@@ -268,25 +276,28 @@ export default function ParcelPanel({
             Zoning: {selected.zoning_code || "not matched"}
             {selected.zoning_label ? ` (${selected.zoning_label})` : ""}
           </p>
-          {zoningInfo?.status === "use_table_unread" ? (
+          {zoningInfo?.status === "use_table" ? (
             <p className="hint">
-              Use table not read. needs_expert_review is still true. {zoningInfo.note}
+              Use table {zoningInfo.codeSection}. Still needs expert review. {zoningInfo.note}{" "}
               {zoningInfo.codeUrl ? (
-                <>
-                  {" "}
-                  <a href={zoningInfo.codeUrl} target="_blank" rel="noreferrer">
-                    Open the code
-                  </a>
-                  .
-                </>
+                <a href={zoningInfo.codeUrl} target="_blank" rel="noreferrer">
+                  §911.02
+                </a>
               ) : null}
             </p>
-          ) : zoningInfo?.status === "stub" ? (
+          ) : zoningInfo?.status === "not_in_use_table" ? (
             <p className="hint">
-              Cited section {zoningInfo.codeSection}. Still needs expert review. {zoningInfo.note}
+              Check with the city / needs review. {zoningInfo.note} This district is not marked prohibited.
             </p>
           ) : (
-            <p className="hint">{zoningInfo?.note}</p>
+            <p className="hint">
+              {zoningInfo?.note}{" "}
+              {zoningInfo?.codeUrl ? (
+                <a href={zoningInfo.codeUrl} target="_blank" rel="noreferrer">
+                  Open the code
+                </a>
+              ) : null}
+            </p>
           )}
           <p>
             Data confidence: <strong>{selected.confidence_label}</strong> ({selected.confidence}). This is not a
@@ -304,12 +315,12 @@ export default function ParcelPanel({
             <div key={group.key}>
               <h3>
                 {group.key === "flagged"
-                  ? "Flagged by the cited stub"
-                  : whatIf && zoningInfo?.status === "stub"
+                  ? "Not permitted by right under §911.02"
+                  : whatIf && zoningInfo?.status === "use_table"
                     ? "Ranked as if zoning allowed all four"
-                    : zoningInfo?.status === "use_table_unread"
-                      ? "Ranked without a zoning filter"
-                      : "Ranked among types the cited stub marks as allowed"}
+                    : zoningInfo?.status === "use_table"
+                      ? "Ranked among types §911.02 permits by right, including partial unit counts"
+                      : "Ranked without a zoning filter"}
               </h3>
               {group.rows.map((row) => (
                 <article key={row.id} className="type-card" style={{ borderColor: TYPE_COLORS[row.id] }}>

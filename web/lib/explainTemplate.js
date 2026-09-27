@@ -110,18 +110,23 @@ export function explainTemplate({ parcel, ranked, weights, whatIf, zoning, count
   if (parcel.confidence_notes?.length) {
     paragraphs.push(`Thin-data notes: ${parcel.confidence_notes.join(" ")}`)
   }
-  if (zoning?.status === "use_table_unread") {
+  if (zoning?.status === "not_in_use_table") {
     paragraphs.push(
-      `The Pittsburgh Zoning Code use table was not read for ${zoning.code || "this district"}. ecode360 blocked automated access, so no housing type was filtered. That is not a finding that every type is allowed. ${zoning.note || ""}`,
+      `${zoning.code || "This district"} is not a column in Pittsburgh Zoning Code §911.02, so no housing type was marked prohibited. Check with the City. This is a screening aid, not a zoning determination.`,
     )
-  } else if (whatIf) {
+  } else if (zoning?.status === "use_table_unread") {
     paragraphs.push(
-      "The what-if zoning toggle is on, so all four types are ranked as if the cited stub rules allowed them. That is a scenario, not a rezoning, and the rules still need expert review.",
+      `The Pittsburgh Zoning Code use table was not read for ${zoning.code || "this district"}, so no housing type was filtered. That is not a finding that every type is allowed. ${zoning.note || ""}`,
     )
-  } else if (zoning?.status === "stub") {
+  } else if (whatIf && zoning?.status === "use_table") {
+    paragraphs.push(
+      "The what-if zoning toggle is on, so all four types are ranked as if §911.02 allowed them. That is a scenario, not a rezoning, and the result still needs expert review.",
+    )
+  } else if (zoning?.status === "use_table") {
     const allowed = [...(zoning.allowed || [])].map((id) => TYPE_LABELS[id] || id)
+    const notes = Object.values(zoning.use_notes || zoning.district?.use_notes || {})
     paragraphs.push(
-      `Stub zoning for ${zoning.code} marks these types as allowed: ${allowed.length ? allowed.join(", ") : "none of the four"}. Types outside that list are flagged and sorted below. ${zoning.note || ""} This is not a determination of what may be built.`,
+      `§911.02 for ${zoning.code} permits by right, or only for some unit counts: ${allowed.length ? allowed.join(", ") : "none of the four"}. Other types need special approval or are blank in the table. ${notes.join(" ")} The mapping from code uses to these four types is an assumption. This is not a determination of what may be built.`,
     )
   } else if (zoning?.note) {
     paragraphs.push(zoning.note)
