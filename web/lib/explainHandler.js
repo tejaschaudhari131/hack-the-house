@@ -5,10 +5,12 @@
 import { streamText } from "ai"
 
 import { buildCompareContext, buildParcelContext, explainCompareTemplate } from "./explainFacts.js"
-import { PROMPT_VERSION, SYSTEM_PROMPT, buildComparePrompt, buildParcelPrompt } from "./explainPrompt.js"
+import { PROMPT_VERSION, SYSTEM_PROMPT, buildComparePrompt, buildParcelPrompt, buildSitesPrompt } from "./explainPrompt.js"
 import { explainTemplate } from "./explainTemplate.js"
 import { clientIp, createRateLimiter, createTtlCache, hashKey } from "./guardrails.js"
+import { buildSitesContext, explainSitesTemplate } from "./explainSites.js"
 import { DEFAULT_WEIGHTS, HOUSING_TYPES } from "./rank.js"
+import { DEFAULT_SITE_FILTERS, SORT_OPTIONS, TYPE_OPTIONS, findSites } from "./sites.js"
 
 export const DEFAULT_MODEL = "anthropic/claude-haiku-4.5"
 
@@ -59,9 +61,47 @@ function parseDrop(raw) {
   return pin && typeId ? { pin, typeId } : null
 }
 
+const FILTER_CHOICES = {
+  combine: ["all", "any"],
+  typeId: TYPE_OPTIONS.map((option) => option.id),
+  permission: ["any", "by_right", "by_right_or_special"],
+  flood: ["any", "none", "no_sfha"],
+  displacement: ["any", "high", "not_high"],
+  area: ["", "Hazelwood", "Lawrenceville"],
+}
+
+/** Accepts only the Find Sites filter keys, with their default types and known choices. */
+export function parseSiteFilters(raw) {
+  if (!raw || typeof raw !== "object") return null
+  const filters = {}
+  for (const [key, fallback] of Object.entries(DEFAULT_SITE_FILTERS)) {
+    const value = raw[key] === undefined ? fallback : raw[key]
+    if (FILTER_CHOICES[key]) {
+      if (!FILTER_CHOICES[key].includes(value)) return null
+      filters[key] = value
+    } else if (typeof fallback === "boolean") {
+      if (typeof value !== "boolean") return null
+      filters[key] = value
+    } else if (value === null || value === "") {
+      filters[key] = null
+    } else {
+      const number = Number(value)
+      if (!Number.isFinite(number) || number < 0 || number > 10_000_000) return null
+      filters[key] = number
+    }
+  }
+  return filters
+}
+
 export function parseExplainRequest(body) {
   const weights = parseWeights(body?.weights)
   if (!weights) return { error: `weights must have ${WEIGHT_KEYS.join(", ")}, each between 0 and 100.` }
+  if (body?.kind === "sites") {
+    const filters = parseSiteFilters(body.filters)
+    if (!filters) return { error: "filters must use the Find Sites filter keys and choices." }
+    const sort = SORT_OPTIONS.some((option) => option.id === body.sort) ? body.sort : "score"
+    return { kind: "sites", weights, filters, sort }
+  }
   if (body?.kind === "compare") {
     const a = parseDrop(body.a)
     const b = parseDrop(body.b)
@@ -211,7 +251,21 @@ export function createExplainHandler({ loadData, env = process.env, model: model
     let context
     let templateText
     let prompt
-    if (input.kind === "compare") {
+    if (input.kind === "sites") {
+      const rows = findSites(data.features || [...data.byPin.values()], input.filters, input.weights, data.zoning, input.sort)
+      context = buildSitesContext({
+        rows,
+        filters: input.filters,
+        sort: input.sort,
+        weights: input.weights,
+        sources: data.sources,
+        summary: data.summary,
+        zoningRules: data.zoning,
+      })
+      templateText = explainSitesTemplate(context)
+      if (!rows.length) return textResponse(templateText, { source: "template", notice: "No parcels match, so there is nothing for the model to explain." })
+      prompt = buildSitesPrompt(context.facts)
+    } else if (input.kind === "compare") {
       const featureA = data.byPin.get(input.a.pin)
       const featureB = data.byPin.get(input.b.pin)
       if (!featureA || !featureB) return jsonError("Unknown parcel pin.", 404)

@@ -2,11 +2,14 @@
 
 import { useMemo, useState } from "react"
 
+import Explanation from "./Explanation.js"
 import SiteFacts from "./SiteFacts.js"
 import SourcesList from "./SourcesList.js"
 import WeightPresets from "./WeightPresets.js"
 import WeightSliders from "./WeightSliders.js"
 import { TYPE_COLORS } from "../lib/colors.js"
+import { useExplanation } from "../lib/explainClient.js"
+import { TOP_SITES, buildSitesContext, explainSitesTemplate } from "../lib/explainSites.js"
 import {
   CITY_STATUS_LABELS,
   DEFAULT_SITE_FILTERS,
@@ -83,6 +86,7 @@ export default function FindSitesPanel({
   onExample,
 }) {
   const [shown, setShown] = useState(PAGE)
+  const sitesAi = useExplanation(JSON.stringify([filters, sort, weights]))
   const set = (patch) => {
     onExample(null)
     onFilters({ ...filters, ...patch })
@@ -335,6 +339,19 @@ export default function FindSitesPanel({
             Download CSV
           </button>
         </div>
+        <button
+          type="button"
+          className="explain"
+          disabled={!rows.length || sitesAi.explaining}
+          onClick={() =>
+            sitesAi.run({ kind: "sites", weights, filters, sort }, () =>
+              explainSitesTemplate(buildSitesContext({ rows, filters, sort, weights, sources, summary: null, zoningRules: null })),
+            )
+          }
+        >
+          {sitesAi.explaining ? "Writing explanation…" : `Explain the top ${Math.min(TOP_SITES, rows.length) || ""} sites`}
+        </button>
+        <Explanation explanation={sitesAi.explanation} />
 
         {selected ? (
           <article className="site-detail" style={{ borderColor: TYPE_COLORS[selected.scoreType] }}>

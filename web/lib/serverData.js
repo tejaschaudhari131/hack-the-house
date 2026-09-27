@@ -22,7 +22,7 @@ export function loadServerData() {
       .then(([parcels, zoning, sources, summary, stops]) => {
         const byPin = new Map()
         for (const feature of parcels.features || []) byPin.set(feature.properties.pin, feature)
-        return { byPin, zoning, sources, summary, stops }
+        return { byPin, features: parcels.features || [], zoning, sources, summary, stops }
       })
       .catch((error) => {
         pending = null
