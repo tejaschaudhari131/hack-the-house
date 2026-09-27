@@ -5,6 +5,7 @@
 export const FACTORS = [
   {
     id: "demand",
+    plain: "Market & lot fit",
     scoreKey: "demand",
     label: "Market activity & lot fit",
     sliderLabel: "Market activity & lot fit",
@@ -17,6 +18,7 @@ export const FACTORS = [
   },
   {
     id: "transit",
+    plain: "Transit",
     scoreKey: "transit",
     label: "Transit access",
     sliderLabel: "Transit access",
@@ -28,6 +30,7 @@ export const FACTORS = [
   },
   {
     id: "equity",
+    plain: "Housing need",
     scoreKey: "equity",
     label: "Equity",
     sliderLabel: "Equity",
@@ -40,6 +43,7 @@ export const FACTORS = [
   },
   {
     id: "climate",
+    plain: "Climate hazard",
     scoreKey: "climate_risk",
     label: "Climate hazard",
     sliderLabel: "Climate hazard (prefer lower)",
@@ -52,6 +56,7 @@ export const FACTORS = [
   },
   {
     id: "displacement",
+    plain: "Displacement risk",
     scoreKey: "displacement_risk",
     label: "Displacement risk (screening signal)",
     sliderLabel: "Displacement risk (prefer lower; screening signal)",
@@ -64,6 +69,7 @@ export const FACTORS = [
   },
   {
     id: "carbon",
+    plain: "Carbon per home",
     scoreKey: "carbon_index",
     label: "Carbon-related proxy (relative, per home)",
     sliderLabel: "Carbon-related proxy (prefer lower; relative, per home)",

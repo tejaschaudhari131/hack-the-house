@@ -9,13 +9,7 @@ export default function GuideBanner({ guide, onNext, onExit, onPrint }) {
   const place = guide.address ? `${guide.address} (PIN ${guide.pin})` : `PIN ${guide.pin}`
   return (
     <section className="guide-banner" aria-live="polite">
-      <ol className="guide-steps" aria-label="Guided example steps">
-        {STEPS.map((name, index) => (
-          <li key={name} className={index + 1 === step ? "on" : index + 1 < step ? "done" : ""} aria-current={index + 1 === step ? "step" : undefined}>
-            {index + 1}. {name}
-          </li>
-        ))}
-      </ol>
+      <p className="guide-title">Guided example · step {step} of 3</p>
       {!guide.pin ? (
         <p>No parcel matches the example question with the current data, so the guided example cannot continue.</p>
       ) : step === 1 ? (

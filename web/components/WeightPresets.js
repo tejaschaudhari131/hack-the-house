@@ -8,7 +8,7 @@ export default function WeightPresets({ weights, onWeights, onAntiDisplacement =
   return (
     <div className="presets">
       <p className="presets-label" id="presets-label">
-        Illustrative priorities
+        Pick a starting point
       </p>
       <div className="preset-row" role="group" aria-labelledby="presets-label">
         {PRESETS.map((preset) => (
@@ -25,11 +25,11 @@ export default function WeightPresets({ weights, onWeights, onAntiDisplacement =
         ))}
       </div>
       <p className="hint">
-        {active ? `${active.label}: ${active.blurb} ` : "Custom weights. "}
-        <span className="tag choice">Value judgment</span> {PRESET_NOTE}
+        {active ? `${active.label}: ${active.blurb}` : "Custom priorities."} <span className="tag choice">A choice, not data</span>
       </p>
-      <details className="preset-weights">
-        <summary>Show the weights behind each priority</summary>
+      <details className="preset-weights more">
+        <summary>What do these buttons change?</summary>
+        <p className="hint">{PRESET_NOTE}</p>
         <table className="contrib-table">
           <thead>
             <tr>

@@ -1,12 +1,11 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 
 import Explanation from "./Explanation.js"
 import SiteFacts from "./SiteFacts.js"
 import SourcesList from "./SourcesList.js"
-import WeightPresets from "./WeightPresets.js"
-import WeightSliders from "./WeightSliders.js"
+import WeightsPanel from "./WeightsPanel.js"
 import { TYPE_COLORS } from "../lib/colors.js"
 import { useExplanation } from "../lib/explainClient.js"
 import { TOP_SITES, buildSitesContext, explainSitesTemplate } from "../lib/explainSites.js"
@@ -86,6 +85,7 @@ export default function FindSitesPanel({
   onExample,
   onCompareSite,
   onAntiDisplacement = null,
+  onStartGuide = null,
   share = null,
   guide = null,
 }) {
@@ -102,16 +102,40 @@ export default function FindSitesPanel({
     return Object.entries(counts).sort((a, b) => b[1] - a[1])
   }, [rows])
   const selected = rows.find((row) => row.pin === selectedPin) || null
+  const activeFilters = Object.entries(filters).filter(([key, value]) => value !== DEFAULT_SITE_FILTERS[key]).length
+  const [cue, setCue] = useState(null)
+  const lastTop = useRef({ pin: null, weights: null })
+  useEffect(() => {
+    const top = rows[0]
+    const weightsKey = JSON.stringify(weights)
+    const previous = lastTop.current
+    lastTop.current = { pin: top?.pin ?? null, weights: weightsKey }
+    if (previous.weights && previous.weights !== weightsKey && previous.pin && top && previous.pin !== top.pin) {
+      setCue(`Ranking changed: the top lot is now ${top.props.address || top.pin}.`)
+      const timer = setTimeout(() => setCue(null), 6000)
+      return () => clearTimeout(timer)
+    }
+  }, [rows, weights])
 
   return (
     <aside className="panel" id="panel">
       {guide}
-      <section className="limitations">
-        <h2>Find sites: where could we build what?</h2>
-        <p>
-          <strong>{SITE_CAVEAT}</strong>
-        </p>
-        <p>
+      {!guide ? (
+        <section className="welcome">
+          <h2>Step 1: find a lot</h2>
+          <p>Start with a question below, or set your own filters. Then pick a lot in the list and compare two housing options on it.</p>
+          {onStartGuide ? (
+            <button type="button" className="explain" onClick={onStartGuide}>
+              Start the guided example
+            </button>
+          ) : null}
+        </section>
+      ) : null}
+      <div className="hint">
+        A City-owned, vacant, or tax-delinquent record does not mean a lot is available.{" "}
+        <details className="inline-more">
+          <summary>About these records</summary>
+          <strong>{SITE_CAVEAT}</strong>{" "}
           <a href={URA_URL} target="_blank" rel="noreferrer">
             URA
           </a>
@@ -124,11 +148,11 @@ export default function FindSitesPanel({
             City Planning zoning page
           </a>
           . Zoning readings come from §911.02 and still need expert review. Screening aid only.
-        </p>
-      </section>
+        </details>
+      </div>
 
       <section>
-        <h2>Example questions</h2>
+        <h2>Start with a question</h2>
         <div className="examples">
           {EXAMPLE_QUERIES.map((example) => (
             <button
@@ -151,8 +175,8 @@ export default function FindSitesPanel({
         ) : null}
       </section>
 
-      <section className="filters">
-        <h2>Filters</h2>
+      <details className="more filters">
+        <summary>Filters ({activeFilters} active)</summary>
         <fieldset>
           <legend>Public records</legend>
           <label className="toggle">
@@ -314,18 +338,15 @@ export default function FindSitesPanel({
         >
           Reset filters
         </button>
-      </section>
+      </details>
 
-      <section>
-        <h2>Weights</h2>
-        <p className="hint">The list is ranked by the weighted score of the chosen type, or of the best type the zoning filter lets through.</p>
-        <WeightPresets weights={weights} onWeights={onWeights} onAntiDisplacement={onAntiDisplacement} />
-        <WeightSliders weights={weights} onWeights={onWeights} />
-      </section>
+      <WeightsPanel weights={weights} onWeights={onWeights} onAntiDisplacement={onAntiDisplacement} cue={cue}>
+        <p className="hint">The list is ranked by the score of the chosen type, or of the best type the zoning filter lets through.</p>
+      </WeightsPanel>
 
       <section>
         <h2 aria-live="polite">
-          {rows.length.toLocaleString()} parcel{rows.length === 1 ? "" : "s"} match
+          {rows.length.toLocaleString()} lot{rows.length === 1 ? "" : "s"} match
         </h2>
         <p className="hint">
           {byHood.map(([name, count]) => `${name} ${count}`).join(" · ") || "No matches. Loosen a filter."}
