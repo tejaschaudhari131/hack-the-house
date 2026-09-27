@@ -22,7 +22,7 @@ npm run dev
 6. Optionally enter hypothetical spare daily boarding capacity under Capacity assumptions. Unknown reserve stays null, not zero. Utility capacity is not supplied by this field.
 7. Undo/redo, switch baseline/proposal, or export the versioned scenario and computed results as JSON.
 
-## Model boundary: planner-screen-1.2
+## Model boundary: planner-screen-1.3
 
 This is a new, explicit screening comparison alongside the original six-factor explorer; its totals are not comparable with the explorer's totals. It is not a validated development forecast.
 
@@ -104,3 +104,11 @@ Edits persist when selecting another parcel in the same study area, so subsequen
 The separate 2.9 MB network display geometry now loads on the first visit to Infra. The calculation graph still loads independently for routed comparisons, initializes once per worker, and is not copied on each edit. Baseline map geometry is not resent during scenario edits.
 
 Run `npm run benchmark:planner` to measure JSON parsing, graph preparation and full evaluations reproducibly. A local run on 2026-09-27 (Node v26.8.1; AMD Ryzen 7 PRO 8840U; 20 measured runs after three warmups) found median full/compact parsing of 107/52 ms and evaluation p95 of 55 ms (Hazelwood) and 64 ms (Lawrenceville). These are CPU observations, not browser FPS or download promises; browser rendering, worker transfer, thermal state and other devices are outside this measurement. Repeat after significant model/data changes. Citywide delivery still requires tiled geometry and regional graph/data partitioning; Rust is not justified by this bounded CPU measurement alone.
+
+## Recommendation audit (planner-screen-1.3)
+
+Compare now includes **Why this result?**, with an exact seven-factor ledger. For each factor, it records the source, effective normalized weight, A/B baseline and proposal scores, weighted change caused by the infrastructure scenario, and contribution to the A−B score gap. Unrounded contributions reconcile exactly to the totals; displayed rounding can cause small apparent differences. Missing factors and zero priorities have explicit, distinct exclusion reasons. These results are included in the scenario export.
+
+A deterministic sensitivity check varies one included priority at a time by −25%/+25%, renormalizes across the same shared coverage and reports changes in the selected winner, including ties. It runs only when both options pass the screening gates. These are bounded policy perturbations, not statistical confidence, input-error propagation, calibration or external validation. A stable result does not prove the model is correct.
+
+The audit exposes outline/use/overlap gate results for both options, mapped environmental overlaps and source caveats, plus the remaining feasibility reviews. Unknown hazard evidence stays unknown. Source maps do not establish parcel-specific environmental safety, and their overlap is not converted into an invented mitigation benefit. Field verification, engineering, reviewed service/capacity inputs and independent outcome validation are still required before claiming development feasibility or predictive recommendations.

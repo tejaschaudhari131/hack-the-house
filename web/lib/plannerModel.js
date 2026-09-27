@@ -4,6 +4,7 @@ import { geometryCenter, fitMassing } from './plannerGeometry.js'
 import { resolveZoning, unitPermission } from './zoning.js'
 import { PLANNER_FACTORS } from './plannerState.js'
 import { networkAccess, infrastructureReservations, validateConnection, validatePark } from './networkModel.js'
+import { rankedWinner, recommendationAudit } from './plannerRecommendation.js'
 
 const clamp = value => Math.max(0, Math.min(100, value))
 const numeric = value => typeof value === 'number' && Number.isFinite(value)
@@ -90,18 +91,11 @@ export function evaluatePlanner({ feature, zoning, scenario, stop, existingBuild
   const included = PLANNER_FACTORS.map(f => f.id).filter(id => numeric(scenario.weights[id]) && scenario.weights[id] > 0 && [baseline.A, baseline.B, proposal.A, proposal.B].every(o => numeric(o.scores[id])))
   const excluded = PLANNER_FACTORS.map(f => f.id).filter(id => !included.includes(id))
   for (const options of [baseline, proposal]) for (const slot of ['A', 'B']) options[slot].total = weighted(options[slot], scenario.weights, included)
-  const winner = options => {
-    const eligible = ['A', 'B'].filter(slot => options[slot].eligible && options[slot].total !== null)
-    if (!eligible.length) return null
-    if (eligible.length === 1) return eligible[0]
-    if (Math.abs(options.A.total - options.B.total) < .1) return 'tie'
-    return options.A.total > options.B.total ? 'A' : 'B'
-  }
-  const before = winner(baseline), after = winner(proposal)
+  const before = rankedWinner(baseline), after = rankedWinner(proposal)
   const changed = before !== after
   const accessDelta = baseline.A.service && proposal.A.service ? baseline.A.service.minutes - proposal.A.service.minutes : null
   const infrastructureEdited = (scenario.connections?.length || 0) + (scenario.parks?.length || 0) > 0
-  return { baseline, proposal, included, excluded, before, after, changed, accessDelta, reservations, infrastructureErrors,
+  const result = { baseline, proposal, included, excluded, before, after, changed, accessDelta, reservations, infrastructureErrors,
     explanation: infrastructureErrors.length ? `Proposal ranking is withheld: ${[...new Set(infrastructureErrors)].join(' ')}`
       : infrastructureEdited ? `${scenario.connections?.length || 0} connection(s) and ${scenario.parks?.length || 0} park(s) are proposed. ${accessDelta === null ? 'Stop access could not be compared on this network.' : `Modeled walk + wait changes by ${round(-accessDelta)} minutes.`} ${changed ? 'The preferred option changes under these assumptions.' : 'The housing preference stays the same.'} Access benefits are shared; reserved land can change housing fit. Park access has a ${scenario.parkAccessShare || 0}% share of the access factor. Demand, rents, displacement and carbon are held unchanged.`
       : !stop ? 'No scheduled stop is available. Transit access and capacity are excluded.'
@@ -109,4 +103,5 @@ export function evaluatePlanner({ feature, zoning, scenario, stop, existingBuild
       : scenario.additionalDepartures === 0 ? 'No infrastructure change yet. Add departures to compare the same two housing options before and after service changes.'
       : `${scenario.additionalDepartures} proposed departures reduce modeled average walk + wait by ${round(accessDelta)} minutes. ${changed ? 'The preferred option changes under the current assumptions.' : 'The preferred housing option stays the same.'} Access gains are shared by both options. ${scenario.spareBoardings === null ? 'Spare capacity is unknown and excluded from ranking.' : 'Capacity differences use your stated spare-boardings and per-home demand assumptions.'} Demand, affordability, displacement and carbon stay unchanged.`,
   }
+  return { ...result, audit: recommendationAudit(result, scenario, feature.properties) }
 }

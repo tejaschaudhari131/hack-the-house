@@ -203,3 +203,18 @@
 @media (max-width: 760px) { .studio { height: auto; min-height: 100dvh; overflow: visible; } .studio-header { height: auto; min-height: 100px; flex: none; flex-wrap: wrap; padding: 12px 14px; gap: 10px; } .studio-brand strong { font-size: 15px; } .studio-brand small { font-size: 9px; } .study-switch { order: 3; flex: 1 0 100%; justify-content: center; } .study-switch button { flex: 1; } .studio-header-actions .studio-export { padding: 8px 10px; font-size: 10px; } .studio-workspace { display: flex; flex-direction: column; overflow: visible; } .studio-canvas { height: 580px; flex: 0 0 580px; } .studio-inspector { min-height: 600px; border-top: 1px solid var(--line); border-left: 0; } .inspector-scroll { overflow: visible; padding: 21px; } .canvas-heading { left: 82px; top: 78px; } .canvas-heading h1 { font-size: 23px; } .canvas-heading p { font-size: 10px; } .canvas-mode { right: 14px; top: 18px; } .studio-tools { left: 10px; top: 18px; } .massing-tray { left: 82px; bottom: 105px; width: calc(100% - 98px); max-width: 355px; padding: 13px; } .canvas-legend { left: 15px; bottom: 33px; max-width: calc(100% - 30px); gap: 8px; } .canvas-legend small { width: 100%; } .massing-tray p { font-size: 9px; } .map-site-label { top: 39%; left: 56%; } .studio-canvas .maplibregl-ctrl-bottom-left { left: 5px; } .planner-field > span, .section-help, .recommendation p { font-size: 12px; } .factor-item summary strong { font-size: 13px; } .factor-content, .evidence-panel, .fit-note p { font-size: 12px; } }
 @media (prefers-reduced-motion: reduce) { .studio *, .planner-loading-bar { animation: none; transition: none; } }
 @media (max-width: 760px) { .canvas-heading { width: calc(100% - 150px); } .canvas-heading h1 { font-size: 21px; line-height: 1.1; } }
+.recommendation-audit { margin-top: 24px; }
+.audit-table-wrap { overflow-x: auto; }
+.audit-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.audit-table caption { text-align: left; color: #727d73; font-size: 11px; padding: 12px 0; }
+.audit-table th, .audit-table td { padding: 9px 6px; border-bottom: 1px solid #e1e7dd; text-align: right; font-variant-numeric: tabular-nums; }
+.audit-table th:first-child { text-align: left; font-weight: 500; }
+.audit-factor { border-top: 1px solid #e1e7dd; padding: 10px 0; }
+.audit-factor summary { font-size: 11px; cursor: pointer; }
+.audit-factor small { display: block; color: #727d73; font-size: 10px; line-height: 1.6; }
+.audit-drivers { padding: 0; list-style: none; }
+.audit-drivers li { display: flex; justify-content: space-between; gap: 10px; margin: 10px 0; }
+.audit-drivers strong { font-variant-numeric: tabular-nums; }
+.audit-gates { border-top: 1px solid #e1e7dd; }
+.audit-gates strong, .audit-gates span { display: block; }
+.recommendation-audit .planner-details li { font-size: 11px; line-height: 1.7; }
