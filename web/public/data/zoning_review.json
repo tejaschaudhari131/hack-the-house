@@ -24,5 +24,5 @@
     "R1D-L": 1
   },
   "unmapped_codes": [],
-  "note": "Allowances are stubs inferred from district titles. Chris should review every row against the current zoning code."
+  "note": "allowed stays empty until a person cites a use-table section and sets use_table_read. needs_expert_review stays true. variance_or_exception is the optional list for types that likely need a variance or special exception."
 }

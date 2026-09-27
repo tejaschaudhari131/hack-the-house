@@ -2,7 +2,7 @@ import test from "node:test"
 import assert from "node:assert/strict"
 import { readFileSync } from "node:fs"
 
-import { resolveZoning } from "./zoning.js"
+import { dropZoningBadge, resolveZoning } from "./zoning.js"
 
 const rules = JSON.parse(readFileSync(new URL("../public/data/zoning.json", import.meta.url)))
 
@@ -31,6 +31,30 @@ test("a cited section is required before an allowance list filters", () => {
   })
   assert.equal(info.status, "use_table_unread")
   assert.equal(info.allowed, null)
+})
+
+test("an unread use table is not labeled prohibited", () => {
+  const info = resolveZoning("R1A-H", rules)
+  const badge = dropZoningBadge("large_apartment", info)
+  assert.equal(badge.id, "unreviewed")
+  assert.match(badge.detail, /not marked prohibited/)
+  assert.match(badge.detail, /Needs expert review/)
+})
+
+test("cited rules drive the three zoning badges", () => {
+  const district = {
+    allowed: ["single_family"],
+    variance_or_exception: ["townhouse_duplex"],
+    use_table_read: true,
+    code_section: "example-section",
+    needs_expert_review: true,
+    notes: "example only",
+  }
+  const info = resolveZoning("R1D-M", { districts: { "R1D-M": district } })
+  assert.equal(dropZoningBadge("single_family", info).id, "allowed")
+  assert.equal(dropZoningBadge("townhouse_duplex", info).id, "variance")
+  assert.equal(dropZoningBadge("large_apartment", info).label, "Not allowed")
+  assert.match(dropZoningBadge("large_apartment", info).detail, /Needs expert review/)
 })
 
 test("a cited section can filter and still needs expert review", () => {

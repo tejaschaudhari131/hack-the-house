@@ -930,7 +930,25 @@ def _source(name, url, publisher, license_name, status, notes, extra=None):
     return row
 
 
-def write_outputs(neighborhoods, parcels, market, county_income, sources, transit_meta, failures):
+def _stops_collection(stops):
+    features = []
+    for stop in stops or []:
+        features.append(
+            {
+                "type": "Feature",
+                "geometry": {"type": "Point", "coordinates": [stop["lon"], stop["lat"]]},
+                "properties": {
+                    "stop_id": stop.get("stop_id"),
+                    "name": stop.get("name"),
+                    "weekday_trips": int(stop.get("trips") or 0),
+                    "routes": stop.get("routes") or [],
+                },
+            }
+        )
+    return {"type": "FeatureCollection", "features": features}
+
+
+def write_outputs(neighborhoods, parcels, market, county_income, sources, transit_meta, failures, stops=None):
     config.PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
     config.WEB_DATA_DIR.mkdir(parents=True, exist_ok=True)
     features = [_public_feature(record) for record in parcels]
@@ -994,7 +1012,7 @@ def write_outputs(neighborhoods, parcels, market, county_income, sources, transi
         "rules_file": "zoning/districts.json",
         "observed_codes": summary["zoning_codes_observed"],
         "unmapped_codes": unmapped,
-        "note": "Allowances are stubs inferred from district titles. Chris should review every row against the current zoning code.",
+        "note": "allowed stays empty until a person cites a use-table section and sets use_table_read. needs_expert_review stays true. variance_or_exception is the optional list for types that likely need a variance or special exception.",
     }
     card = model_card()
     files = {
@@ -1004,6 +1022,7 @@ def write_outputs(neighborhoods, parcels, market, county_income, sources, transi
         "sources.json": sources,
         "score_model.json": card,
         "zoning_review.json": zoning_review,
+        "stops.geojson": _stops_collection(stops),
     }
     for name, payload in files.items():
         text = json.dumps(payload, separators=(",", ":")) if name.endswith(".geojson") else json.dumps(payload, indent=2)
@@ -1363,7 +1382,16 @@ def main(refresh=False):
             ),
         ]
     )
-    write_outputs(neighborhoods, parcels, market, county_income, sources, transit_meta, failures)
+    write_outputs(
+        neighborhoods,
+        parcels,
+        market,
+        county_income,
+        sources,
+        transit_meta,
+        failures,
+        stops=None if transit is None else transit.get("stops"),
+    )
     if failures:
         print("Completed with source failures:", ", ".join(item["name"] for item in failures), flush=True)
     else:

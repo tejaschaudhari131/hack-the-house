@@ -50,3 +50,35 @@ export function resolveZoning(code, rules) {
     codeUrl,
   }
 }
+
+/** Badge for a dropped housing type. Empty or unread rules are not treated as "not allowed." */
+export function dropZoningBadge(typeId, zoningInfo) {
+  const review = "Needs expert review. This is not a zoning determination."
+  if (!zoningInfo || zoningInfo.status !== "stub" || !zoningInfo.allowed) {
+    return {
+      id: "unreviewed",
+      label: "Needs expert review",
+      detail: `The use table was not read, so this type is not marked allowed, not marked as a variance, and not marked prohibited. ${review}`,
+    }
+  }
+  const variance = new Set(zoningInfo.district?.variance_or_exception || [])
+  if (zoningInfo.allowed.has(typeId)) {
+    return {
+      id: "allowed",
+      label: "Allowed",
+      detail: `The rules file lists this type as allowed. ${review}`,
+    }
+  }
+  if (variance.has(typeId)) {
+    return {
+      id: "variance",
+      label: "Likely needs variance or special exception",
+      detail: `The rules file lists this type as likely needing a variance or special exception. ${review}`,
+    }
+  }
+  return {
+    id: "not_allowed",
+    label: "Not allowed",
+    detail: `The rules file does not list this type as allowed. ${review}`,
+  }
+}

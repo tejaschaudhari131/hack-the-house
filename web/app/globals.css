@@ -19,6 +19,51 @@ body {
 }
 
 .banner-title { margin-left: auto; font-size: 14px; opacity: 0.9; }
+.mode-switch { display: flex; gap: 6px; }
+.mode-switch button { background: transparent; color: #fff; border-color: rgba(255, 255, 255, 0.45); }
+.mode-switch button.on { background: #fff; color: #3f2a1d; border-color: #fff; }
+
+.app.drop-mode { grid-template-columns: 1fr 640px; }
+.drop-map { height: 100%; width: 100%; }
+.building-pin {
+  width: 16px;
+  border: 2px solid #111827;
+  border-radius: 2px 2px 0 0;
+  box-shadow: 3px 5px 0 rgba(17, 24, 39, 0.35);
+}
+.palette { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.palette button { text-align: left; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+.palette i { width: 12px; height: 12px; display: inline-block; }
+.palette span { color: #52606d; font-size: 12px; }
+.palette button.on span { color: #e7e5e4; }
+.compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.drop-card {
+  border-left: 6px solid #999;
+  border-top: 1px solid #e4e7eb;
+  border-right: 1px solid #e4e7eb;
+  border-bottom: 1px solid #e4e7eb;
+  padding: 8px;
+  margin: 8px 0;
+  background: #fff;
+}
+.drop-card header { display: flex; justify-content: space-between; gap: 8px; font-weight: 600; }
+.drop-card.empty { background: transparent; }
+.score-line { margin-top: 8px; }
+.tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 1px 5px;
+  border-radius: 999px;
+  margin-right: 4px;
+}
+.tag.measured { background: #dbeafe; color: #1e3a8a; }
+.tag.choice { background: #fef3c7; color: #92400e; }
+.badge.allowed { background: #d1fae5; }
+.badge.variance { background: #ffedd5; }
+.badge.not_allowed { background: #fee2e2; }
+.badge.unreviewed { background: #fef3c7; }
 
 .app {
   display: grid;
@@ -132,7 +177,8 @@ button.text-button { border: 0; background: transparent; color: #1d4e89; padding
 .model p { font-size: 13px; }
 
 @media (max-width: 900px) {
-  .app { grid-template-columns: 1fr; height: auto; }
+  .app, .app.drop-mode { grid-template-columns: 1fr; height: auto; }
   .map-wrap { height: 70vh; }
   .banner-title { margin-left: 0; }
+  .compare-grid, .palette { grid-template-columns: 1fr; }
 }

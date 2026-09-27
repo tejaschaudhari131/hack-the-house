@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic"
 import { useEffect, useMemo, useState } from "react"
 
+import DropPanel from "./DropPanel.js"
 import ParcelPanel from "./ParcelPanel.js"
 import { DEFAULT_WEIGHTS, rankTypes } from "../lib/rank.js"
 import { resolveZoning } from "../lib/zoning.js"
@@ -10,6 +11,11 @@ import { resolveZoning } from "../lib/zoning.js"
 const MapView = dynamic(() => import("./MapView.js"), {
   ssr: false,
   loading: () => <div className="map-loading">Loading map…</div>,
+})
+
+const DropMap = dynamic(() => import("./DropMap.js"), {
+  ssr: false,
+  loading: () => <div className="map-loading">Loading 3D map…</div>,
 })
 
 export default function App() {
@@ -26,6 +32,11 @@ export default function App() {
   const [query, setQuery] = useState("")
   const [explanation, setExplanation] = useState(null)
   const [explaining, setExplaining] = useState(false)
+  const [mode, setMode] = useState("inspect")
+  const [stops, setStops] = useState(null)
+  const [activeType, setActiveType] = useState("townhouse_duplex")
+  const [activeSlot, setActiveSlot] = useState("A")
+  const [drops, setDrops] = useState([])
 
   useEffect(() => {
     let cancelled = false
@@ -56,6 +67,12 @@ export default function App() {
       }
     }
     load()
+    fetch("/data/stops.geojson")
+      .then((response) => (response.ok ? response.json() : null))
+      .then((json) => {
+        if (!cancelled && json) setStops(json)
+      })
+      .catch(() => {})
     return () => {
       cancelled = true
     }
@@ -151,18 +168,35 @@ export default function App() {
     }
   }
 
+  function dropOn(pin) {
+    setDrops((current) => {
+      const next = current.filter((item) => item.slot !== activeSlot)
+      next.push({ slot: activeSlot, pin, typeId: activeType })
+      return next
+    })
+    setActiveSlot((current) => (current === "A" ? "B" : current))
+  }
+
   return (
     <>
       <header className="banner">
         <strong>Screening aid only.</strong> This is not legal, zoning, financial, or permitting advice. A
         consequential decision should go to City Planning / the Zoning Administrator or a qualified professional.
+        <span className="mode-switch">
+          <button type="button" className={mode === "inspect" ? "on" : ""} onClick={() => setMode("inspect")}>
+            Click a parcel
+          </button>
+          <button type="button" className={mode === "drop" ? "on" : ""} onClick={() => setMode("drop")}>
+            Drop a building
+          </button>
+        </span>
         <span className="banner-title">Housing typology, equity, and climate matchmaker</span>
       </header>
-      <div className="app">
+      <div className={mode === "drop" ? "app drop-mode" : "app"}>
         <div className="map-wrap">
           {error ? <p className="map-loading">{error}. Run the pipeline, then reload.</p> : null}
           {!error && !parcels ? <p className="map-loading">Loading parcels…</p> : null}
-          {parcels && neighborhoods ? (
+          {parcels && neighborhoods && mode === "inspect" ? (
             <MapView
               parcels={parcels}
               neighborhoods={neighborhoods}
@@ -174,13 +208,51 @@ export default function App() {
               onSelect={setSelectedPin}
             />
           ) : null}
+          {parcels && neighborhoods && mode === "drop" ? (
+            <DropMap
+              parcels={parcels}
+              neighborhoods={neighborhoods}
+              stops={stops}
+              drops={drops}
+              focus={focus}
+              onDrop={dropOn}
+            />
+          ) : null}
           <ul className="legend">
             <li><i style={{ background: "#1d4e89" }} /> Single-family</li>
             <li><i style={{ background: "#0f766e" }} /> Townhouse / duplex</li>
             <li><i style={{ background: "#c2410c" }} /> Small apartment</li>
             <li><i style={{ background: "#9f1239" }} /> Large apartment</li>
+            {mode === "drop" ? (
+              <>
+                <li><i style={{ background: "#1d4ed8" }} /> 800 m walk ring</li>
+                <li><i style={{ background: "#111827" }} /> Stop inside the ring</li>
+              </>
+            ) : null}
           </ul>
         </div>
+        {mode === "drop" ? (
+          <DropPanel
+            summary={summary}
+            weights={weights}
+            onWeights={setWeights}
+            focus={focus}
+            onFocus={setFocus}
+            query={query}
+            onQuery={setQuery}
+            matches={matches}
+            onSelectPin={dropOn}
+            zoning={zoning}
+            stops={stops}
+            drops={drops}
+            activeType={activeType}
+            onType={setActiveType}
+            activeSlot={activeSlot}
+            onSlot={setActiveSlot}
+            onClear={(slot) => setDrops((current) => current.filter((item) => item.slot !== slot))}
+            byPin={byPin}
+          />
+        ) : (
         <ParcelPanel
           summary={summary}
           model={model}
@@ -201,6 +273,7 @@ export default function App() {
           explaining={explaining}
           onExplain={onExplain}
         />
+        )}
       </div>
     </>
   )

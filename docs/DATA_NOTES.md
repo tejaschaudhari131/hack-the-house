@@ -37,7 +37,7 @@ Block-group coordinates are NAD83 and are used as WGS84. That shift is small nex
 
 **Flood, slope, and mines.** These are three different maps with different update cycles. In this pull, steep slopes touch about 57% of Hazelwood parcels and about 15% of Lawrenceville parcels. Undermined areas show up on about 13% of Hazelwood parcels and on none of these Lawrenceville parcels. Mapped FEMA zones run the other way: about 6% of Lawrenceville parcels and under 1% of Hazelwood parcels. They are not combined into a single "Hazelwood is riskier" fact. Absence from the FEMA query is not a survey. Slope overlap is not a landslide. Mine overlap is not a safety determination.
 
-**Transit schedule versus the street.** Trip counts are the GTFS schedule for one weekday. They are not delay, crowding, or a sidewalk.
+**Transit schedule versus the street.** Trip counts are the GTFS schedule for one weekday. They are not delay, crowding, or a sidewalk. The drop-a-building ring uses the same stops, written to `stops.geojson` (name, weekday trip count, route ids). A stop is inside the ring when it is within 800 meters of the parcel point. The parcel score's trip count is still the 400 meter figure. Both are scheduled service.
 
 **List URL versus the file we could download.** Where the organizers' URL 404'd or the HTML page blocked this client, `sources.json` keeps the list URL and records `access_url` separately.
 

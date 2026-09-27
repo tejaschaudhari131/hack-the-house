@@ -16,7 +16,9 @@ On 2026-09-26, ecode360 returned HTTP 403 with a Cloudflare challenge (`cf-mitig
 - `needs_expert_review: true`
 - a `todo` that says to cite the use table before filling `allowed`
 
-The app ignores `allowed` until `use_table_read` is true and `code_section` is set. Until then it does not filter housing types. That is not a finding that every type is allowed. Do not fill `allowed` from the district title.
+The app ignores `allowed` until `use_table_read` is true and `code_section` is set. Until then it does not filter housing types, and the drop-a-building badge stays "Needs expert review" rather than "Not allowed." That is not a finding that every type is allowed. Do not fill `allowed` from the district title.
+
+Optional `variance_or_exception` is a list of housing-type ids that the drop badge should call "Likely needs variance or special exception." Leave it off until the use table, overlays, and exception rules have actually been read.
 
 Edit `districts.json`. The web app reads a copy at `web/public/data/zoning.json`.
 

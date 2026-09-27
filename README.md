@@ -40,7 +40,15 @@ npm test
 npm run dev
 ```
 
-Open http://localhost:3000. Click a parcel, move the sliders, and try the zoning what-if toggle. Each parcel result is a screening aid. Flag a result that looks wrong; the flag stays in that browser and is not sent to the City. A consequential decision should go to City Planning / the Zoning Administrator or a qualified professional. See [Human in the loop](#human-in-the-loop).
+Open http://localhost:3000. The default view is click a parcel. **Drop a building** is the second mode: pick one of the four types, click a parcel, and a block extrudes on that lot with an 800 meter walk ring. Drop a second building to compare them. Each result is a screening aid. Flag a result that looks wrong; the flag stays in that browser and is not sent to the City. A consequential decision should go to City Planning / the Zoning Administrator or a qualified professional. See [Human in the loop](#human-in-the-loop) and [Drop a building](#drop-a-building).
+
+### One-minute demo
+
+1. Open the app. Leave **Click a parcel** if you only want the original map.
+2. Choose **Drop a building**. Townhouse / duplex is already selected.
+3. Search `Butler` and click a Lawrenceville address. A block and an 800 m ring appear. Right-drag the map to tilt it.
+4. Small apartment is the next type if you click it. Search `Glenwood` and click a Hazelwood address. That fills Building B.
+5. Read the sentence **Why they rank differently**, then the two cards: homes added, the four scores, the weighted total, and whether each number is measured or a weighting choice. The zoning badge says needs expert review until a code section is cited.
 
 For a plain-language explanation, click "Explain the top two." With no API key, that uses a deterministic template. To use a model, copy `web/.env.example` to `web/.env.local` and set `LLM_API_KEY`. Optional: `LLM_BASE_URL` (default `https://api.openai.com/v1`) and `LLM_MODEL` (default `gpt-4o-mini`).
 
@@ -67,7 +75,19 @@ shared/rank_vector.json
                    One numeric example both the Python tests and the JS tests must match.
 ```
 
-The pipeline stores the zoning district code it found on each parcel. The browser reads `zoning.json` and decides what the stub rules allow. Turning on "what if zoning changed" ranks all four types and says so.
+The pipeline stores the zoning district code it found on each parcel. The browser reads `zoning.json` and, once a person has cited a code section, decides what those rules mark as allowed. Turning on "what if zoning changed" ranks all four types and says so. Until then the click-a-parcel view does not filter types.
+
+## Drop a building
+
+Click a parcel stays available from the banner. Drop a building is a second mode on the same parcels and the same scores.
+
+Pick one of the four types. Each has a default home count and height used only for the drawing and the "homes added" line: single-family 1 home / 8 m, townhouse/duplex 2 / 11 m, small apartment 12 / 15 m, large apartment 40 / 24 m. Those defaults do not change the score.
+
+Click a parcel. MapLibre draws a 3D block on the lot. An 800 meter ring (about a 10-minute walk) is drawn from the parcel. PRT stops inside that ring are marked, with a count of stops and weekday scheduled trips. If the parcel overlaps a FEMA flood zone or a 25%+ slope, that lot is tinted. The card shows homes added, demand, transit, equity, climate risk, and the weighted total. Each line is tagged measured or a weighting choice. The zoning badge reads the rules file: allowed, likely needs a variance or special exception, or not allowed, and always says it needs expert review. Because the use tables were not read, the badge currently says needs expert review rather than inventing a prohibition.
+
+Drop a second building, on the same parcel or another one, and the two cards sit side by side with a sentence on why one ranks higher. The disclaimer and the flag control stay on the card. The flag stays in the browser.
+
+Stop dots come from `data/processed/stops.geojson`, the same weekday GTFS counts as the parcel scores, limited to stops near the two neighborhoods.
 
 Composite score = weighted average of demand, transit, equity, and climate suitability (100 minus climate risk). A missing dimension is skipped. It is not treated as zero.
 
@@ -103,7 +123,7 @@ About 5% of clipped parcels (411 of 8,645) did not match an assessment row in ZI
 ## Libraries
 
 - Python: shapely, pyshp (and the standard library)
-- Web: Next.js, React, Leaflet, react-leaflet
+- Web: Next.js, React, Leaflet, react-leaflet, MapLibre GL (drop-a-building view only)
 - Basemap tiles: OpenStreetMap, attributed on the map
 
 No paid data product. No model is required for the scores. The optional explanation model is called only when `LLM_API_KEY` is set.
