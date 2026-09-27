@@ -3,11 +3,11 @@
 import { useEffect, useMemo, useState } from "react"
 
 import { AI_LABEL } from "./Explanation.js"
-import { describeComparison } from "../lib/comparison.js"
+import { ROUNDING_NOTE, describeComparison } from "../lib/comparison.js"
 import { NOT_EVALUATED, sourceList } from "../lib/explainFacts.js"
 import { PROMPT_VERSION } from "../lib/explainPrompt.js"
 import { describeFilters } from "../lib/explainSites.js"
-import { FACTORS, weightShares } from "../lib/factors.js"
+import { FACTORS, round1, weightShares } from "../lib/factors.js"
 import { nextActions } from "../lib/nextActions.js"
 import { matchPreset } from "../lib/presets.js"
 import { describeRobustness } from "../lib/robustness.js"
@@ -15,7 +15,7 @@ import { SITE_CAVEAT } from "../lib/sites.js"
 
 function fmt(value) {
   if (value === null || value === undefined) return "—"
-  const text = Number(value).toFixed(1)
+  const text = round1(value).toFixed(1)
   return text === "-0.0" ? "0.0" : text
 }
 
@@ -134,7 +134,7 @@ export default function DecisionBrief({ compare, weights, featureA, featureB, zo
         </table>
         <p className="report-small">
           Weights are relative (shares shown are normalized). Contribution = weight × suitability ÷ the sum of weights of
-          that scenario&apos;s available factors; risk factors count as 100 minus the value. Transit also enters the carbon
+          that scenario&apos;s available factors; risk factors count as 100 minus the value. {ROUNDING_NOTE} Transit also enters the carbon
           proxy, and need indicators enter both equity and displacement, so the factors are not independent.
           {preset ? ` Preset: ${preset.label} (a team-authored example, not a measured stakeholder preference).` : " Custom weights."}
         </p>
