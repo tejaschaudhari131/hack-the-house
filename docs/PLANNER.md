@@ -4,6 +4,8 @@
 
 Studio has one editable next-building draft, with no A/B controls. Cycle its housing type on the map or in Edit. In Rankings, **Compare to** adds any of the other four templates; **All types** compares all five, including triplex. **Expand comparison** opens the table at full width; **Back to map** returns to the same scene.
 
+Drag the sidebar's left divider to resize it, or focus the divider and use Left/Right arrows (Shift for larger steps). Enter or double-click restores the default width. **Hide sidebar** gives the map the full workspace; **Show sidebar** restores the panel and its width without clearing the scenario. On narrow screens the panel stacks below the map and can still be hidden.
+
 The current draft keeps its exact dimensions, height and placement. Other columns use standard templates. Every column uses the same rent, utilities, target income and priorities. Only selected types determine common evidence coverage across baseline/proposal. Missing evidence, zero weights and failed placement/use screens remain explicit. Multi-building totals still include the placed plan plus each next-building alternative. Selecting a compared type swaps it into the draft and retains the previous type as a standard comparison.
 
 Exports use schema 4 with `draft` and `comparisonTypes`, rather than `options.A/B`. The evaluator retains legacy A/B support for existing model fixtures; new Studio scenarios and exports do not contain hidden alternatives. Source parcel data and the seven factor calculations are unchanged. “Market fit” is a shorter display label; its existing market-activity/lot-fit formula is unchanged.

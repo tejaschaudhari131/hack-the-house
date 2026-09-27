@@ -365,3 +365,13 @@
 .studio .priority-slider .priority-raw { color: #65766a; }
 .studio .priority-slider > span { gap: 12px; }
 .studio .priority-slider b { white-space: nowrap; font-variant-numeric: tabular-nums; font-size: 12px; }
+
+/* The divider resizes only the inspector; MapLibre observes the map's new size. */
+.studio-workspace { grid-template-columns: minmax(0, 1fr) 8px var(--sidebar-width, 440px); }
+.sidebar-resizer { cursor: col-resize; touch-action: none; display: flex; align-items: center; justify-content: center; background: #edf2e9; z-index: 4; }
+.sidebar-resizer span { height: 44px; width: 3px; border-radius: 3px; background: #91a691; }
+.sidebar-resizer:hover, .sidebar-resizer:focus-visible { background: #cbdccb; outline: 2px solid #315b46; outline-offset: -2px; }
+.studio-workspace.sidebar-collapsed, .studio-workspace.is-comparing { grid-template-columns: minmax(0, 1fr); }
+.sidebar-collapsed .studio-inspector, .sidebar-collapsed .sidebar-resizer, .is-comparing .sidebar-resizer { display: none; }
+.studio .sidebar-toggle { padding: 8px 10px; font-size: 11px; white-space: nowrap; }
+@media (max-width: 760px) { .sidebar-resizer { display: none; } .studio-header-actions { flex-wrap: wrap; } }

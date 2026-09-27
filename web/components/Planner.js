@@ -13,6 +13,7 @@ import StudioPriorities from './StudioPriorities.js'
 import StudioSites from './StudioSites.js'
 import { studioSites } from '../lib/studioPresentation.js'
 import HousingComparison from './HousingComparison.js'
+import StudioWorkspace from './StudioWorkspace.js'
 import { evaluatePlanner, nearbyStops, preferredStop, round } from '../lib/plannerModel.js'
 import { EXAMPLES, MODEL_VERSION, PLANNER_FACTORS, MASSING_DEFAULTS, initialStudioScenario, historyFor, scenarioReducer, scenarioExport } from '../lib/plannerState.js'
 
@@ -153,7 +154,9 @@ function Studio({ data }) {
     window.history.replaceState(null, '', url)
   }, [scenario.pin])
   const selected = byPin.get(scenario.pin), props = selected.properties
-  const [tool, setTool] = useState('housing'), [proposed, setProposed] = useState(true), [view3d, setView3d] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [tool, setActiveTool] = useState('housing'), [proposed, setProposed] = useState(true), [view3d, setView3d] = useState(true)
+  function setTool(value) { setActiveTool(value); setSidebarOpen(true) }
   useEffect(() => {
     if (tool === 'housing') setView3d(true)
     else if (tool === 'network' || tool === 'service') setView3d(false)
@@ -255,13 +258,13 @@ function Studio({ data }) {
   }
 
   return <main className="studio">
-    <a className="skip-link" href="#planner-inspector">Skip to planning controls</a>
+    <a className="skip-link" href="#planner-inspector" onClick={() => setSidebarOpen(true)}>Skip to planning controls</a>
     <header className="studio-header">
       <div className="studio-brand"><span className="planner-brandmark"><Icon name="building"/></span><div><strong>Playhouse<span className="studio-beta">LAB</span></strong><small>Housing + infrastructure studio</small></div></div>
       <nav className="study-switch" aria-label="Study examples">{EXAMPLES.map((example, i) => <button key={example.id} className={props.area === example.label ? 'active' : ''} onClick={() => select(example.pin)}><span>0{i + 1}</span>{example.label}</button>)}</nav>
-      <div className="studio-header-actions"><button className="find-sites-button" onClick={() => { setTool('sites'); setInspectorTab('edit') }}>Find sites</button><button className="studio-export" onClick={download} disabled={!result || evaluation.pending}>Export scenario <span aria-hidden="true">↓</span></button></div>
+      <div className="studio-header-actions"><button className="sidebar-toggle" aria-expanded={sidebarOpen} aria-controls="planner-inspector" onClick={() => { if (tool === 'compare') setActiveTool('housing'); setSidebarOpen(!sidebarOpen) }}>{sidebarOpen ? 'Hide sidebar' : 'Show sidebar'}</button><button className="find-sites-button" onClick={() => { setTool('sites'); setInspectorTab('edit') }}>Find sites</button><button className="studio-export" onClick={download} disabled={!result || evaluation.pending}>Export scenario <span aria-hidden="true">↓</span></button></div>
     </header>
-    <div className={`studio-workspace ${tool === 'compare' ? 'is-comparing' : ''}`}>
+    <StudioWorkspace sidebarOpen={sidebarOpen} expanded={tool === 'compare'} map={
       <section className="studio-canvas" aria-label="Planning map">
         <PlannerMap parcels={mapParcels} neighborhoods={neighborhoods} stops={stops} existingBuildings={coloredBuildings} showExisting={showExisting} selected={selected} option={previewOption} stop={stop} proposed={proposed} additionalDepartures={scenario.additionalDepartures} view3d={view3d} onSelect={select} onStop={selectStop} tool={tool} placing={placing} onPlace={placeProposal} onHover={setHoverPoint} placedBuildings={result?.committed?.[proposed ? 'proposal' : 'baseline'] || []} network={network} networkResult={evaluated?.access} reservations={result?.reservations} connections={scenario.connections} drawing={drawing} draftNode={draftNode} onDraw={drawInfrastructure} discoveryPins={discoveryPins}/>
         {placing && <div className="placement-banner" role="status">Click to add {BUILDINGS[option.typeId].label}. Green: passes placement screen · red: needs review. <button onClick={() => setPlacing(false)}>Cancel placement</button></div>}
@@ -271,7 +274,7 @@ function Studio({ data }) {
         {tool === 'housing' && <div className="massing-tray"><div className="tray-top"><div><span className="eyebrow">CURRENT DRAFT</span><strong>{BUILDINGS[option.typeId].label}</strong></div><span className="option-chip">{BUILDINGS[option.typeId].units} homes</span></div><div className="type-cycler"><button aria-label="Previous housing type" onClick={() => cycle(-1)}>←</button><div className="type-dots">{BUILDING_IDS.map(id => <button key={id} title={BUILDINGS[id].label} aria-label={`Preview ${BUILDINGS[id].label}`} aria-pressed={id === option.typeId} className={id === option.typeId ? 'active' : ''} onClick={() => changeType(id)}><Icon name="building" size={18}/></button>)}</div><button aria-label="Next housing type" onClick={() => cycle(1)}>→</button></div><p>{option.width} × {option.depth} m footprint · {option.height} m high <span>Proposed dimensions</span></p></div>}
         <div className="canvas-legend"><label className="existing-toggle"><input type="checkbox" checked={showExisting} onChange={e => setShowExisting(e.target.checked)}/>Existing buildings</label>{USE_LEGEND.map(use => <span key={use.id}><i style={{ background: use.color }}/>{use.label}</span>)}<span><i className="legend-parcel"/> Site</span><span><i style={{background:"#0891b2"}}/> Current draft</span><span><i style={{background:PLACEMENT_COLORS.valid}}/> Placement passes</span><span><i style={{background:PLACEMENT_COLORS.invalid}}/> Review placement</span><span><i className="legend-stop"/> Stop</span><small>{contextError ? <button onClick={() => setContextAttempt(n => n + 1)}>Retry building layer</button> : context ? `${context.manifest.count.toLocaleString()} recorded outlines · lighter shades = simulated` : 'Loading building context…'} · Blue line: modeled walk to stop</small></div>
       </section>
-
+    }>
       <aside id="planner-inspector" className="studio-inspector" tabIndex={-1}>
         <div className="inspector-top">{tool === 'compare' && <button className="comparison-back" onClick={() => setTool('housing')}>← Back to map</button>}<div className="inspector-status"><span className="live-dot"/>{evaluation.pending ? 'Recalculating…' : 'Scenario ready'}<span>{MODEL_VERSION}</span></div><label className="site-search"><Icon name="pin" size={16}/><input aria-label="Search address or parcel ID" placeholder="Find an address or parcel…" value={query} onChange={e => setQuery(e.target.value)}/></label>{query.length > 1 && <div className="search-results">{matches.length ? matches.map(f => <button key={f.properties.pin} onClick={() => select(f.properties.pin)}>{f.properties.address || f.properties.pin}<small>{f.properties.neighborhood}</small></button>) : <p>No matching study parcels.</p>}</div>}</div>
         <nav className="inspector-tabs" aria-label="Inspector sections">{[['edit', tool === 'sites' ? 'Sites' : 'Edit'], ['rankings','Rankings'], ['priorities','Priorities'], ['assumptions','Assumptions']].map(([id,label]) => <button key={id} aria-pressed={inspectorTab === id} onClick={() => setInspectorTab(id)}>{label}</button>)}</nav>
@@ -335,7 +338,7 @@ function Studio({ data }) {
         </div>
         <footer className="inspector-footer"><span className="live-dot"/>Local scenario · public data · human review</footer>
       </aside>
-    </div>
+    </StudioWorkspace>
     <div className={notice ? 'network-notice' : 'planner-announcement'} role="status" aria-live="polite">{notice}{notice && <button aria-label="Dismiss notification" onClick={() => setNotice('')}>×</button>}</div>
   </main>
 }
