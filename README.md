@@ -26,7 +26,7 @@ Both views cover **all 90 City of Pittsburgh neighborhoods and 142,865 parcels**
 
 Both maps are limited to the bounding rectangle of Pittsburgh’s official neighborhood boundaries. Neighboring basemap areas can still appear inside that rectangle; their parcels are not included.
 
-Studio detail loads as you pan or select a site. Explorer loads the selected neighborhood; shared comparisons can fetch another neighborhood on demand. Close views show 3D buildings; wider views use flat footprints, then neighborhood outlines. A small cache makes revisiting areas faster. The active plan keeps its evidence even when its buildings are off screen.
+Studio shows detail for the selected neighborhood and its immediate adjoining neighborhoods, only where they are in view. Use the neighborhood picker to explore another part of the city. New downloads wait for the camera to settle and run two neighborhoods at a time. Explorer loads the selected neighborhood; shared comparisons can fetch another neighborhood on demand. Close views show 3D buildings; wider views use flat footprints, then neighborhood outlines. Off-screen detail is removed from rendering. The active plan keeps its full evidence even when its buildings are off screen. Geometry, heights and routing precision are unchanged.
 
 There is one editable **next-building draft**. Use **Compare to** to add other housing types to the comparison; all selected types share the same costs, priorities and evidence coverage. Each visitor has their own local Studio scenario. This is not a shared multiplayer session; export before reloading to keep a copy.
 

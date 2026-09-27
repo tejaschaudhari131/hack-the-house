@@ -3,12 +3,13 @@ import { gunzipSync } from 'node:zlib'
 import { createHash } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import { resolve } from 'node:path'
-import { geometryBounds, boundsOverlap } from '../lib/plannerGeometry.js'
+import { geometryBounds, boundsOverlap, geometriesOverlap } from '../lib/plannerGeometry.js'
 import { colorBuildingUses } from '../lib/buildingUses.js'
-import { collection, neighborhoodId, spatialIndex } from '../lib/studioData.js'
+import { collection, neighborhoodId, neighborhoodAdjacency, spatialIndex } from '../lib/studioData.js'
 
 // Legacy study partitioner retained for transport-parity regression tests.
 export function partitionStudioData(parcels, buildings, neighborhoods) {
+  const adjacency = neighborhoodAdjacency(neighborhoods)
   const colored = colorBuildingUses(buildings, new Map(parcels.features.map(f => [f.properties.pin, f])))
   const buildingBounds = colored.features.map(feature => ({ feature, bounds: geometryBounds(feature.geometry) }))
   const chunks = [], catalogue = [], descriptors = []
@@ -23,7 +24,7 @@ export function partitionStudioData(parcels, buildings, neighborhoods) {
     const chunk = { parcels: collection(features), buildings: collection(buildingBounds.filter(b => boundsOverlap(bounds, b.bounds)).map(b => b.feature)) }
     const content = JSON.stringify(chunk), hash = createHash('sha256').update(content).digest('hex').slice(0, 16)
     const file = `${id}.${hash}.json`
-    descriptors.push({ id, name, area: neighborhood.properties.group, bounds, file, parcels: features.length, buildings: chunk.buildings.features.length, bytes: Buffer.byteLength(content) })
+    descriptors.push({ id, name, neighbors: adjacency[id], area: neighborhood.properties.group, bounds, file, parcels: features.length, buildings: chunk.buildings.features.length, bytes: Buffer.byteLength(content) })
     chunks.push({ id, file, content, data: chunk })
     for (const f of features) catalogue.push([f.properties.pin, f.properties.address || '', id])
   }
@@ -51,6 +52,7 @@ export async function prepareStudioData() {
   const root = new URL('../public/data/', import.meta.url), destination = new URL('studio/', root)
   const source = new URL('../../pipeline/data/processed/', import.meta.url)
   const neighborhoods = await json(new URL('neighborhoods.geojson', root))
+  const adjacency = neighborhoodAdjacency(neighborhoods), neighborhoodIndex = spatialIndex(neighborhoods.features)
   if (neighborhoods.features.length !== 90) throw new Error('City release requires all 90 neighborhoods')
   // Remove obsolete hashed outputs: a local rebuild must match a clean deployment.
   await rm(destination, { recursive: true, force: true })
@@ -82,7 +84,12 @@ export async function prepareStudioData() {
       ;(pinLookup[p.pin.slice(0,3)] ||= {})[p.pin]=id
     }
   }
-  const buildings = colorBuildingUses(await gz(new URL('existing-buildings.geojson.gz',source)),uses), index=spatialIndex(buildings.features)
+  const buildings = colorBuildingUses(await gz(new URL('existing-buildings.geojson.gz',source)),uses)
+  for (const building of buildings.features) {
+    building.properties.display_neighborhoods = neighborhoodIndex.query(geometryBounds(building.geometry))
+      .filter(n => geometriesOverlap(n.geometry, building.geometry)).map(n => neighborhoodId(n.properties.name)).sort()
+  }
+  const index=spatialIndex(buildings.features)
   const network=await gz(new URL('walking-network.json.gz',source)), networkFiles=new Map()
   // Share nine buffered regional graphs instead of duplicating a large graph 90 times.
   const cityBoxes=neighborhoods.features.map(f=>geometryBounds(f.geometry))
@@ -118,7 +125,7 @@ export async function prepareStudioData() {
     }
     const favorite={'Hazelwood':'0056F00338000000','Lower Lawrenceville':'0049N00010000000'}[name]
     const example=parcels.features.find(f=>f.properties.pin===favorite) || parcels.features.find(f=>f.properties.vacant_lot && f.properties.lot_sqft>=3500 && f.properties.lot_sqft<30000 && f.properties.zoning_code) || parcels.features[0]
-    const descriptor={id,name,area,bounds,viewBounds:geometryBounds(n.geometry),examplePin:example?.properties.pin || null,parcels:parcels.features.length,buildings:footprints.length,parcelFiles:p.files,buildingFiles:b.files,bytes:[...p.sizes,...b.sizes].reduce((a,b)=>a+b,0),...networkFiles.get(region)}
+    const descriptor={id,name,area,neighbors:adjacency[id],bounds,viewBounds:geometryBounds(n.geometry),examplePin:example?.properties.pin || null,parcels:parcels.features.length,buildings:footprints.length,parcelFiles:p.files,buildingFiles:b.files,bytes:[...p.sizes,...b.sizes].reduce((a,b)=>a+b,0),...networkFiles.get(region)}
     descriptors.push(descriptor)
     manifest.maximumFileBytes=Math.max(manifest.maximumFileBytes,...p.sizes,...b.sizes,descriptor.networkBytes,descriptor.roadsBytes)
     console.log(`${name}: ${descriptor.parcels} parcels; ${(descriptor.bytes/1e6).toFixed(2)} MB split transport`)

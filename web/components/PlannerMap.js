@@ -11,14 +11,15 @@ import { configureMapWorkers } from '../lib/maplibreSetup.js'
 import { haversineMeters } from '../lib/geo.js'
 import { simulatedColor } from '../lib/buildingUses.js'
 import { buildingHeightDescription, buildingHeightSource } from '../lib/buildingHeights.js'
-import { DETAIL_ZOOM, spatialIndex } from '../lib/studioData.js'
+import { DETAIL_ZOOM, sameFeatureSet, spatialIndex } from '../lib/studioData.js'
+import { networkDisplayIndex } from '../lib/networkDisplay.js'
 
 const empty = () => ({ type: 'FeatureCollection', features: [] })
 const fc = features => ({ type: 'FeatureCollection', features })
 // Official neighborhood union extent: navigation bounds, not a polygon mask.
 
 
-export default function PlannerMap({ parcels, neighborhoods, stops, existingBuildings, showExisting, selected, buildingPreview, stop, proposed, additionalDepartures, view3d, onSelect, onStop, tool, placing, onPlace, onHover, placedBuildings = [], network, roadsFile, networkResult, reservations, connections, routes = [], drawing, draftNode, onDraw, discoveryPins = [], onViewport }) {
+export default function PlannerMap({ parcels, neighborhoods, stops, existingBuildings, showExisting, selected, buildingPreview, stop, proposed, additionalDepartures, view3d, onSelect, onStop, tool, placing, onPlace, onHover, placedBuildings = [], network, visibleNeighborhoodIds = [], networkResult, reservations, connections, routes = [], drawing, draftNode, onDraw, discoveryPins = [], onViewport }) {
   const container = useRef(null), mapRef = useRef(null), callbacks = useRef({ onSelect, onStop, tool, placing, onPlace })
   const [ready, setReady] = useState(false), [error, setError] = useState(null)
   const [viewport, setViewport] = useState(null)
@@ -29,7 +30,15 @@ export default function PlannerMap({ parcels, neighborhoods, stops, existingBuil
   const lastPin = useRef(null)
   const marker = useRef(null)
   const popup = useRef(null)
-  const networkDisplayed = useRef(false)
+  const uploaded = useRef(new Map())
+  const roadIndex = useMemo(() => tool === 'network' && network ? networkDisplayIndex(network, neighborhoods) : null, [tool, network, neighborhoods])
+  const visibleKey = visibleNeighborhoodIds.join('|')
+  const visibleRoads = useMemo(() => viewport?.zoom >= DETAIL_ZOOM && roadIndex ? roadIndex.query(viewport.bounds, visibleKey.split('|').filter(Boolean)) : [], [roadIndex, viewport, visibleKey])
+  function updateFeatures(id, features) {
+    if (sameFeatureSet(uploaded.current.get(id), features)) return
+    mapRef.current.getSource(id).setData(fc(features))
+    uploaded.current.set(id, features)
+  }
   callbacks.current = { onSelect, onStop, tool, placing, onPlace, onHover, drawing, onDraw, onViewport }
 
   useEffect(() => {
@@ -116,35 +125,35 @@ export default function PlannerMap({ parcels, neighborhoods, stops, existingBuil
       })
       map.on('mouseenter', 'parcel-fill', () => { map.getCanvas().style.cursor = callbacks.current.placing || callbacks.current.drawing ? 'crosshair' : 'pointer' })
       map.on('mouseleave', 'parcel-fill', () => { map.getCanvas().style.cursor = callbacks.current.placing || callbacks.current.drawing ? 'crosshair' : '' })
-      publishViewport()
+      publishViewport(true)
       setReady(true)
     })
     let viewportTimer = null
-    const publishViewport = () => {
+    const publishViewport = (loadNeighborhoods = false) => {
       clearTimeout(viewportTimer); viewportTimer = null
-      const bounds = map.getBounds(), dx = (bounds.getEast() - bounds.getWest()) * .35, dy = (bounds.getNorth() - bounds.getSouth()) * .35
-      const next = { zoom: map.getZoom(), bounds: [bounds.getWest() - dx, bounds.getSouth() - dy, bounds.getEast() + dx, bounds.getNorth() + dy] }
-      setViewport(next); callbacks.current.onViewport?.(next)
+      const bounds = map.getBounds()
+      const next = { zoom: map.getZoom(), bounds: [bounds.getWest(), bounds.getSouth(), bounds.getEast(), bounds.getNorth()] }
+      setViewport(next)
+      if (loadNeighborhoods) callbacks.current.onViewport?.(next)
       if (marker.current) marker.current.getElement().hidden = next.zoom < DETAIL_ZOOM
       if (next.zoom < DETAIL_ZOOM) popup.current?.remove()
     }
-    // A buffered view and throttled updates keep panning responsive without
-    // rebuilding GeoJSON or requesting neighborhoods on every animation frame.
-    map.on('move', () => { viewportTimer ??= setTimeout(publishViewport, 150) })
-    map.on('moveend', publishViewport)
-    map.on('resize', publishViewport)
+    // Cull existing detail while moving, but request new neighborhoods only after
+    // the camera settles. Zooming out cannot start a burst of intermediate loads.
+    map.on('move', () => { viewportTimer ??= setTimeout(() => publishViewport(false), 150) })
+    map.on('moveend', () => publishViewport(true))
+    map.on('resize', () => publishViewport(true))
     const observer = new ResizeObserver(() => map.resize())
     observer.observe(container.current)
-    return () => { clearTimeout(viewportTimer); observer.disconnect(); marker.current?.remove(); marker.current = null; popup.current?.remove(); map.remove(); mapRef.current = null; networkDisplayed.current = false }
+    return () => { clearTimeout(viewportTimer); observer.disconnect(); marker.current?.remove(); marker.current = null; popup.current?.remove(); map.remove(); mapRef.current = null; uploaded.current.clear() }
   }, [neighborhoods, stops])
 
   useEffect(() => {
     if (!ready || !viewport) return
     const pins = new Set(discoveryPins)
-    const map = mapRef.current
-    map.getSource('parcels').setData(fc(visibleParcels))
-    map.getSource('discovery').setData(fc(visibleParcels.filter(f => pins.has(f.properties.pin))))
-    map.getSource('existing-buildings').setData(fc(visibleBuildings))
+    updateFeatures('parcels', visibleParcels)
+    updateFeatures('discovery', visibleParcels.filter(f => pins.has(f.properties.pin)))
+    updateFeatures('existing-buildings', visibleBuildings)
   }, [ready, visibleParcels, visibleBuildings, discoveryPins])
   useEffect(() => {
     if (!ready) return
@@ -157,11 +166,11 @@ export default function PlannerMap({ parcels, neighborhoods, stops, existingBuil
   useEffect(() => {
     if (!ready) return
     const map = mapRef.current, visible = tool === 'network', point = selected && geometryCenter(selected.geometry)
-    if (visible && roadsFile && networkDisplayed.current !== roadsFile) { map.getSource('walking-network').setData(`/data/studio/${roadsFile}`); networkDisplayed.current = roadsFile }
     map.setLayoutProperty('network-line', 'visibility', visible ? 'visible' : 'none')
     map.getSource('network-nodes').setData(visible && network && point ? fc(network.nodes.flatMap((coordinates, id) => network.ground[id] && haversineMeters(...point, ...coordinates) < 600 ? [{ type: 'Feature', properties: { node: id }, geometry: { type: 'Point', coordinates } }] : [])) : empty())
     map.getSource('parks').setData(visible && network ? fc(network.parks.map(p => ({ type: 'Feature', properties: { name: p.name }, geometry: p.geometry }))) : empty())
-  }, [ready, tool, network, roadsFile, selected])
+  }, [ready, tool, network, selected])
+  useEffect(() => { if (ready) updateFeatures('walking-network', visibleRoads) }, [ready, visibleRoads])
 
   useEffect(() => {
     if (!ready) return
@@ -222,5 +231,5 @@ export default function PlannerMap({ parcels, neighborhoods, stops, existingBuil
     if (point) lastPin.current = selected.properties.pin
   }, [ready, selected, view3d])
 
-  return <><div ref={container} className="planner-map" data-detail-level={!viewport || viewport.zoom < DETAIL_ZOOM ? 'overview' : viewport.zoom < 16 ? 'footprints' : '3d'} data-visible-parcels={visibleParcels.length} data-visible-buildings={visibleBuildings.length} aria-label="3D parcel planning map. Select a parcel on the map or use the address search." />{error && <div className="planner-map-error" role="alert">{error}</div>}</>
+  return <><div ref={container} className="planner-map" data-detail-level={!viewport || viewport.zoom < DETAIL_ZOOM ? 'overview' : viewport.zoom < 16 ? 'footprints' : '3d'} data-visible-neighborhoods={visibleKey} data-visible-parcels={visibleParcels.length} data-visible-buildings={visibleBuildings.length} data-visible-roads={visibleRoads.length} aria-label="3D parcel planning map. Select a parcel on the map or use the address search." />{error && <div className="planner-map-error" role="alert">{error}</div>}</>
 }

@@ -138,7 +138,8 @@ export default function Planner() {
 
 function Studio({ data }) {
   const { manifest, neighborhoods, stops, zoning, summary, buildingManifest, initialChunk, initialPin } = data
-  const knownPins = useRef(new Map(initialChunk.data.parcels.features.map(f => [f.properties.pin, { id: initialChunk.id, properties: { pin:f.properties.pin, address:f.properties.address, neighborhood:f.properties.neighborhood, area:f.properties.area } }])))
+  const knownPins = useRef(null)
+  if (!knownPins.current) knownPins.current = new Map(initialChunk.data.parcels.features.map(f => [f.properties.pin, { id: initialChunk.id, properties: { pin:f.properties.pin, address:f.properties.address, neighborhood:f.properties.neighborhood, area:f.properties.area } }]))
   const catalogue = knownPins.current
   const [viewport, setViewport] = useState(null), [pendingPin, setPendingPin] = useState(null), [pendingHistory, setPendingHistory] = useState(null)
   const [showExisting, setShowExisting] = useState(true)
@@ -171,11 +172,13 @@ function Studio({ data }) {
   const historyTarget = pendingHistory === 'undo' ? history.past.at(-1) : pendingHistory === 'redo' ? history.future[0] : null
   const historyIds = historyTarget ? [...new Set([historyTarget.pin, ...(historyTarget.buildings || []).map(b => b.pin)].map(pin => catalogue.get(pin).id))] : []
   const extraIds = [...historyIds, ...(pendingPin ? [catalogue.get(pendingPin).id] : []), ...(tool === 'sites' ? manifest.neighborhoods.filter(n => n.area === catalogue.get(scenario.pin).properties.area).map(n => n.id) : [])]
-  const loaded = useNeighborhoodData(manifest, initialChunk, requiredIds, viewport, extraIds)
+  const loaded = useNeighborhoodData(manifest, initialChunk, requiredIds, viewport, extraIds, networkDescriptor.id, neighborhoods)
   const { parcels } = loaded
-  for (const [id, chunk] of loaded.chunks) for (const f of chunk.parcels.features) {
-    catalogue.set(f.properties.pin, { id, properties: { pin:f.properties.pin, address:f.properties.address, neighborhood:f.properties.neighborhood, area:f.properties.area } })
-  }
+  useMemo(() => {
+    for (const [id, chunk] of loaded.chunks) for (const f of chunk.parcels.features) {
+      catalogue.set(f.properties.pin, { id, properties: { pin:f.properties.pin, address:f.properties.address, neighborhood:f.properties.neighborhood, area:f.properties.area } })
+    }
+  }, [loaded.chunks, catalogue])
   const byPin = useMemo(() => new Map(parcels.features.map(f => [f.properties.pin, f])), [parcels])
   const selected = byPin.get(scenario.pin), props = selected.properties
   const mapParcels = useMemo(() => slimParcels(loaded.mapParcels), [loaded.mapParcels])
@@ -230,7 +233,7 @@ function Studio({ data }) {
   const nearby = useMemo(() => nearbyStops(selected, stops), [selected, stops])
   const stop = nearby.find(s => String(s.stop_id) === scenario.stopId) || null
   const buildingIndex = useMemo(() => context ? spatialIndex(context.buildings.features) : null, [context])
-  const loadedBuildingIndex = useMemo(() => spatialIndex(mergeNeighborhoods([...loaded.chunks.values()], 'buildings').features), [loaded.chunks])
+  const loadedBuildingIndex = useMemo(() => tool === 'network' ? spatialIndex(mergeNeighborhoods([...loaded.chunks.values()], 'buildings').features) : null, [loaded.chunks, tool])
   const nearbyBuildings = useMemo(() => {
     if (!buildingIndex) return null
     const bounds = geometryBounds(selected.geometry)
@@ -361,7 +364,7 @@ function Studio({ data }) {
     </header>
     <StudioWorkspace sidebarOpen={sidebarOpen} expanded={tool === 'compare'} map={
       <section className="studio-canvas" aria-label="Planning map">
-        <PlannerMap parcels={mapParcels} neighborhoods={neighborhoods} stops={stops} existingBuildings={loaded.mapBuildings} showExisting={showExisting} selected={selected} buildingPreview={buildingPreview} stop={stop} proposed={proposed} additionalDepartures={scenario.additionalDepartures} view3d={view3d} onSelect={select} onStop={selectStop} tool={tool} placing={placing} onPlace={placeProposal} onHover={setHoverPoint} placedBuildings={result?.committed?.[proposed ? 'proposal' : 'baseline'] || []} network={network} roadsFile={networkDescriptor.roadsFile} networkResult={evaluated?.access} reservations={result?.reservations} connections={scenario.connections} routes={scenario.routes || []} drawing={drawing} draftNode={draftNode} onDraw={drawInfrastructure} discoveryPins={discoveryPins} onViewport={setViewport}/>
+        <PlannerMap parcels={mapParcels} neighborhoods={neighborhoods} stops={stops} existingBuildings={loaded.mapBuildings} showExisting={showExisting} selected={selected} buildingPreview={buildingPreview} stop={stop} proposed={proposed} additionalDepartures={scenario.additionalDepartures} view3d={view3d} onSelect={select} onStop={selectStop} tool={tool} placing={placing} onPlace={placeProposal} onHover={setHoverPoint} placedBuildings={result?.committed?.[proposed ? 'proposal' : 'baseline'] || []} network={network} visibleNeighborhoodIds={loaded.visibleIds} networkResult={evaluated?.access} reservations={result?.reservations} connections={scenario.connections} routes={scenario.routes || []} drawing={drawing} draftNode={draftNode} onDraw={drawInfrastructure} discoveryPins={discoveryPins} onViewport={setViewport}/>
         <div className="map-detail-status" role="status">{loaded.error ? <button onClick={loaded.retry}>Neighborhood data unavailable · Retry</button> : pendingPin || pendingHistory || loaded.pending ? 'Loading neighborhood…' : viewport && viewport.zoom < DETAIL_ZOOM ? 'Zoom in for buildings and parcels' : null}</div>
         {placing && <div className="placement-banner" role="status">Click to add {housingSpec(option).label}. Green: passes placement screen · red: needs review. <button onClick={() => setPlacing(false)}>Cancel placement</button></div>}
         <nav data-tour="tools" className="studio-tools" aria-label="Planning tools">{[['sites', 'pin', 'Sites'], ['housing', 'building', 'Housing'], ['service', 'bus', 'Transit'], ['network', 'network', 'Infra'], ['compare', 'chart', 'Compare']].map(([id, icon, label]) => <button key={id} className={tool === id ? 'active' : ''} aria-pressed={tool === id} onClick={() => { setTool(id); setInspectorTab(id === 'compare' ? 'rankings' : 'edit') }}><Icon name={icon}/><span>{label}</span></button>)}<div className="tool-divider"/><button onClick={() => setView3d(!view3d)} aria-pressed={view3d}><Icon name="layers"/><span>{view3d ? '3D' : '2D'}</span></button></nav>

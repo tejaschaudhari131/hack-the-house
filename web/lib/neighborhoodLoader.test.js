@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { loadNeighborhood, locateNeighborhood } from './neighborhoodLoader.js'
+import { loadNeighborhood, locateNeighborhood, loadNeighborhoodBatch } from './neighborhoodLoader.js'
 import { regionalNetwork } from '../scripts/prepare-studio-data.mjs'
 const descriptor={id:'brookline',name:'Brookline',examplePin:'000ABC123',parcelFiles:['brookline-parcels.abc.json','brookline-parcels.def.json'],buildingFiles:['brookline-buildings.abc.json']}
 
@@ -41,4 +41,23 @@ test('regional graph remapping preserves one-way edges, costs, access nodes and 
   assert.deepEqual(region.edges,graph.edges)
   assert.deepEqual(region.parks,[{id:'p',nodes:[2]}])
   assert.equal(region.nodes.length,3)
+})
+
+test('camera loads have bounded concurrency, and cancellation drops queued and late results',async()=>{
+  const controller=new AbortController(), started=[], published=[], releases=[]
+  const pending=loadNeighborhoodBatch(['a','b','c','d'],id=>new Promise(resolve=>{started.push(id);releases.push(()=>resolve(id))}),controller.signal,(id)=>published.push(id))
+  assert.deepEqual(started,['a','b'])
+  releases.shift()(); await Promise.resolve(); await Promise.resolve()
+  assert.deepEqual(started,['a','b','c'])
+  assert.deepEqual(published,['a'])
+  controller.abort(); releases.forEach(release=>release()); await pending
+  assert.deepEqual(started,['a','b','c'],'d must never download')
+  assert.deepEqual(published,['a'],'aborted results must never enter the cache')
+})
+
+test('a failed neighborhood does not prevent other bounded loads from finishing',async()=>{
+  const published=[]
+  const errors=await loadNeighborhoodBatch(['a','b','c'],async id=>{if(id==='b')throw Error('missing b');return id},new AbortController().signal,id=>published.push(id))
+  assert.deepEqual(published.sort(),['a','c'])
+  assert.equal(errors[0].message,'missing b')
 })

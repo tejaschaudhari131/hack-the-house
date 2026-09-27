@@ -16,6 +16,22 @@ export async function loadNeighborhood(descriptor, signal, fetcher = fetch, with
   return { parcels: collection(parcels.flatMap(c => c.features)), buildings: collection(buildings.flatMap(c => c.features)) }
 }
 
+/** Limit simultaneous parse/download bursts; obsolete camera requests never start queued work. */
+export async function loadNeighborhoodBatch(ids, load, signal, onLoad, concurrency = 2) {
+  let next = 0
+  const errors = []
+  await Promise.all(Array.from({ length: Math.min(concurrency, ids.length) }, async () => {
+    while (next < ids.length && !signal.aborted) {
+      const id = ids[next++]
+      try {
+        const data = await load(id, signal)
+        if (!signal.aborted) onLoad(id, data)
+      } catch (error) { if (!signal.aborted) errors.push(error) }
+    }
+  }))
+  return errors
+}
+
 export async function locateNeighborhood(manifest, pin, signal, fetcher = fetch) {
   if (!/^[0-9A-Z]{6,24}$/.test(pin || '')) return null
   if (manifest.catalogue) return manifest.neighborhoods.find(n => n.id === manifest.catalogue.find(row => row[0] === pin)?.[2]) || null
