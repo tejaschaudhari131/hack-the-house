@@ -9,6 +9,7 @@
     "test": "node --test lib/rank.test.js lib/explainTemplate.test.js lib/zoning.test.js lib/drop.test.js"
   },
   "dependencies": {
+    "ai": "^7.0.116",
     "leaflet": "^1.9.4",
     "maplibre-gl": "^6.11.2",
     "next": "^15.5.4",
