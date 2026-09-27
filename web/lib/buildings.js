@@ -1,10 +1,22 @@
-/** Display defaults for a dropped building. Not measurements and not inputs to the score. */
-
+/** Display defaults for a dropped building. Not measurements and not inputs to the score.
+ * scoreType is the housing type whose score the building uses. useRow is the §911.02 row read for its unit count.
+ */
 export const BUILDINGS = {
-  single_family: { units: 1, heightM: 8, floors: 2 },
-  townhouse_duplex: { units: 2, heightM: 11, floors: 3 },
-  small_apartment: { units: 12, heightM: 15, floors: 4 },
-  large_apartment: { units: 40, heightM: 24, floors: 8 },
+  single_family: { label: "Single-family", units: 1, heightM: 8, floors: 2, scoreType: "single_family", useRow: "Single-Unit Detached" },
+  townhouse_duplex: { label: "Townhouse / duplex", units: 2, heightM: 11, floors: 3, scoreType: "townhouse_duplex", useRow: null },
+  triplex: { label: "Triplex (3 units)", units: 3, heightM: 11, floors: 3, scoreType: "small_apartment", useRow: "Three-Unit" },
+  small_apartment: { label: "Small apartment (12 units)", units: 12, heightM: 15, floors: 4, scoreType: "small_apartment", useRow: "Multi-Unit" },
+  large_apartment: { label: "Large apartment (40 units)", units: 40, heightM: 24, floors: 8, scoreType: "large_apartment", useRow: "Multi-Unit" },
+}
+
+export const BUILDING_IDS = Object.keys(BUILDINGS)
+
+/** Note shown wherever a building's unit count differs from what its score measures. */
+export function scoreProxyNote(buildingId) {
+  const spec = BUILDINGS[buildingId]
+  if (!spec) return ""
+  if (spec.scoreType === buildingId && buildingId !== "small_apartment" && buildingId !== "large_apartment") return ""
+  return `Scored with the ${spec.scoreType === "small_apartment" ? "small apartment (3–19 units)" : "large apartment (20+ units)"} score. The ${spec.units}-home count is a display default and does not change the score; permission is read from the §911.02 ${spec.useRow} row.`
 }
 
 export const WALK_RADIUS_M = 800

@@ -80,6 +80,52 @@ function cite(zoningInfo) {
   return `${section}. ${REVIEW}`
 }
 
+export const PERMISSION_CATEGORIES = {
+  permitted: "Permitted by right (P)",
+  partial: "Permitted for some unit counts only",
+  special: "Needs special approval (A, S, or C; not a variance)",
+  not_permitted: "Not permitted under the checked row",
+  unknown: "Unknown / not reviewed: check with the City",
+}
+
+const BADGE_TO_CATEGORY = {
+  allowed: "permitted",
+  partial: "partial",
+  approval: "special",
+  not_allowed: "not_permitted",
+  unreviewed: "unknown",
+}
+
+const CATEGORY_TO_BADGE = Object.fromEntries(Object.entries(BADGE_TO_CATEGORY).map(([badge, category]) => [category, badge]))
+
+/**
+ * Permission for a building with a specific unit count. `useRow` names the §911.02 row (Three-Unit, Multi-Unit, …).
+ * Without a row, falls back to the four-type badge. A missing district or row is unknown, never permitted.
+ */
+export function unitPermission(typeId, useRow, zoningInfo, units = null) {
+  if (!useRow || zoningInfo?.status !== "use_table") {
+    const badge = dropZoningBadge(typeId, zoningInfo)
+    const category = BADGE_TO_CATEGORY[badge.id] || "unknown"
+    return { category, badgeId: badge.id, label: badge.label, detail: badge.detail, useRow: null, letter: null }
+  }
+  const letter = zoningInfo.district?.use_rows?.[useRow]
+  let category
+  if (letter === undefined || letter === null) category = "unknown"
+  else if (String(letter).trim().toUpperCase() === "P") category = "permitted"
+  else if (String(letter).trim() === "") category = "not_permitted"
+  else category = "special"
+  const count = units ? `${units} units read from the ` : ""
+  const cell = letter === undefined || letter === null ? "not in the table" : letter === "" ? "blank" : letter
+  return {
+    category,
+    badgeId: CATEGORY_TO_BADGE[category],
+    label: category === "special" ? `Needs special approval (${cell})` : PERMISSION_CATEGORIES[category],
+    detail: `${count}§911.02 ${useRow} row for ${zoningInfo.code}: ${cell}. ${cite(zoningInfo)}`,
+    useRow,
+    letter: letter ?? null,
+  }
+}
+
 /** Badge for one housing type. A/S/C are special approval, not a variance. */
 export function dropZoningBadge(typeId, zoningInfo) {
   if (!zoningInfo || zoningInfo.status === "not_in_use_table" || zoningInfo.status === "unmapped" || zoningInfo.status === "no_zoning") {
