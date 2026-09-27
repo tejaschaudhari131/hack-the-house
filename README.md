@@ -50,9 +50,11 @@ Open http://localhost:3000. The default view is click a parcel. **Drop a buildin
 4. Small apartment is the next type if you click it. Search `Glenwood` and click a Hazelwood address. That fills Building B.
 5. Read the sentence **Why they rank differently**, then the two cards: homes added, the four scores, the weighted total, and whether each number is measured or a weighting choice. The zoning badge cites §911.02 and still says it needs expert review.
 
-For a plain-language explanation, click "Explain the top two." With no API key, that uses a deterministic template. To use a model, copy `web/.env.example` to `web/.env.local` and set `LLM_API_KEY`. Optional: `LLM_BASE_URL` (default `https://api.openai.com/v1`) and `LLM_MODEL` (default `gpt-4o-mini`).
+For a plain-language explanation, click "Explain the top two" on a parcel, "Explain this parcel" on a dropped building, or "Explain A vs B" once two buildings are dropped. The text streams from a language model through the Vercel AI Gateway and is labeled **AI-generated summary of the scores above; check sources**. With no gateway credentials, or if the model errors or times out, the same button returns the deterministic template and is labeled **Template explanation (no AI)** with the reason. See [AI explanations](#ai-explanations).
 
-On Vercel, set the project root to `web`. Put the key in the project environment, not in git.
+To use the model locally, copy `web/.env.example` to `web/.env.local` and set `AI_GATEWAY_API_KEY` (create one under AI Gateway → API Keys in the Vercel dashboard), or run `vercel link` then `vercel env pull .env.local` inside `web/` to get a short-lived OIDC token. Optional: `AI_MODEL` (default `anthropic/claude-haiku-4.5`), `AI_EXPLANATIONS=off` to force the template.
+
+On Vercel, set the project root to `web`. The gateway authenticates with the project's OIDC token automatically, so no key is needed there. Nothing in `web/` depends on running the Python pipeline at deploy time: the app and the explain API both read the committed files in `web/public/data/`.
 
 After Chris edits `zoning/districts.json`:
 
@@ -70,7 +72,9 @@ pipeline/          Tejas. Download, clean, score. Writes data/processed and web/
   score.py         Measured inputs vs normative anchors. No zoning allowances.
 zoning/            Chris. districts.json maps a zoning code to allowed housing types.
 web/               YY. Next.js map. Ranks on the client from the static GeoJSON.
-  app/api/explain  Template explanation, or an LLM if LLM_API_KEY is set.
+  app/api/explain  AI Gateway explanation grounded in server-side facts; template fallback.
+  lib/explainFacts.js, lib/explainPrompt.js, lib/explainHandler.js
+                   What the model may see, what it is told, and the guardrails.
 shared/rank_vector.json
                    One numeric example both the Python tests and the JS tests must match.
 ```
@@ -123,15 +127,32 @@ About 5% of clipped parcels (411 of 8,645) did not match an assessment row in ZI
 ## Libraries
 
 - Python: shapely, pyshp (and the standard library)
-- Web: Next.js, React, Leaflet, react-leaflet, MapLibre GL (drop-a-building view only)
+- Web: Next.js, React, Leaflet, react-leaflet, MapLibre GL (drop-a-building view only), Vercel AI SDK (`ai` v7) for explanations
 - Basemap tiles: OpenStreetMap, attributed on the map
 
-No paid data product. No model is required for the scores. The optional explanation model is called only when `LLM_API_KEY` is set.
+No paid data product. No model is required for the scores. A language model only writes the optional explanation text, and the template covers it when the model is not available.
 
 ## AI Tools Used
 
-- Cursor cloud agent, model Grok 4.7, used during the hackathon to scaffold the pipeline, the scoring model, and the first web app. The scoring rules are in `pipeline/score.py` and `data/processed/score_model.json` so a person can read and change them.
-- Optional explanation model: any OpenAI-compatible chat endpoint configured with `LLM_API_KEY`. The default model name is `gpt-4o-mini`. If the key is missing or the call fails, `web/lib/explainTemplate.js` writes the explanation from the same numbers. The demo does not depend on a model being up.
+- **Explanations in the app:** `anthropic/claude-haiku-4.5` (Anthropic Claude Haiku 4.5) through the [Vercel AI Gateway](https://vercel.com/docs/ai-gateway), called with the Vercel AI SDK. Set `AI_MODEL` to use another gateway model. The model writes prose only. It does not compute scores, choose weights, or read the zoning code. If it is unavailable, `web/lib/explainTemplate.js` writes the explanation from the same numbers, and the UI says so. The demo does not depend on a model being up.
+- **Writing the code:** Cursor cloud agents helped write this repository. Grok 4.7 scaffolded the pipeline, the scoring model, and the first web app. Claude Opus 5.5 wrote the AI Gateway explanation route, the grounding and guardrails, and their tests. People on the team reviewed the scoring rules, which are in `pipeline/score.py` and `data/processed/score_model.json` so anyone can read and change them.
+
+## AI explanations
+
+The model sees only what the server builds in `web/lib/explainFacts.js`, from the committed files in `web/public/data/`. The browser sends parcel PINs, housing types, the four weights, and the what-if toggle; it cannot put its own numbers into the prompt. For a parcel, the facts are the four types' demand, transit, equity, and climate scores and weighted totals, the weights, the §911.02 reading for each type (including whether it needs special approval, the legend, the mapping assumption, and `needs_expert_review`), the flood, steep-slope, undermined, transit, income, ACS, and CHAS inputs, and each input's source name, vintage, pull date, and caveat. Shares are converted to whole percents on the server so the model never does arithmetic. Owner and deed-party fields are not in the data, and the facts builder does not copy any field it does not name.
+
+The system prompt (`web/lib/explainPrompt.js`) asks for plain language for residents and planners. It asks the model to explain why the types or the two scenarios rank differently, keep measured findings apart from value judgments (the weights and scoring rules), state uncertainty and source vintages, use no number that is not in the facts, make no legal conclusion, and send real decisions to City Planning or a qualified professional.
+
+Guardrails (`web/lib/explainHandler.js`): at most 600 output tokens; a 15 second total timeout and 8 seconds to the first token; an in-memory cache keyed by a hash of the model, prompt version, and facts (6 hours, 500 entries); 6 AI requests per minute per IP and 60 per minute per server instance; a 4 KB request limit; strict input validation. Past a limit, or on any error, the reply is the template with a notice. Tests: `web/lib/explain.test.js` (uses the AI SDK's mock model, no network).
+
+How to check it locally: run `npm run dev` in `web/` with `AI_GATEWAY_API_KEY` set, click a parcel, and click "Explain the top two." The label under the button shows the model. Or call the API directly:
+
+```bash
+curl -N -X POST localhost:3000/api/explain -H 'content-type: application/json' \
+  -d '{"kind":"parcel","pin":"0049B00013000000","weights":{"demand":25,"transit":25,"equity":25,"climate":25}}' -D -
+```
+
+The `x-explain-source` header is `ai` or `template`, `x-explain-model` names the model, `x-explain-cache` is `hit` or `miss`, and `x-explain-notice` gives the reason for a template fallback. For two dropped buildings, send `{"kind":"compare","weights":{...},"a":{"pin":"...","typeId":"small_apartment"},"b":{"pin":"...","typeId":"townhouse_duplex"}}`.
 
 ## Human in the loop
 
