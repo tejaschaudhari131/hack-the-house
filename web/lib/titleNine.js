@@ -87,12 +87,7 @@ export function evaluateTitleNine({ option, feature, zoning, massing, existingBu
   }
   const compatibility = /^RM-(M|H|VH)$/.test(code || '') || ['NDO', 'LNC', 'NDI', 'UNC', 'HC', 'GI', 'UI', 'P'].includes(code)
   if (compatibility) {
-    const distance = inputs.residentialDistrictDistanceFt
-    add('compatibility', 'Residential compatibility', 'compatibility', 'unknown', 'Adjacent/across-street relationships, protected district boundaries, yards, screening, light and noise lack sufficient evidence. An entered distance can test the height limit only.', '916.01–916.07')
-    if (nonnegative(distance) && distance <= 100) {
-      compare('compat-height', 'Compatibility height (ft)', 'compatibility', option.height * FT, distance <= 50 ? 40 : 50, 'max', '916.02.B')
-      compare('compat-stories', 'Compatibility stories', 'compatibility', floors, distance <= 50 ? 3 : 4, 'max', '916.02.B')
-    }
+    add('compatibility', 'Residential compatibility', 'compatibility', 'unknown', 'Adjacent/across-street relationships, protected district boundaries, yards, screening, light and noise lack sufficient evidence.', '916.01–916.07')
   }
   // Proxies can trigger review, but cannot certify an overlay absent.
   add('overlays', 'Overlay coverage', 'overlays', inputs.overlayStatus === 'none' ? 'pass' : inputs.overlayStatus === 'present' ? 'conditional' : 'unknown', inputs.overlayStatus === 'none' ? 'User assumes no §906 overlay applies. Positive mapped hazard signals still require review below.' : 'Confirm adopted floodplain, landslide, undermining, view-protection and steep-slope overlays. Parcel hazard proxies are not the overlay map.')

@@ -1,16 +1,20 @@
 # Planning studio
 
-## Current interface: planner-screen-1.6
+## Current interface: planner-screen-1.7
+
+Studio now applies [supported Title Nine checks](TITLE_NINE.md) before scoring. A supported zoning conflict or a failed physical fit produces no housing total. Unsupported rules are **Not assessed** and excluded from eligibility. Each type has an expandable list of checks, code links and exclusions. All proposed buildings on a lot share FAR/coverage totals; project-wide IZ counts are rechecked for each alternative.
+
+Under **Assumptions → Advanced options**, enter exact stories and choose duplex versus attached-house form. **Additional zoning evidence** holds optional parcel-specific parking, grading, tree, landscaping and IZ inputs. Blank fields remain unknown; entered values are scenario assumptions. Undo/redo and exports retain these inputs.
 
 Studio has one editable next-building draft, with no A/B controls. Cycle its housing type on the map or in Edit. In Rankings, **Compare to** adds any of the other four templates; **All types** compares all five, including triplex. **Expand comparison** opens the table at full width; **Back to map** returns to the same scene.
 
 Drag the sidebar's left divider to resize it, or focus the divider and use Left/Right arrows (Shift for larger steps). Enter or double-click restores the default width. **Hide sidebar** gives the map the full workspace; **Show sidebar** restores the panel and its width without clearing the scenario. On narrow screens the panel stacks below the map and can still be hidden.
 
-The housing draft appears automatically as a translucent preview, including when its outline does not fit or overlaps an existing building. Green means the outline, overlap and mapped-use checks pass; red means review is needed; grey means checks are updating. The preview keeps the proposed dimensions and does not add a building or remove existing buildings. **Add building to plan** saves a passing draft; **Place manually** lets you choose a position with a map click. This supersedes the hidden-invalid-preview behavior described in older sections below.
+The housing draft appears automatically as a translucent preview, including when its outline does not fit or overlaps an existing building. Green means no supported conflict was found; the label discloses excluded checks. Red means a supported zoning conflict or failed/unavailable physical fit; grey means checks are updating. The preview keeps the proposed dimensions and does not add a building or remove existing buildings. **Add building to plan** saves a draft with a clear footprint and no supported zoning conflict; **Place manually** rechecks the clicked position. This supersedes the hidden-invalid-preview behavior described in older sections below.
 
 The current draft keeps its exact dimensions, height and placement. Other columns use standard templates. Every column uses the same rent, utilities, target income and priorities. Only selected types determine common evidence coverage across baseline/proposal. Missing evidence, zero weights and failed placement/use screens remain explicit. Multi-building totals still include the placed plan plus each next-building alternative. Selecting a compared type swaps it into the draft and retains the previous type as a standard comparison.
 
-Exports use schema 4 with `draft` and `comparisonTypes`, rather than `options.A/B`. The evaluator retains legacy A/B support for existing model fixtures; new Studio scenarios and exports do not contain hidden alternatives. Source parcel data and the seven factor calculations are unchanged. “Market fit” is a shorter display label; its existing market-activity/lot-fit formula is unchanged.
+Exports use schema 5 with `draft`, `comparisonTypes`, parcel-keyed `zoningInputsByPin` and `projectInputs`, rather than `options.A/B`. The evaluator retains legacy A/B support for existing model fixtures; new Studio scenarios and exports do not contain hidden alternatives. Source parcel data and the seven factor calculations are unchanged. “Market fit” is a shorter display label; its existing market-activity/lot-fit formula is unchanged.
 
 Priorities are relative weights, normalized over the factors with shared evidence. Multiplying every weight by the same positive number leaves scores and rankings unchanged. Sliders show their effective percentage of the score and allow increments of 1. **Equal priorities** gives each available factor equal influence; **All off** disables ranking. Missing evidence and zero weights are excluded explicitly. Preset matching uses relative proportions, too.
 

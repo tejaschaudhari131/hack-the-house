@@ -101,7 +101,7 @@ export function fitMassing(geometry, width, depth, placement = null, existingBui
     if (![placement.east, placement.north, placement.bearing].every(Number.isFinite)) return { fits: false, geometry: null, reason: 'Invalid placement.' }
     const rect = rectangle(placement.east, placement.north, width, depth, -placement.bearing * Math.PI / 180)
     const candidate = makeGeometry(rect), fits = polygons(geometry).some(rings => rectangleInside(rect, rings.map(r => r.map(project))))
-    return { fits, geometry: candidate, placement, mode: 'manual', collisions: collisionCount(candidate), reason: fits ? 'Your exact placement fits the parcel outline. Setbacks, access, height and engineering are not checked.' : 'Your placement crosses or touches the parcel boundary or a hole. Move or rotate it; its size and position have not been changed automatically.' }
+    return { fits, geometry: candidate, placement, mode: 'manual', collisions: collisionCount(candidate), reason: fits ? 'Your exact placement fits the parcel outline. Outline check only; see separate zoning checks. Access and engineering are unreviewed.' : 'Your placement crosses or touches the parcel boundary or a hole. Move or rotate it; its size and position have not been changed automatically.' }
   }
   let occupiedFit = null
   for (const rings of polygons(geometry)) {
@@ -121,7 +121,7 @@ export function fitMassing(geometry, width, depth, placement = null, existingBui
       const rect = rectangle(x, y, width, depth, angle)
       if (rectangleInside(rect, polygon)) {
         const candidate = makeGeometry(rect), collisions = collisionCount(candidate)
-        const result = { fits: true, geometry: candidate, placement: { east: x, north: y, bearing: ((-angle * 180 / Math.PI) % 360 + 360) % 360 }, mode: 'parcel', collisions, reason: 'Aligned to a parcel edge, prioritizing its longest edge. This does not identify street frontage. Setbacks, access, height and engineering are not checked.' }
+        const result = { fits: true, geometry: candidate, placement: { east: x, north: y, bearing: ((-angle * 180 / Math.PI) % 360 + 360) % 360 }, mode: 'parcel', collisions, reason: 'Aligned to a parcel edge, prioritizing its longest edge. This does not identify street frontage. Outline check only; see separate zoning checks. Access and engineering are unreviewed.' }
         if (!collisions) return result
         occupiedFit ||= result
       }

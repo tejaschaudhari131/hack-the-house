@@ -12,6 +12,7 @@ Explore housing and infrastructure decisions on a 3D map of Pittsburgh.
 - Previews the draft automatically, with green/red placement status, before adding it to the plan.
 - Tests walking connections, streets with sidewalks, parks and added service at existing bus stops.
 - Shows factor scores, tradeoffs, adjustable priorities and the assumptions behind them.
+- Checks supported Title Nine rules. A zoning conflict or failed physical fit removes the housing score; rules without enough evidence are marked **Not assessed**.
 - Keeps exact income, rent, utilities and building dimensions under **Assumptions → Advanced options**.
 - Supports undo/redo and scenario JSON export.
 
@@ -66,6 +67,7 @@ Policy review remains deferred for planning boundaries, existing/proposed labels
 ## Project guide
 
 - [Studio behavior, calculations and limits](docs/PLANNER.md)
+- [Title Nine checks and evidence limits](docs/TITLE_NINE.md)
 - [Public data sources](docs/DATA_SOURCES.md) and [data notes](docs/DATA_NOTES.md)
 - [Explorer model card](docs/MODEL_CARD.md), [validation](docs/VALIDATION.md) and [demo script](docs/DEMO_SCRIPT.md)
 - [Data pipeline](pipeline/README.md) and [zoning rules](zoning/README.md)

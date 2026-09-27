@@ -448,3 +448,20 @@ button.explain { font-weight: 700; }
   .steps ol button { padding: 6px 10px; }
   .brief-screen .print-brief { overflow-x: auto; }
 }
+/* Studio zoning evidence: terse summary, details on demand. */
+.studio .zoning-checks > summary { flex-wrap: wrap; gap: 4px 10px; }
+.studio .zoning-checks > ul, .studio .zoning-checks details > ul { list-style: none; padding: 0; margin: 10px 0; }
+.studio .zoning-rule { padding: 9px 0; border-bottom: 1px solid #e2e8f0; }
+.studio .zoning-rule > div { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.studio .zoning-rule strong { font-size: 12px; }
+.studio .zoning-rule span { font-size: 11px; color: #52616b; }
+.studio .zoning-rule.conflict span { color: #b42318; font-weight: 700; }
+.studio .zoning-rule.pass span { color: #167247; }
+.studio .zoning-rule p { font-size: 12px; line-height: 1.5; margin: 4px 0 0; }
+.studio .zoning-checks a { color: #17677d; white-space: nowrap; }
+.studio .zoning-checks details, .studio .zoning-inputs > details { margin: 12px 0; }
+.studio .zoning-checks details > summary, .studio .zoning-inputs > details > summary { cursor: pointer; font-size: 12px; font-weight: 600; padding: 8px 0; }
+.studio .zoning-checks.compact { margin: 8px 0; padding: 6px; }
+.studio .zoning-checks.compact > summary { display: block; }
+.studio .zoning-checks.compact > summary span { display: block; }
+.studio .zoning-inputs small { display: block; line-height: 1.5; color: #52616b; }
