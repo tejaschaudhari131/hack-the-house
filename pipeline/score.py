@@ -23,6 +23,8 @@ TYPE_LABELS = {
     "large_apartment": "Large apartment (20+ units)",
 }
 
+DEFAULT_WEIGHTS = {"demand": 25, "transit": 25, "equity": 25, "climate": 25, "displacement": 15, "carbon": 15}
+
 # Value judgments. Changing these changes scores without any new observation.
 NORMATIVE = {
     "demand_market_weight": 0.5,
@@ -51,6 +53,40 @@ NORMATIVE = {
         "small_apartment": {"production": 0.80, "displacement_exposure": 0.55, "climate_exposure": 1.00},
         "large_apartment": {"production": 0.95, "displacement_exposure": 0.85, "climate_exposure": 1.08},
     },
+    # Displacement-risk screen. Anchors map each tract input onto 0-1.
+    "displacement_renter_share_low": 0.25,
+    "displacement_renter_share_high": 0.75,
+    "displacement_chas_low": 0.30,
+    "displacement_chas_high": 0.80,
+    "displacement_rent_change_vs_county_low": 0.0,
+    "displacement_rent_change_vs_county_high": 0.30,
+    "displacement_vulnerability_weight": 0.5,
+    "displacement_pressure_weight": 0.5,
+    # Marginal-carbon estimate. Embodied tiers are coarse on purpose: the cited studies
+    # separate new single-family homes from multi-unit homes, but do not reliably
+    # separate the three multi-unit types from each other per home.
+    "carbon_embodied_tier": {
+        "single_family": 1.0,
+        "townhouse_duplex": 0.6,
+        "small_apartment": 0.6,
+        "large_apartment": 0.6,
+    },
+    "carbon_operational_weight": 0.5,
+    "carbon_embodied_weight": 0.5,
+    "carbon_building_weight": 0.6,
+    "carbon_transport_weight": 0.4,
+}
+
+# Published, not chosen: EIA RECS 2020 Table CE1.2 (Northeast census region), average
+# annual site energy per household in million Btu, by housing unit type.
+# https://www.eia.gov/consumption/residential/data/2020/c&e/xls/ce1.2.xlsx
+# Townhouse / duplex uses single-family attached. Small apartment uses 2-4 units,
+# which is the conservative end of a 3-19 unit building. Large apartment uses 5+ units.
+RECS_2020_NORTHEAST_MMBTU = {
+    "single_family": 120.7,
+    "townhouse_duplex": 85.4,
+    "small_apartment": 68.0,
+    "large_apartment": 36.2,
 }
 
 
@@ -315,6 +351,72 @@ def climate_risk(housing_type, base):
     return clamp100(base * exposure)
 
 
+def displacement_risk(renter_share, chas_rent_burden_share, rent_change_vs_county):
+    """Tract-level displacement screen. A screening signal, not a prediction.
+
+    Vulnerability is the average of the renter share and the CHAS low-income renter
+    cost-burden share. Pressure is how much faster median gross rent rose than the
+    county's between the 2015-2019 and 2020-2024 ACS. The risk blends the two.
+    A missing input is dropped. Returns (risk 0-100 or None, parts dict).
+    """
+    renter = _anchor(
+        renter_share,
+        NORMATIVE["displacement_renter_share_low"],
+        NORMATIVE["displacement_renter_share_high"],
+    )
+    burden = _anchor(
+        chas_rent_burden_share,
+        NORMATIVE["displacement_chas_low"],
+        NORMATIVE["displacement_chas_high"],
+    )
+    pressure = _anchor(
+        rent_change_vs_county,
+        NORMATIVE["displacement_rent_change_vs_county_low"],
+        NORMATIVE["displacement_rent_change_vs_county_high"],
+    )
+    vulnerability = _weighted_present([(renter, 1.0), (burden, 1.0)])
+    risk = _weighted_present(
+        [
+            (vulnerability, NORMATIVE["displacement_vulnerability_weight"]),
+            (pressure, NORMATIVE["displacement_pressure_weight"]),
+        ]
+    )
+    parts = {
+        "renter_component": None if renter is None else round(renter, 3),
+        "cost_burden_component": None if burden is None else round(burden, 3),
+        "rent_pressure_component": None if pressure is None else round(pressure, 3),
+        "vulnerability": None if vulnerability is None else round(vulnerability, 3),
+    }
+    return (None if risk is None else clamp100(100 * risk)), parts
+
+
+def carbon_building_relative(housing_type):
+    """Operational (RECS, published) and embodied (tier, a choice) per home, 0-1."""
+    operational = RECS_2020_NORTHEAST_MMBTU[housing_type] / RECS_2020_NORTHEAST_MMBTU["single_family"]
+    embodied = NORMATIVE["carbon_embodied_tier"][housing_type]
+    return (
+        NORMATIVE["carbon_operational_weight"] * operational
+        + NORMATIVE["carbon_embodied_weight"] * embodied
+    )
+
+
+def carbon_index(housing_type, transit):
+    """Relative marginal-carbon estimate per new home, 0-100. Higher means more.
+
+    Not tonnes of CO2. The building part varies by type. The transport part is
+    100 minus the transit score, the same for every type on a parcel.
+    """
+    building = carbon_building_relative(housing_type)
+    transport = None if transit is None else clamp(1 - float(transit) / 100)
+    value = _weighted_present(
+        [
+            (building, NORMATIVE["carbon_building_weight"]),
+            (transport, NORMATIVE["carbon_transport_weight"]),
+        ]
+    )
+    return None if value is None else clamp100(100 * value)
+
+
 def demand_score(housing_type, heat, lot_sqft):
     if heat is None:
         return None, lot_fit(lot_sqft, housing_type)
@@ -374,6 +476,18 @@ def confidence_for(parcel, neighborhood, census_note_extra=None):
         notes.append(
             "Undermined areas did not load, so mine-subsidence screening is not in the climate score."
         )
+    if "renter_share" in parcel and parcel.get("renter_share") is None:
+        notes.append("The ACS renter share is missing for this tract, so the displacement screen leaves it out.")
+    if "rent_change_vs_county" in parcel and parcel.get("rent_change_vs_county") is None:
+        notes.append(
+            "No comparable 2015-2019 rent for this tract (boundary changed in 2020 or the estimate is missing), "
+            "so the displacement screen has no rent-pressure input here."
+        )
+    if str(parcel.get("rent_2019_geography") or "").startswith("parent_2010_tract"):
+        notes.append(
+            "This tract was split in 2020. Its 2015-2019 rent is the larger 2010 tract it sits inside, "
+            "so the rent-pressure input is approximate."
+        )
     sales = int(neighborhood.get("valid_sales") or 0)
     if sales < NORMATIVE["min_valid_sales_for_price"]:
         score -= 0.10
@@ -424,6 +538,11 @@ def score_parcel(parcel, neighborhood, county_median_income):
         parcel.get("undermined_available", True),
     )
     conf, conf_label, notes = confidence_for(parcel, neighborhood)
+    place_displacement, displacement_parts = displacement_risk(
+        parcel.get("renter_share"),
+        parcel.get("chas_rent_burden_share"),
+        parcel.get("rent_change_vs_county"),
+    )
     fits = {}
     scores = {}
     for housing_type in HOUSING_TYPES:
@@ -434,6 +553,8 @@ def score_parcel(parcel, neighborhood, county_median_income):
             "transit": transit,
             "equity": equity_score(housing_type, need_for_equity, displacement if heat is not None else None),
             "climate_risk": climate_risk(housing_type, base),
+            "displacement_risk": place_displacement,
+            "carbon_index": carbon_index(housing_type, transit),
             "confidence": conf,
             "confidence_label": conf_label,
         }
@@ -457,6 +578,10 @@ def score_parcel(parcel, neighborhood, county_median_income):
         "undermined_component": None if undermined_component is None else round(undermined_component, 1),
         "steep_slope_role": "landslide_risk_proxy",
         "climate_base": None if base is None else round(base, 1),
+        "displacement_risk": place_displacement,
+        **displacement_parts,
+        "carbon_building": {key: round(carbon_building_relative(key), 3) for key in HOUSING_TYPES},
+        "carbon_transport": None if transit is None else round(clamp(1 - transit / 100), 3),
     }
     return {
         "scores": scores,
@@ -470,18 +595,22 @@ def score_parcel(parcel, neighborhood, county_median_income):
 def composite(type_score, weights):
     """Weighted mean. Missing dimensions are left out, not treated as zero.
 
-    weights keys: demand, transit, equity, climate.
-    climate is applied to climate suitability (100 - climate_risk).
+    weights keys: demand, transit, equity, climate, displacement, carbon.
+    climate, displacement, and carbon are "higher is worse" inputs, so each is
+    applied as 100 minus the value.
     """
-    suitability = None
-    risk = type_score.get("climate_risk")
-    if risk is not None:
-        suitability = 100 - float(risk)
+
+    def inverted(key):
+        value = type_score.get(key)
+        return None if value is None else 100 - float(value)
+
     parts = [
         (type_score.get("demand"), weights.get("demand", 0)),
         (type_score.get("transit"), weights.get("transit", 0)),
         (type_score.get("equity"), weights.get("equity", 0)),
-        (suitability, weights.get("climate", 0)),
+        (inverted("climate_risk"), weights.get("climate", 0)),
+        (inverted("displacement_risk"), weights.get("displacement", 0)),
+        (inverted("carbon_index"), weights.get("carbon", 0)),
     ]
     num = 0.0
     den = 0.0
@@ -592,10 +721,50 @@ def model_card():
                     "A small exposure multiplier by housing type (more homes, slightly higher risk)",
                 ],
             },
+            {
+                "id": "displacement_risk",
+                "label": "Displacement risk (screening signal)",
+                "higher_means": (
+                    "More signs that current renters here are vulnerable and rents are rising faster than the county. "
+                    "Ranking uses 100 minus this number. It is a screening signal, not a prediction that anyone will be displaced."
+                ),
+                "measured": [
+                    "Renter-occupied share of occupied housing units, census tract (ACS 2024 5-year B25003)",
+                    "Share of renter households at or below 80 percent of HAMFI paying more than 30 percent of income, census tract (HUD CHAS 2018-2022 Table 8)",
+                    "Change in tract median gross rent from the 2015-2019 to the 2020-2024 ACS 5-year (B25064), minus the Allegheny County change over the same two periods. Non-overlapping samples. Only tracts whose 2020 boundary matches the 2010 tract (95 percent land-area overlap both ways) are compared.",
+                ],
+                "normative": [
+                    "Anchors: renter share 25 to 75 percent, CHAS cost burden 30 to 80 percent, rent growth 0 to 30 percentage points above the county",
+                    "Vulnerability (renter share and cost burden, averaged) and pressure (rent growth) weighted 50/50. A missing input is dropped.",
+                    "The same value for every housing type on a parcel. Evidence on whether a given building type adds to or relieves local displacement is mixed, so the screen does not guess.",
+                    "The slider prefers lower-risk places. A CDC pursuing anti-displacement housing can set it to 0 and filter for high-risk tracts in Find Sites instead.",
+                    "Overlaps the equity score's sales-heat penalty on purpose: that term is neighborhood sale prices; this one is tract renters and rents.",
+                ],
+            },
+            {
+                "id": "carbon_index",
+                "label": "Marginal carbon (estimate)",
+                "higher_means": (
+                    "More estimated greenhouse gas per new home from building form and travel. A relative index from 0 to 100, "
+                    "not tonnes of CO2. Ranking uses 100 minus this number."
+                ),
+                "measured": [
+                    "Average annual site energy per household by housing type, Northeast census region, EIA RECS 2020 Table CE1.2: single-family detached 120.7, single-family attached 85.4, apartments in 2-4 unit buildings 68.0, apartments in 5+ unit buildings 36.2 million Btu. Existing homes of all ages, not new construction.",
+                    "Embodied GHG per new home is higher for new single-unit buildings than for new units in large multi-unit buildings (Zuluaga and Saxe 2025, city medians about 79,000-102,000 versus 39,000-60,000 kgCO2e per dwelling). Low-rise multi-unit (missing middle) housing averaged lower embodied GHG per bedroom than single-family and mid/high-rise buildings (Rankin et al. 2024).",
+                    "Transit score for the parcel, as a proxy for household travel emissions",
+                ],
+                "normative": [
+                    "Embodied carbon is a relative tier, not a measured number: 1.0 for single-family and 0.6 for the three multi-unit types. The studies do not reliably separate the multi-unit types per home.",
+                    "Townhouse / duplex uses the RECS single-family attached figure; small apartment uses the 2-4 unit figure (conservative); large apartment uses the 5+ unit figure",
+                    "Operational and embodied weighted 50/50 inside the building part; building 60 percent and transport 40 percent of the index",
+                    "Transport is 100 minus the transit score, the same for every type on a parcel. No vehicle-miles or emissions number is claimed.",
+                ],
+            },
         ],
         "composite": (
-            "Weighted average of demand, transit, equity, and climate suitability "
-            "(100 - climate risk). Weights are the sliders and are value judgments. "
+            "Weighted average of demand, transit, equity, climate suitability (100 - climate risk), "
+            "lower displacement risk (100 - displacement risk), and lower carbon (100 - carbon index). "
+            "Weights are the sliders and are value judgments. "
             "Missing dimensions are skipped, not filled with zero."
         ),
         "confidence": (
@@ -603,5 +772,13 @@ def model_card():
             "or thin. It does not say whether the value judgments are good ones."
         ),
         "normative_choices": NORMATIVE,
-        "default_weights": {"demand": 25, "transit": 25, "equity": 25, "climate": 25},
+        "published_inputs": {
+            "recs_2020_northeast_site_mmbtu_per_household": RECS_2020_NORTHEAST_MMBTU,
+            "recs_source": "https://www.eia.gov/consumption/residential/data/2020/c&e/xls/ce1.2.xlsx",
+            "embodied_sources": [
+                "https://doi.org/10.1088/2634-4505/adfc95",
+                "https://doi.org/10.1111/jiec.13461",
+            ],
+        },
+        "default_weights": DEFAULT_WEIGHTS,
     }
