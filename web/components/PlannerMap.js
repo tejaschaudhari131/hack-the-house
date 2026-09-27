@@ -6,6 +6,7 @@ import 'maplibre-gl/dist/maplibre-gl.css'
 import { geometryCenter, rectangleAt } from '../lib/plannerGeometry.js'
 import { configureMapWorkers } from '../lib/maplibreSetup.js'
 import { haversineMeters } from '../lib/geo.js'
+import { buildingHeightDescription, buildingHeightSource } from '../lib/buildingHeights.js'
 
 const empty = () => ({ type: 'FeatureCollection', features: [] })
 const fc = features => ({ type: 'FeatureCollection', features })
@@ -40,7 +41,7 @@ export default function PlannerMap({ parcels, neighborhoods, stops, existingBuil
       map.addSource('parcels', { type: 'geojson', data: parcels, promoteId: 'pin' })
       map.addSource('districts', { type: 'geojson', data: neighborhoods })
       map.addSource('stops', { type: 'geojson', data: stops || empty() })
-      map.addSource('existing-buildings', { type: 'geojson', data: empty(), promoteId: 'id', attribution: '<a href="https://mapservices.pasda.psu.edu/server/rest/services/pasda/AlleghenyCounty/MapServer/11">Allegheny County / PASDA buildings</a>' })
+      map.addSource('existing-buildings', { type: 'geojson', data: empty(), promoteId: 'id', attribution: '<a href="https://mapservices.pasda.psu.edu/server/rest/services/pasda/AlleghenyCounty/MapServer/11">Allegheny County / PASDA buildings</a> · Heights: County / <a href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors, ODbL</a>' })
       for (const id of ['building', 'selected', 'service', 'network-nodes', 'parks', 'reservations', 'connections', 'draft-node']) map.addSource(id, { type: 'geojson', data: empty() })
       map.addSource('walking-network', { type: 'geojson', data: empty(), attribution: '<a href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors · ODbL</a>' })
       map.addLayer({ id: 'district-line', type: 'line', source: 'districts', paint: { 'line-color': '#78978c', 'line-width': 2, 'line-dasharray': [3, 3] } })
@@ -54,7 +55,7 @@ export default function PlannerMap({ parcels, neighborhoods, stops, existingBuil
       map.addLayer({ id: 'reservation-fill', type: 'fill', source: 'reservations', paint: { 'fill-color': ['case', ['==', ['get', 'kind'], 'park'], '#70aa53', '#bd8d55'], 'fill-opacity': .6 } })
       map.addLayer({ id: 'connection-line', type: 'line', source: 'connections', paint: { 'line-color': '#a16736', 'line-width': 4 } })
       map.addLayer({ id: 'draft-point', type: 'circle', source: 'draft-node', paint: { 'circle-color': '#f3b45b', 'circle-radius': 7, 'circle-stroke-color': '#fff', 'circle-stroke-width': 2 } })
-      map.addLayer({ id: 'existing-buildings-fill', type: 'fill-extrusion', source: 'existing-buildings', minzoom: 14, paint: { 'fill-extrusion-height': ['get', 'height_m'], 'fill-extrusion-color': ['case', ['==', ['get', 'height_method'], 'stories_estimate'], '#aab4af', '#c1c5bd'], 'fill-extrusion-opacity': .8 } })
+      map.addLayer({ id: 'existing-buildings-fill', type: 'fill-extrusion', source: 'existing-buildings', minzoom: 14, paint: { 'fill-extrusion-height': ['get', 'height_m'], 'fill-extrusion-color': ['match', ['get', 'height_method'], ['stories_estimate', 'osm_height', 'osm_levels'], '#aab4af', '#c1c5bd'], 'fill-extrusion-opacity': .8 } })
       map.addLayer({ id: 'service-link', type: 'line', source: 'service', filter: ['==', ['geometry-type'], 'LineString'], paint: { 'line-color': '#386da3', 'line-width': 3 } })
       map.addLayer({ id: 'stops-points', type: 'circle', source: 'stops', minzoom: 14, paint: { 'circle-radius': 4, 'circle-color': '#fff', 'circle-stroke-color': '#587693', 'circle-stroke-width': 1.5 } })
       map.addLayer({ id: 'service-zone', type: 'fill-extrusion', source: 'service', filter: ['==', ['geometry-type'], 'Polygon'], paint: { 'fill-extrusion-height': 1.5, 'fill-extrusion-color': ['get', 'color'], 'fill-extrusion-opacity': .95 } })
@@ -71,9 +72,14 @@ export default function PlannerMap({ parcels, neighborhoods, stops, existingBuil
           const content = document.createElement('div')
           content.className = 'building-popup'
           const title = document.createElement('strong'); title.textContent = 'Recorded building footprint'
-          const detail = document.createElement('p'); detail.textContent = p.height_method === 'stories_estimate' ? `${p.height_m} m estimated from ${p.stories} recorded stories (3 m/story + 1.5 m assumed roof).` : '9 m placeholder. No usable building-height evidence is available.'
-          const note = document.createElement('small'); note.textContent = 'County footprint · height is not measured · occupancy unverified'
+          const detail = document.createElement('p'); detail.textContent = buildingHeightDescription(p)
+          const note = document.createElement('small'); note.textContent = 'County footprint · approximate relative massing · occupancy unverified'
           content.append(title, detail, note)
+          const source = buildingHeightSource(p)
+          if (source) {
+            const link = document.createElement('a'); link.href = source; link.target = '_blank'; link.rel = 'noreferrer'; link.textContent = 'View mapped height source ↗'
+            content.append(document.createElement('br'), link)
+          }
           popup.current?.remove()
           popup.current = new Popup({ maxWidth: '260px' }).setLngLat(event.lngLat).setDOMContent(content).addTo(map)
           if (p.pin) callbacks.current.onSelect(p.pin)

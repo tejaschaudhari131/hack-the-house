@@ -189,3 +189,14 @@ test('mapped overlap or missing context withholds ranking, and placement history
   history = scenarioReducer(history, { type: 'redo' })
   assert.equal(scenarioExport(history.present).scenario.options.B.placement.east, 100)
 })
+
+test('display height estimates never change recommendation scores or footprint collisions', () => {
+  for (const example of EXAMPLES) {
+    const input = inputFor(example.pin)
+    const obstacle = { type: 'Feature', geometry: input.feature.geometry, properties: { height_m: 3.5, height_method: 'typology_estimate' } }
+    const result = evaluatePlanner({ ...input, existingBuildings: [obstacle] })
+    const taller = { ...obstacle, properties: { height_m: 30, height_method: 'osm_height' } }
+    assert.deepEqual(evaluatePlanner({ ...input, existingBuildings: [taller] }), result)
+    assert.ok(result.proposal.A.massing.collisions > 0)
+  }
+})

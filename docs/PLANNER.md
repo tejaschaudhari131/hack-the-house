@@ -42,7 +42,7 @@ Only factors available in **both housing alternatives and both infrastructure st
 
 The service tool uses one stop's aggregate departures; it does not sum identical trips at neighboring stops. Added departures are user-authored assumptions. It does not modify source feeds or create a feasible operating timetable. It does not predict changes in prices, observed demographics, displacement, utility headroom or emissions.
 
-Massing dimensions and heights are **proposal assumptions**. County building footprints now provide existing context. Their heights are assessment-based estimates or labelled placeholders; LiDAR has not been ingested. Building units remain the selected template's count even when dimensions change; a larger volume does not automatically imply more feasible homes.
+Massing dimensions and heights are **proposal assumptions**. County building footprints provide existing context. Their display heights use recorded stories, matched OSM height/level tags, or labelled building-type estimates; LiDAR has not been ingested. Building units remain the selected template's count even when dimensions change; a larger volume does not automatically imply more feasible homes.
 
 ## Code and growth path
 
@@ -65,9 +65,21 @@ Before expanding analytical claims: ingest/validate building dimensions, audit t
 
 ## Existing building context
 
-Run `python pipeline/build_context.py` with `pipeline/requirements.txt` installed. The script reads only the two study-area bounding boxes from the County/PASDA building layer, verifies every requested source ID was returned, deduplicates, repairs polygonal geometry where possible, and retains complete footprints intersecting the neighborhood boundaries. It requests WGS84 coordinates (`outSR=4326`); the source is NAD83. No manual pixel alignment or parcel-wide extrusion is used.
+Run `python pipeline/build_context.py` with `pipeline/requirements.txt` installed. The script reads only the two study-area bounding boxes from the County/PASDA building layer, verifies every requested source ID was returned, deduplicates, repairs polygonal geometry where possible, and retains complete footprints intersecting the neighborhood boundaries. It excludes outlines explicitly marked `demolished` by the source from both rendering and proposal collision checks; the omitted IDs are recorded in the manifest. It requests WGS84 coordinates (`outSR=4326`); the source is NAD83. No manual pixel alignment or parcel-wide extrusion is used.
 
-The assessment query selects only parcel IDs and `STORIES`. A story count is used only with one assessment row, at least 80% footprint overlap with the named parcel, and one footprint predominantly on that parcel. The display-height estimate is **stories × assumed 3 m + assumed 1.5 m roof allowance**. Other buildings have a **9 m visual placeholder**. Neither is a measured height. A building click exposes the method; the legend and evidence panel explain coverage. No unit counts or occupancy are inferred. Nonresidential buildings are included.
+The assessment query selects only parcel IDs and `STORIES`. Parcel matching requires at least 80% footprint coverage, using the source PIN first and then a unique spatial match if necessary. A recorded story count requires one assessment row and either a sole footprint or a dominant main footprint (at least 1.8 times the next largest footprint and 60% of the parcel's total building area). Smaller auxiliary footprints do not inherit the main building's stories. Spatially recovered parcels use assessment records already present in the bounded extract; absent records remain unknown.
+
+Height selection follows this order:
+
+1. A spatially matched OpenStreetMap `height` tag, interpreted in metres or explicit feet. This already includes the roof, so no roof allowance is added.
+2. County assessment `STORIES × 3 m + 1.5 m` on an unambiguous main footprint.
+3. Matched OSM `building:levels × 3 m`, plus `roof:height`, `roof:levels × 3 m`, or an assumed 0.6 m flat / 1.5 m unspecified roof allowance.
+4. An explicitly **inferred** building-type height. Residential buildings use the study-area median of usable residential source heights (currently 7.5 m); small auxiliary footprints use 3.5 m. Illustrative priors are 10.5 / 13.5 / 16.5 m for small / medium / large apartment properties, 10.5 m for mixed-use/commercial, 7.5 m for warehouses and 8 m for industrial buildings. Apartment bands describe whole properties, **not observed floor counts**; those priors require minimum footprint areas of 100 / 150 / 200 m². Auxiliary classification requires a residential parcel, a dominant main building, at most 80 m², and at most 35% of the main footprint's area; residential-auxiliary land use also supports the auxiliary prior.
+5. A 9 m placeholder when neither records nor a useful building-type classification are available.
+
+OSM data comes from eight bounded public map API tiles, cached for repeatable offline processing. Matching requires at least 65% County-footprint coverage and 50% OSM-footprint coverage; building parts require 80% County coverage. Ambiguous competing matches with materially different heights, incomplete polygons, and suspended parts are rejected. These thresholds, floor-to-metre conversions and typology priors are assumptions. The source references, query bounds, input hashes and retrieval dates are retained; tiles are not a synchronized historical snapshot. OSM attributes are © OpenStreetMap contributors, ODbL 1.0 (https://www.openstreetmap.org/copyright).
+
+The result supports **approximate relative massing**, not verified height ordering, terrain-relative roof elevations, roof shapes, or survey accuracy. Arsenal's large apartment footprints now use a labelled 16.5 m prior instead of the former blanket 9 m fallback; this is not a measured Arsenal height. Source dates and coverage vary. A building click exposes the method and links mapped OSM records where used; the evidence panel separates source-based and inferred coverage. Display heights never enter recommendation scores or collision tests. No unit counts or occupancy are inferred. Nonresidential buildings are included.
 
 `existing-buildings.sources.json` records source URLs, coordinate systems, input hashes/retrieval times, output hash and counts. Raw responses are cached in ignored `pipeline/data/raw/building_context`; remove that directory to refresh. The source layer does not declare explicit redistribution terms; resolve these before external publication. Layer/catalog dates do not guarantee that every structure is current.
 
@@ -81,7 +93,7 @@ Each housing option can store a manual placement: east/north metre offsets from 
 
 Only nearby building geometries intersecting the selected parcel's bounding box are passed to the calculation worker. A hidden context layer still participates in overlap checks. If the data cannot load, unknown overlap evidence is not treated as an empty site: ranking is withheld. A mapped overlap requires review of redevelopment/demolition; there is no removal tool or assumption that demolition is permitted. No overlap is not proof of vacancy.
 
-The extract currently contains 6,624 footprints: 2,328 in Hazelwood and 4,296 in Lawrenceville. 2,235 heights use story-based estimates and 4,389 use placeholders. The additional uncompressed geometry payload is approximately 3.5 MB for both examples. These are extract counts, not verified dwelling counts or a performance guarantee.
+The extract currently contains 6,436 footprints: 2,250 in Hazelwood and 4,186 in Lawrenceville, after excluding 188 source-marked demolished outlines. Heights comprise 2,641 assessment-story estimates, 112 OSM height tags, 41 OSM level estimates, 3,546 building-type estimates and 96 placeholders. The uncompressed building payload is approximately 3.9 MB for both examples. Height enrichment runs offline; the browser still renders a single extrusion layer with one numeric height per footprint. These are extract counts, not verified dwelling counts or a performance guarantee. The full parcel download is unchanged.
 
 ## Connected walking, connections and parks (planner-screen-1.2)
 

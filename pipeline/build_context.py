@@ -6,6 +6,7 @@ to refresh. Heights are display estimates, never inputs to housing recommendatio
 """
 import hashlib
 import json
+import math
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
@@ -14,6 +15,7 @@ import shapely
 from shapely.geometry import shape
 
 from util import fetch_json, geojson_to_shape, shape_to_geojson
+from height_estimates import PROFILES, footprint_role, residential_use, fallback_profile, residential_medians, osm_index, match_osm
 
 ROOT = Path(__file__).resolve().parents[1]
 PUBLIC = ROOT / 'web/public/data'
@@ -21,6 +23,7 @@ CACHE = ROOT / 'pipeline/data/raw/building_context'
 LAYER = 'https://mapservices.pasda.psu.edu/server/rest/services/pasda/AlleghenyCounty/MapServer/11'
 ASSESSMENTS = '65855e14-549e-4992-b5be-d629afc676fa'
 API = 'https://data.wprdc.org/api/3/action/datastore_search'
+OSM_API = 'https://api.openstreetmap.org/api/0.6/map.json'
 
 
 def cached(name, url, params):
@@ -41,6 +44,47 @@ def height_for(stories, unambiguous):
     if unambiguous and 1 <= value <= 60:
         return round(value * 3 + 1.5, 2), 'stories_estimate', value
     return 9, 'placeholder', None
+
+
+def load_osm(groups):
+    """Bounded public API extracts, split to stay well below the map API area limit.
+
+    Node geometry is resolved offline; only height-bearing polygons are retained.
+    A failed or incomplete download fails the build rather than silently changing
+    height coverage. Cached responses make subsequent builds independent of HTTP.
+    """
+    elements, requests = {}, []
+    for name, boundary in groups.items():
+        west, south, east, north = boundary.bounds
+        xs, ys = [west - .0001, (west + east) / 2, east + .0001], [south - .0001, (south + north) / 2, north + .0001]
+        for x in range(2):
+            for y in range(2):
+                bbox = ','.join(str(v) for v in [xs[x], ys[y], xs[x + 1], ys[y + 1]])
+                key = f'osm-map-{name}-{hashlib.sha256(bbox.encode()).hexdigest()[:12]}'
+                raw = cached(key, OSM_API, {'bbox': bbox})
+                if not isinstance(raw.get('elements'), list):
+                    raise RuntimeError(f'Invalid OSM extract: {key}')
+                requests.append({'url': OSM_API, 'bbox': bbox, 'cache': key + '.json'})
+                for e in raw['elements']:
+                    identity = (e['type'], e['id'])
+                    if e.get('version', 0) >= elements.get(identity, {}).get('version', 0):
+                        elements[identity] = e
+        print(f'{name}: public OSM context downloaded', flush=True)
+    nodes = {e['id']: {'lon': e['lon'], 'lat': e['lat']} for e in elements.values() if e['type'] == 'node'}
+    ways = {e['id']: e for e in elements.values() if e['type'] == 'way'}
+    for e in ways.values():
+        if all(n in nodes for n in e.get('nodes', [])):
+            e['geometry'] = [nodes[n] for n in e.get('nodes', [])]
+    selected = []
+    for e in elements.values():
+        tags = e.get('tags', {})
+        if not (('building' in tags or 'building:part' in tags) and ('height' in tags or 'building:levels' in tags)):
+            continue
+        if e['type'] == 'relation':
+            for member in e.get('members', []):
+                member['geometry'] = ways.get(member['ref'], {}).get('geometry') if member['type'] == 'way' else None
+        selected.append(e)
+    return {'elements': selected, 'provenance': {'source': OSM_API, 'requests': requests, 'height_tagged_elements': len(selected), 'license': 'ODbL-1.0', 'attribution': '© OpenStreetMap contributors', 'license_url': 'https://www.openstreetmap.org/copyright', 'note': 'Live API tiles cached at the input retrieval times below; not a synchronized historical snapshot. Only polygons with complete geometry and adequate overlap can supply heights.'}}
 
 
 def main():
@@ -64,17 +108,27 @@ def main():
     parcels = json.loads((PUBLIC / 'parcels.geojson').read_text())['features']
     parcel_map = {f['properties']['pin']: f for f in parcels}
     parcel_shapes = {pin: shape(f['geometry']) for pin, f in parcel_map.items()}
+    parcel_pins = list(parcel_shapes)
+    parcel_tree = shapely.STRtree(list(parcel_shapes.values()))
     all_shapes, clean = [], []
     invalid = 0
+    retired = []
     for feature in raw.values():
+        if (feature['properties'].get('status') or '').lower() == 'demolished':
+            if any(shape(feature['geometry']).intersects(boundary) for boundary in groups.values()):
+                retired.append(str(feature['properties']['OBJECTID']))
+            continue
         geom = geojson_to_shape(feature['geometry'])
         if geom is None or geom.area == 0:
             invalid += 1
             continue
         clean.append((feature, geom)); all_shapes.append(geom)
     tree = shapely.STRtree(all_shapes)
+    # Local equal-scale area approximation is sufficient for footprint role thresholds.
+    areas_m2 = [g.area * 111320 ** 2 * math.cos(math.radians(g.centroid.y)) for g in all_shapes]
     rows = {}
-    pins = sorted({(f['properties'].get('PIN') or '').strip() for f, _ in clean} & parcel_map.keys())
+    # Preserve the original query set/cache batch ordering, including retired outlines.
+    pins = sorted({(f['properties'].get('PIN') or '').strip() for f in raw.values()} & parcel_map.keys())
     for i in range(0, len(pins), 50):
         batch = pins[i:i + 50]
         result = cached(f'stories-50-{i}', API, {'resource_id': ASSESSMENTS, 'fields': 'PARID,STORIES', 'filters': json.dumps({'PARID': batch}), 'limit': 10000})['result']
@@ -84,32 +138,57 @@ def main():
             rows.setdefault(record['PARID'], []).append(record.get('STORIES'))
     print(f'Assessment stories: {len(rows)} matched parcel records', flush=True)
 
+    osm_raw = load_osm(groups)
+    osm_records, osm_tree = osm_index(osm_raw)
     features = []
-    for feature, geom in clean:
+    for index, (feature, geom) in enumerate(clean):
         areas = [name for name, boundary in groups.items() if geom.intersects(boundary)]
         if not areas:
             continue
-        p = feature['properties']; pin = (p.get('PIN') or '').strip()
+        p = feature['properties']; source_pin = (p.get('PIN') or '').strip(); pin = source_pin
         parcel = parcel_shapes.get(pin)
         verified = parcel is not None and geom.intersection(parcel).area / geom.area >= .8
+        parcel_match = 'source_pin' if verified else 'unmatched'
+        if not verified:
+            matches = [parcel_pins[int(i)] for i in parcel_tree.query(geom, predicate='intersects') if geom.intersection(parcel_shapes[parcel_pins[int(i)]]).area / geom.area >= .8]
+            if len(matches) == 1:
+                pin = matches[0]; parcel = parcel_shapes[pin]; verified = True; parcel_match = 'spatial'
         # A main-dwelling story count must not be assigned to every outbuilding.
         related = [int(i) for i in tree.query(parcel, predicate='intersects') if all_shapes[i].intersection(parcel).area / all_shapes[i].area > .5] if verified else []
+        use = (parcel_map[pin]['properties'].get('land_use') or '') if verified else ''
+        role = footprint_role(index, related, areas_m2, residential_use(use) or use.startswith('APART:'))
         values = rows.get(pin, [])
-        height, method, stories = height_for(values[0] if len(values) == 1 else None, verified and len(related) == 1)
-        properties = {'id': str(p['OBJECTID']), 'source_id': p.get('outline_id'), 'pin': pin if verified else '', 'source_pin': pin, 'area': areas[0], 'height_m': height, 'height_method': method, 'stories': stories, 'class': p.get('CLASS'), 'status': p.get('status')}
+        height, method, stories = height_for(values[0] if len(values) == 1 else None, verified and role in {'sole', 'dominant'})
+        properties = {'id': str(p['OBJECTID']), 'source_id': p.get('outline_id'), 'pin': pin if verified else '', 'source_pin': source_pin, 'parcel_match': parcel_match, 'footprint_role': role, 'area': areas[0], 'height_m': height, 'height_method': method, 'stories': stories, 'class': p.get('CLASS'), 'status': p.get('status')}
+        hint = match_osm(geom, osm_records, osm_tree)
+        if hint and (hint['height_method'] == 'osm_height' or method == 'placeholder'):
+            properties.update(hint)
+        if properties['height_method'] == 'placeholder':
+            profile = fallback_profile(use, p.get('CLASS'), role, areas_m2[index])
+            properties.update(height_m=PROFILES[profile][0], height_method='typology_estimate' if profile != 'unknown' else 'placeholder', height_profile=profile)
         features.append({'type': 'Feature', 'id': properties['id'], 'properties': properties, 'geometry': shape_to_geojson(geom)})
+    medians = residential_medians(features)
+    for f in features:
+        p = f['properties']
+        if p.get('height_profile') == 'residential' and p['area'] in medians:
+            p['height_m'] = medians[p['area']]
     features.sort(key=lambda f: f['properties']['id'])
     output = PUBLIC / 'existing-buildings.geojson'
     output.write_text(json.dumps({'type': 'FeatureCollection', 'features': features}, separators=(',', ':')))
     manifest = {
         'retrieved_at': datetime.now(timezone.utc).isoformat(), 'source': LAYER, 'source_layer_name': metadata['name'],
         'assessment_source': API, 'assessment_resource': ASSESSMENTS, 'source_crs': metadata['extent']['spatialReference']['wkid'], 'output_crs': 4326,
+        'osm_height_source': osm_raw['provenance'],
         'count': len(features), 'by_area': dict(Counter(f['properties']['area'] for f in features)), 'height_methods': dict(Counter(f['properties']['height_method'] for f in features)),
         'invalid_geometry_omitted': invalid, 'bytes': output.stat().st_size, 'sha256': hashlib.sha256(output.read_bytes()).hexdigest(),
+        'demolished_footprints_omitted': len(retired), 'demolished_ids_omitted': sorted(retired),
         'input_hashes': {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(CACHE.glob('*.json'))},
         'input_retrieval_times': {p.name: datetime.fromtimestamp(p.stat().st_mtime, timezone.utc).isoformat() for p in sorted(CACHE.glob('*.json'))},
-        'height_formula': 'For one spatially verified footprint per parcel and one usable STORIES record: STORIES * 3 m + 1.5 m. Both conversion constants are assumptions. Otherwise a 9 m visual placeholder.',
-        'limitations': ['Footprints are recorded roof outlines, not a complete verified current housing inventory. Nonresidential buildings are also shown.', 'Heights are estimates or placeholders, never surveyed heights. No lidar, roof shape or terrain elevation model.', 'Buildings intersecting a study boundary are retained whole. Parcel matches require 80% footprint overlap; source PINs remain available for audit.', 'No occupancy, housing unit count, demolition, acquisition, or development permission is inferred.', 'The source layer supplies no explicit license statement; attribution is retained and redistribution terms require clarification before external publication.'],
+        'height_formula': 'Prefer spatially matched OSM height; otherwise one assessment STORIES row on a sole or dominant footprint uses STORIES * 3 m + 1.5 m roof; otherwise OSM building:levels * 3 m + mapped roof:height, roof:levels * 3 m, or assumed 0.6 m flat / 1.5 m unspecified roof. Then use labelled typology priors, finally 9 m unknown placeholder. All metre-per-story and roof constants are assumptions.',
+        'height_profiles': {key: {'height_m': value[0], 'description': value[1]} for key, value in PROFILES.items()},
+        'residential_median_heights_m': medians,
+        'matching_rules': {'parcel_footprint_coverage': .8, 'dominant_to_second_area_ratio': 1.8, 'dominant_share_of_building_area': .6, 'auxiliary_max_m2': 80, 'auxiliary_max_main_area_ratio': .35, 'osm_footprint_coverage': .65, 'osm_reverse_coverage': .5, 'osm_part_coverage': .8},
+        'limitations': ['Footprints are recorded roof outlines, not a complete verified current housing inventory. Nonresidential buildings are also shown.', 'Display heights support approximate relative massing, not measured heights, exact relative ordering or regulatory feasibility. No lidar, roof mesh or terrain elevation model.', 'Buildings intersecting a study boundary are retained whole. Parcel matches require 80% footprint overlap; a unique spatial match can recover a missing/stale source PIN. Source PINs remain available for audit.', 'Dominant-building and auxiliary roles are footprint-based assumptions, not verified building uses. Ambiguous groups do not inherit assessment stories.', 'Apartment unit bands describe a parcel, not floor counts. Their illustrative priors apply only above 200 / 150 / 100 square metres for large / medium / small apartment footprints. Residential priors use the study-area median of at least 20 usable residential source heights, otherwise 7.5 m.', 'No occupancy, housing unit count, demolition, acquisition, or development permission is inferred. Visual heights never enter recommendation scores or collision tests.', 'OSM height/level tags are contributor records with varying dates and accuracy; neither implies a survey. County outlines are retained, including complex footprints that can only show one extrusion height.', 'The County source layer supplies no explicit license statement; attribution is retained and redistribution terms require clarification before external publication. OSM-derived height attributes are © OpenStreetMap contributors, ODbL 1.0.'],
     }
     (PUBLIC / 'existing-buildings.sources.json').write_text(json.dumps(manifest, indent=2) + '\n')
     print(json.dumps({k: manifest[k] for k in ['count', 'by_area', 'height_methods', 'bytes', 'invalid_geometry_omitted']}, indent=2))
