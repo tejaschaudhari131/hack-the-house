@@ -3,9 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "predev": "node scripts/prepare-maplibre.mjs && node scripts/prepare-planner-data.mjs",
+    "predev": "node scripts/prepare-maplibre.mjs",
     "dev": "next dev",
-    "prebuild": "node scripts/prepare-maplibre.mjs && node scripts/prepare-planner-data.mjs",
+    "prebuild": "node scripts/prepare-maplibre.mjs",
     "build": "next build",
     "start": "next start",
     "test": "node --test lib/*.test.js",
