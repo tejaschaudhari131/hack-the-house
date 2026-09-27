@@ -139,6 +139,8 @@ export default function ParcelReport({ feature, weights, whatIf, zoning, summary
               <th>Transit</th>
               <th>Equity</th>
               <th>Climate risk</th>
+              <th>Displ. risk</th>
+              <th>Carbon</th>
               <th>§911.02 reading</th>
             </tr>
           </thead>
@@ -152,6 +154,8 @@ export default function ParcelReport({ feature, weights, whatIf, zoning, summary
                 <td>{fmt(row.transit)}</td>
                 <td>{fmt(row.equity)}</td>
                 <td>{fmt(row.climate_risk)}</td>
+                <td>{fmt(row.displacement_risk_screen)}</td>
+                <td>{fmt(row.marginal_carbon_index_estimate)}</td>
                 <td>
                   {row.zoning.treated_as_allowed_by_what_if ? "What-if: treated as allowed" : row.zoning.reading}
                   {row.zoning.needs_special_approval ? " (special approval, not a variance)" : ""}
@@ -163,7 +167,7 @@ export default function ParcelReport({ feature, weights, whatIf, zoning, summary
         <p className="report-small">
           {facts.ranking_rule} Source: {facts.zoning_source.name} ({facts.zoning_source.url}). {facts.zoning.legend} The
           four types are mapped onto the code&apos;s uses by an assumption. Needs expert review. Overlays and lot width are
-          not applied. Scores are 0–100 on fixed anchors; climate risk is higher-is-worse.
+          not applied. Scores are 0–100 on fixed anchors; climate risk, displacement risk (a tract screening signal), and carbon (a relative estimate, not tonnes) are higher-is-worse.
         </p>
       </section>
 

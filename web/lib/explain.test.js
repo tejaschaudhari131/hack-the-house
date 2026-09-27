@@ -8,11 +8,12 @@ import { buildCompareContext, buildParcelContext, explainCompareTemplate } from 
 import { DEFAULT_MODEL, aiConfig, createExplainHandler, parseExplainRequest } from "./explainHandler.js"
 import { SYSTEM_PROMPT, buildComparePrompt, buildParcelPrompt } from "./explainPrompt.js"
 import { createRateLimiter, createTtlCache } from "./guardrails.js"
+import { DEFAULT_WEIGHTS } from "./rank.js"
 
 const zoning = JSON.parse(readFileSync(new URL("../public/data/zoning.json", import.meta.url)))
 const sources = JSON.parse(readFileSync(new URL("../public/data/sources.json", import.meta.url)))
 const summary = { county_median_income: 78548, sale_cutoff: "2021-09-26", transit_service_date: "2026-09-25" }
-const WEIGHTS = { demand: 25, transit: 25, equity: 25, climate: 25 }
+const WEIGHTS = { ...DEFAULT_WEIGHTS }
 
 function square(lon, lat) {
   const d = 0.0002

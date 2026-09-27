@@ -46,6 +46,10 @@ export function sourceList(sources, summary, zoningRules) {
     slope: cite(sources, "Pittsburgh Steep Slopes (25% or greater)", "City layer as published on the pull date"),
     undermined: cite(sources, "Pittsburgh Undermined Areas", "City/county layer as published on the pull date"),
     zoningMap: cite(sources, "City of Pittsburgh zoning districts", "Zoning map as published on the pull date (district code only)"),
+    tenure: cite(sources, "ACS 2024 5-year table B25003 (tenure)", "2024 ACS 5-year (2020–2024), census tract"),
+    rent2019: cite(sources, "ACS 2015-2019 5-year table B25064 (median gross rent)", "ACS 2015–2019 vs 2020–2024 median gross rent, census tract"),
+    recs: cite(sources, "EIA Residential Energy Consumption Survey 2020, Table CE1.2", "RECS 2020, Northeast census region, existing homes"),
+    embodied: cite(sources, "Embodied carbon by residential building form", "Published studies; direction only, as a coarse tier"),
     zoningCode: {
       name: USE_TABLE,
       vintage: "Saved copy of the use table read for this build",
@@ -138,6 +142,17 @@ function placeInputs(props, summary, sources) {
       meaning: "Preliminary mine-subsidence screen. Historic mine maps can be incomplete. Not a safety determination.",
       source: sources.undermined,
     },
+    displacement: {
+      tract_renter_share_percent: pct(props.renter_share),
+      tract_rent_change_vs_county_points: pct(props.rent_change_vs_county),
+      qualified_census_tract_2026: present(props.qct_2026),
+      meaning: "A tract-level screening signal of renter vulnerability and rent pressure, the same for every housing type. Not a prediction that anyone will be displaced.",
+      sources: [sources.tenure, sources.rent2019, sources.chas],
+    },
+    carbon: {
+      meaning: "A relative 0–100 estimate per new home from building form (RECS site energy, an embodied-carbon tier) and travel (the transit score). Not tonnes of CO2.",
+      sources: [sources.recs, sources.embodied],
+    },
   }
 }
 
@@ -152,7 +167,7 @@ const VALUE_JUDGMENTS = [
 function weightFacts(weights) {
   return {
     ...weights,
-    note: "Value judgments chosen by the user. The weighted total is the weighted average of demand, transit, equity, and climate suitability (100 minus climate risk). Missing scores are skipped, not treated as zero.",
+    note: "Value judgments chosen by the user. The weighted total is the weighted average of demand, transit, equity, and 100 minus each of climate risk, displacement risk, and the carbon index, for whichever of those weights exist. Missing scores are skipped, not treated as zero.",
   }
 }
 
@@ -166,6 +181,8 @@ function scoreRow(row) {
     equity: row.equity,
     climate_risk: row.climate_risk,
     climate_suitability: row.climate_suitability,
+    displacement_risk_screen: present(row.displacement_risk),
+    marginal_carbon_index_estimate: present(row.carbon_index),
   }
 }
 

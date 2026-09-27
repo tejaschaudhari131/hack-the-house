@@ -83,7 +83,9 @@ export function explainTemplate({ parcel, ranked, weights, whatIf, zoning, count
   const second = ranked[1]
   const measured = listMeasured(parcel, countyMedianIncome)
   const gap = second ? biggestGap(top, second) : null
-  const weightText = `demand ${weights.demand}, transit ${weights.transit}, equity ${weights.equity}, climate ${weights.climate}`
+  const weightText = Object.entries(weights)
+    .map(([key, value]) => `${key} ${value}`)
+    .join(", ")
 
   const at = (row) => (row.composite === null || row.composite === undefined ? "" : ` at ${row.composite}`)
   const splitByZoning = !whatIf && top.allowed === true && second?.allowed === false

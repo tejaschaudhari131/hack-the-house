@@ -5,9 +5,13 @@ import unittest
 from pathlib import Path
 
 from score import (
+    RECS_2020_NORTHEAST_MMBTU,
+    carbon_building_relative,
+    carbon_index,
     chas_low_income_renter_cost_burden,
     climate_risk,
     composite,
+    displacement_risk,
     lot_fit,
     model_card,
     rank_types,
@@ -94,6 +98,86 @@ class ScoreTests(unittest.TestCase):
             )
         ]
         self.assertEqual(flagged, VECTOR["expected_order_current_rules"])
+
+    def test_shared_rank_vector_six_factors(self):
+        six = VECTOR["six_factor"]
+        for housing_type, expected in six["expected_composite"].items():
+            self.assertEqual(composite(six["scores"][housing_type], six["weights"]), expected)
+        order = [row["id"] for row in rank_types(six["scores"], six["weights"], allowed=None, what_if=True)]
+        self.assertEqual(order, six["expected_order_what_if"])
+
+    def test_displacement_blends_vulnerability_and_pressure(self):
+        # renter 0.5 -> 0.5, CHAS 0.55 -> 0.5, rent +15 points over county -> 0.5
+        risk, parts = displacement_risk(0.5, 0.55, 0.15)
+        self.assertEqual(risk, 50.0)
+        self.assertEqual(parts["vulnerability"], 0.5)
+        high, _ = displacement_risk(0.8, 0.85, 0.4)
+        low, _ = displacement_risk(0.2, 0.25, -0.1)
+        self.assertEqual(high, 100.0)
+        self.assertEqual(low, 0.0)
+
+    def test_missing_displacement_inputs_are_dropped_not_zeroed(self):
+        vulnerability_only, parts = displacement_risk(0.75, 0.8, None)
+        self.assertEqual(vulnerability_only, 100.0)
+        self.assertIsNone(parts["rent_pressure_component"])
+        pressure_only, _ = displacement_risk(None, None, 0.3)
+        self.assertEqual(pressure_only, 100.0)
+        nothing, _ = displacement_risk(None, None, None)
+        self.assertIsNone(nothing)
+
+    def test_displacement_is_the_same_for_every_type(self):
+        parcel = {
+            "lot_sqft": 4000,
+            "trips_within_400m": 50,
+            "nearest_stop_m": 200,
+            "median_income": 45000,
+            "rent_burden_share": 0.45,
+            "chas_rent_burden_share": 0.7,
+            "renter_share": 0.6,
+            "rent_change_vs_county": 0.2,
+            "assessment_joined": True,
+            "transit_available": True,
+            "flood_available": True,
+            "steep_slope_available": True,
+            "undermined_available": True,
+        }
+        neighborhood = {"price_per_sqft": 200, "turnover_per_100": 15, "valid_sales": 40}
+        result = score_parcel(parcel, neighborhood, 76000)
+        values = {row["displacement_risk"] for row in result["scores"].values()}
+        self.assertEqual(len(values), 1)
+        self.assertIsNotNone(values.pop())
+        missing = score_parcel({**parcel, "rent_change_vs_county": None}, neighborhood, 76000)
+        self.assertTrue(any("rent-pressure" in note for note in missing["confidence_notes"]))
+
+    def test_higher_displacement_risk_lowers_the_composite(self):
+        base = {"demand": 50, "transit": 50, "equity": 50, "climate_risk": 20, "carbon_index": 40}
+        weights = {"demand": 1, "transit": 1, "equity": 1, "climate": 1, "displacement": 1, "carbon": 1}
+        self.assertGreater(
+            composite({**base, "displacement_risk": 10}, weights),
+            composite({**base, "displacement_risk": 90}, weights),
+        )
+        self.assertEqual(
+            composite({**base, "displacement_risk": None}, weights),
+            composite(base, {**weights, "displacement": 0}),
+        )
+
+    def test_carbon_uses_published_recs_ratios_and_orders_building_forms(self):
+        self.assertEqual(RECS_2020_NORTHEAST_MMBTU["single_family"], 120.7)
+        self.assertEqual(RECS_2020_NORTHEAST_MMBTU["large_apartment"], 36.2)
+        self.assertEqual(carbon_building_relative("single_family"), 1.0)
+        order = sorted(RECS_2020_NORTHEAST_MMBTU, key=carbon_building_relative, reverse=True)
+        self.assertEqual(order, ["single_family", "townhouse_duplex", "small_apartment", "large_apartment"])
+        # Same building, better transit, lower estimate. Transit missing drops that part.
+        self.assertGreater(carbon_index("small_apartment", 10), carbon_index("small_apartment", 90))
+        self.assertEqual(carbon_index("single_family", None), 100.0)
+        self.assertLessEqual(carbon_index("large_apartment", 100), 100)
+
+    def test_model_card_labels_new_factors_as_screen_and_estimate(self):
+        dims = {row["id"]: row for row in model_card()["dimensions"]}
+        self.assertIn("not a prediction", dims["displacement_risk"]["higher_means"])
+        self.assertIn("not tonnes", dims["carbon_index"]["higher_means"])
+        self.assertIn("relative tier", " ".join(dims["carbon_index"]["normative"]))
+        self.assertEqual(set(model_card()["default_weights"]), {"demand", "transit", "equity", "climate", "displacement", "carbon"})
 
     def test_climate_suitability_direction(self):
         low = {"demand": 50, "transit": 50, "equity": 50, "climate_risk": 0}

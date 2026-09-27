@@ -14,8 +14,8 @@ const STEPS = [
           apartment) on real Pittsburgh parcels in <strong>Hazelwood</strong> and <strong>Lawrenceville</strong>.
         </p>
         <p>
-          It scores market demand, transit access, equity, and mapped climate hazard from public data, and it reads the
-          zoning use table (§911.02). It is for planners, community development corporations, developers, and residents
+          It scores market demand, transit access, equity, mapped climate hazard, a displacement screen, and a rough
+          carbon estimate from public data, and it reads the zoning use table (§911.02). It is for planners, community development corporations, developers, and residents
           who want to see the trade-offs before a meeting.
         </p>
         <p className="hint">
@@ -25,7 +25,7 @@ const STEPS = [
     ),
   },
   {
-    title: "Click a parcel, or drop a building",
+    title: "Click a parcel, drop a building, or find sites",
     body: (
       <>
         <p>
@@ -35,6 +35,10 @@ const STEPS = [
         <p>
           <strong>Drop a building</strong> to place one type on a lot in 3D with a 10-minute walk ring and nearby transit.
           Drop a second one to compare two scenarios side by side.
+        </p>
+        <p>
+          <strong>Find sites</strong> to filter the whole map (for example vacant or city-owned lots where a type is
+          permitted by right) and get a ranked list you can export.
         </p>
       </>
     ),
