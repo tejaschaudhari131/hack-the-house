@@ -12,7 +12,7 @@ const scores = {
   large_apartment: { demand: 30, transit: 60, equity: 62, climate_risk: 25 },
 }
 
-test("presets cover the five profiles, fill every weight key, and say they are value judgments", () => {
+test("the five illustrative priorities fill every weight key and are labeled as not measured preferences", () => {
   assert.deepEqual(PRESETS.map((preset) => preset.id), ["balanced", "transit", "housing_need", "lower_hazard", "lower_carbon"])
   for (const preset of PRESETS) {
     const weights = presetWeights(preset)

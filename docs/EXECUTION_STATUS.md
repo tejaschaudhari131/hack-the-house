@@ -4,6 +4,8 @@ Single integrator log for the owner's implementation spec (Sun Sep 27 2026). Tim
 
 ## Current state
 
+- Checkpoint 2 merged: PR #4 → main at `8ff2989`, production deployment `dpl_GRr9btPgnBzAD1GuCF68w7bPsRV2` READY. The owner verified the title, share link, and six-factor compare sentence on production.
+- Checkpoint 3 branch: `cursor/checkpoint3-docs-demo-ded8` from `8ff2989`, with a new PR.
 - Checkpoint 1 merged: PR #2 → main at `88aa9cb`. Production served the new title ("Housing Typology, Equity & Climate Matchmaker · Pittsburgh") at the start of Checkpoint 2.
 - Checkpoint 2 branch: `cursor/checkpoint2-sensitivity-evidence-ded8`, from `88aa9cb`, with a new PR against main.
 
@@ -68,6 +70,32 @@ Screenshots and the brief PDF are in the agent artifacts (`/opt/cursor/artifacts
 
 - JS `npm test`: see the checkpoint report (63 at the last run). Python: `test_score` 18, `test_pii` 5, `test_sites` 5. `next build` green.
 
+## Checkpoint 3 (docs and demo)
+
+- Docs: `docs/MODEL_CARD.md`, `docs/VALIDATION.md`, `docs/DEMO_SCRIPT.md` (resolved parcel PIN 0056F00338000000 and numbers from the committed data), `docs/SUBMISSION.md` (form draft; personal fields, video link, and attestations are TODO for humans), `docs/PILOT_PLAN.md`. README refreshed: live link, framing, docs index, libraries, AI disclosure including the production template status, limitations (expert review pending, not-evaluated items, map keyboard access), and team full names.
+- Recording: `/opt/cursor/artifacts/cp3/hack-the-house-demo.mp4` (1280×720 H.264, 3:13, burned-in captions, no audio), with a contact sheet and SRT file. Recorded from https://hack-the-house.vercel.app (production at `8ff2989`) with Playwright and system Chrome (SwiftShader for the 3D map). Numbers in the captions were read from the page at recording time. The explanation shown is the labeled template, because production has no working model credential; the caption says so. Not in git.
+- Small code fix: the comparison sentence shows the gap to one decimal ("2.0 points"), matching the rounding rule. It reaches production after the merge (the recording shows "2 points").
+- AI on production: still the labeled template. The owner reports `LLM_*` are placeholders and the OIDC gateway call is rejected; a human must add a key in Vercel. No further agent work on this.
+
+## Final status against the spec's mandatory requirements
+
+| Requirement | Implemented | Verified | Evidence / blocker |
+| --- | --- | --- | --- |
+| Six-factor consistency | Yes | Tests + production (owner) | `lib/factors.js`; `factors.test.js`; parity vectors in Python and JS |
+| Trustworthy comparison (contributions, coverage, permission apart) | Yes | Tests + browser + production (owner) | `lib/comparison.js`, `comparison.test.js` |
+| Permission and unit-count correctness | Yes | Tests | `lib/zoning.js` `unitPermission`; triplex tests |
+| Guided shortlist → compare → brief | Yes | Browser (local + production recording) | `lib/guide.js`, GuideBanner, DecisionBrief |
+| Sensitivity (priorities, solved sweep) | Yes | Tests + browser | `lib/robustness.js` |
+| Evidence visibility | Yes | Tests + browser | `lib/evidence.js`, EvidenceDrawer |
+| Reproducible state | Yes | Tests + browser + production (owner) | `lib/scenarioState.js` |
+| Grounded AI with labeled fallback | Yes | Mocks + local protocol server; production shows the template | Blocked on a real credential (human) |
+| Performance fix, measured | Yes | Headless before/after | See Checkpoint 2 |
+| Submission package | Drafted | Needs human review | `docs/SUBMISSION.md` TODOs: member emails and affiliations, video link, 18+ and eligibility attestations, confirmation of the AI disclosure |
+| Demo recording | Yes | Contact sheet reviewed | `/opt/cursor/artifacts/cp3/` |
+| Expert zoning review | No | — | Needs a qualified human reviewer; badges say "needs expert review" |
+
+Recovery: the last known-good production commit is `8ff2989` (Checkpoint 2). Roll back in Vercel to that deployment if a later merge misbehaves.
+
 ## Next action
 
-Owner's assistant: merge PR #2 once CI and build pass, then check the production deploy. Agent: Checkpoint 3 (docs and demo) on the owner's go.
+Owner's assistant: merge PR #2 once CI and build pass, then check the production deploy. Owner: merge the Checkpoint 3 PR, fill the TODO fields in `docs/SUBMISSION.md`, upload the recording, add a model key if available (then re-record the explanation segment), and submit the form. The agent does not submit.
