@@ -4,7 +4,7 @@ Version: score model v1 (`web/public/data/score_model.json`), data pulled 2026-0
 
 ## What it is
 
-A transparent weighted-average screen that ranks four housing types (single-family; townhouse/duplex; small apartment, 3–19 units; large apartment, 20+ units) on each of 8,645 parcels in Hazelwood and Lower, Central, and Upper Lawrenceville, Pittsburgh, plus a triplex (3-unit) building that uses the small-apartment score and the §911.02 Three-Unit permission row. It is arithmetic on published data with team-chosen anchors and weights. There is no trained model. A language model, when a credential is configured, only writes a prose explanation of numbers the app has already computed.
+A transparent weighted-average screen that ranks four housing types (single-family; townhouse/duplex; small apartment, 3–19 units; large apartment, 20+ units) on each of 142,865 parcels across all 90 City of Pittsburgh neighborhoods, plus a triplex (3-unit) building that uses the small-apartment score and the §911.02 Three-Unit permission row. It is arithmetic on published data with team-chosen anchors and weights. No neighborhood is omitted. Parcels are assigned by largest boundary overlap, with deterministic ties; the whole parcel outline is retained after the city-membership check. Missing source evidence remains unknown. There is no trained model. A language model, when a credential is configured, only writes a prose explanation of numbers the app has already computed.
 
 **Intended use:** help CDC staff and municipal planners choose which real parcel and housing option to investigate next, see why options rank differently, and list what must be verified. **Not for:** permits, zoning determinations, feasibility or financial decisions, appraisal, affordability commitments, predicting displacement, or ranking people.
 
@@ -47,3 +47,5 @@ Sources, vintages, and caveats: README "Data Sources", `docs/DATA_NOTES.md`, `we
 ## Known limitations
 
 See README "Limitations" and `docs/VALIDATION.md`. Most important: no expert zoning review yet; dimensional rules, utilities, and geotechnical conditions are not evaluated; scores use fixed anchors, not citywide percentiles; ACS margins of error; the CHAS vintage lags; straight-line distances; no practitioner validation of the rankings.
+
+Coverage note: the 142,865 mapped records include 142,571 identified parcels and 294 county polygons without a unique PIN. Those polygons have stable `SITE…` map IDs, retain the source label, and disclose that assessment and parcel-ID-based property flags are unknown. No neighborhood is omitted.

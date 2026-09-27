@@ -10,7 +10,8 @@ Explore housing and infrastructure decisions on a 3D map of Pittsburgh.
 - Lets you place several proposed buildings across selected parcels.
 - Lets you cycle one housing draft and compare selected housing types side by side.
 - Previews the draft automatically, with green/red placement status, before adding it to the plan.
-- Tests walking connections, streets with sidewalks, parks and added service at existing bus stops.
+- Routes between two points along existing roads and paths. New walking/street connections snap into that network.
+- Tests new connections, parks and added service at existing bus stops.
 - Shows factor scores, tradeoffs, adjustable priorities and the assumptions behind them.
 - Checks supported Title Nine rules. A zoning conflict or failed physical fit removes the housing score; rules without enough evidence are marked **Not assessed**.
 - Keeps exact income, rent, utilities and building dimensions under **Assumptions → Advanced options**.
@@ -21,11 +22,11 @@ Studio is at `/`. The original parcel Explorer remains at `/explore` for referen
 
 ## Scope
 
-The two study areas are **Hazelwood** and **Lawrenceville** (Lower, Central and Upper). The map covers 8,645 parcels; that is data coverage, not a proposal to redevelop every parcel. Existing building colours show recorded use, not recommendations.
+Both views cover **all 90 City of Pittsburgh neighborhoods and 142,865 parcels**; no neighborhood is omitted. Choose a neighborhood in the header. Hazelwood and Lawrenceville remain regression examples. This is data coverage, not a proposal to redevelop every parcel. Existing building colours show recorded use, not recommendations.
 
-Studio navigation is limited to Pennsylvania's bounding rectangle. Neighboring areas can appear along its irregular borders; this does not expand the study data coverage.
+Both maps are limited to the bounding rectangle of Pittsburgh’s official neighborhood boundaries. Neighboring basemap areas can still appear inside that rectangle; their parcels are not included.
 
-Neighborhood detail loads as you pan or select a site. Close views show 3D buildings; wider views use flat footprints, then neighborhood outlines. A small cache makes revisiting areas faster. The active plan keeps its evidence even when its buildings are off screen.
+Studio shows detail for the selected neighborhood and its immediate adjoining neighborhoods, only where they are in view. Use the neighborhood picker to explore another part of the city. New downloads wait for the camera to settle and run two neighborhoods at a time. Explorer loads the selected neighborhood; shared comparisons can fetch another neighborhood on demand. Close views show 3D buildings; wider views use flat footprints, then neighborhood outlines. Off-screen detail is removed from rendering. The active plan keeps its full evidence even when its buildings are off screen. Geometry, heights and routing precision are unchanged.
 
 There is one editable **next-building draft**. Use **Compare to** to add other housing types to the comparison; all selected types share the same costs, priorities and evidence coverage. Each visitor has their own local Studio scenario. This is not a shared multiplayer session; export before reloading to keep a copy.
 
@@ -53,7 +54,7 @@ npm run build
 npm start
 ```
 
-The committed data is ready to use. You do not need to run Python or download datasets to start the app.
+The committed, compressed neighborhood data is ready to use. `predev` / `prebuild` generates hashed static chunks; keep the repository root available when building the `web` directory. You do not need to run Python or download datasets to start the app.
 
 ## Hosting
 
@@ -63,7 +64,7 @@ For a new Vercel project: import this repository, select **Next.js**, set the ro
 
 Studio works without AI credentials. Explorer has a template explanation fallback; set `AI_EXPLANATIONS=off` for a template-only demo. See [web setup](web/README.md) for optional model configuration. Vercel Hobby is intended for personal, non-commercial use; check [plan eligibility](https://vercel.com/docs/plans/hobby) before using it for paid work.
 
-Most simulation work happens in each visitor's browser. Studio loads generated neighborhood files instead of the full parcel/building download. `npm run dev` and `npm run build` prepare these automatically; the original files remain available to Explorer. The shared walking graph stays loaded so routes can cross neighborhood boundaries. A 30-user load test has not been run.
+Most simulation work happens in each visitor's browser. Both views load generated neighborhood files instead of the full city download. `npm run dev` and `npm run build` prepare these automatically. Studio loads a buffered regional walking graph for the selected site so nearby routes can cross neighborhood boundaries. A 30-user load test has not been run.
 
 ## Next with the team
 
@@ -87,3 +88,11 @@ Policy review remains deferred for planning boundaries, existing/proposed labels
 - YY Ng — map and frontend
 
 AI coding tools assisted development under the team's direction. Housing scores are calculated from explicit rules, not generated by a language model.
+
+## City data release
+
+Canonical inputs live in `pipeline/data/processed/parcels/*.geojson.gz`, plus compressed buildings and walking-network files. No full-city parcel, building or graph file is fetched on entry. Browser data is static and cacheable; the explanation endpoint opens at most the requested neighborhoods. No database or paid data service is needed.
+
+Rebuild with `python pipeline/run_pipeline.py`, `python pipeline/build_context.py`, and `python pipeline/build_network.py`, after installing `pipeline/requirements.txt`. Run `npm run benchmark:studio` after a web build for manifest, chunk and initial-data sizes. See [Validation](docs/VALIDATION.md) for release measurements, source refreshes and browser checks.
+
+Coverage note: the 142,865 mapped records include 142,571 identified parcels and 294 county polygons without a unique PIN. Those polygons have stable `SITE…` map IDs, retain the source label, and disclose that assessment and parcel-ID-based property flags are unknown. No neighborhood is omitted.

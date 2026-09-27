@@ -85,6 +85,20 @@ export function geometriesOverlap(a, b) {
   return false
 }
 
+/** Display-only membership: retain a whole recorded segment that touches a polygon, without clipping it. */
+export function segmentTouchesPolygon(a, b, geometry) {
+  const scale = METRES * Math.cos(a[1] * Math.PI / 180)
+  const project = p => [(p[0] - a[0]) * scale, (p[1] - a[1]) * METRES]
+  const start = [0, 0], end = project(b)
+  for (const polygon of polygons(geometry)) {
+    const rings = polygon.map(r => r.map(project))
+    const contains = p => insideRing(p, rings[0]) && !rings.slice(1).some(h => insideRing(p, h))
+    if (contains(start) || contains(end)) return true
+    for (const ring of rings) for (let i = 1; i < ring.length; i++) if (intersects(start, end, ring[i - 1], ring[i])) return true
+  }
+  return false
+}
+
 /** Fixed-size search, preferring parcel edges; explicit manual placements are never moved. */
 export function fitMassing(geometry, width, depth, placement = null, existingBuildings = null) {
   const origin = geometryCenter(geometry)

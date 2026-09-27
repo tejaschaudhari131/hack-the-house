@@ -3,9 +3,71 @@
 What has been checked, how, and what has not. Run everything with:
 
 ```bash
-cd pipeline && python3 test_score.py && python3 test_pii.py && python3 test_sites.py
+python -m unittest discover -s pipeline -p 'test_*.py'
 cd web && npm ci && npm test && npm run build
 ```
+
+## Citywide release — September 27, 2026
+
+- **Coverage:** all 90 Pittsburgh neighborhoods; 142,865 mapped records (142,571 identified parcels plus 294 anonymous/shared-ground polygons with internal map IDs). No neighborhood omitted. 140,983 records match assessment evidence. Unknown parcel-ID-based property flags stay unknown.
+- **Buildings/network:** 116,502 recorded outlines; 371,689 walking nodes, 845,872 directed edges, 311 mapped parks with walking access. 94 park ways lacked a valid polygon or mapped access; relation-only parks remain out of scope. Recorded outlines and estimated heights are not a verified current dwelling inventory.
+- **Automated checks:** 49 Python tests pass. **30 web test files pass**. They cover original study regressions plus all 90 canonical-to-browser parcel round trips, unique IDs, lookup, hashes, chunk failures/aborts, graph remapping and cache behavior. Build succeeds in **53.46 seconds**, including data preparation. Routing tests cover curved/same-edge routes, disconnected crossings, foot direction, bridge snapping exclusions, fractional new junctions, immutable baselines and no score/land effect from saving existing routes.
+- **Transport:** no citywide parcel/building/graph download on entry. Hashed parcel/building parts target 12 MiB, with one buffered routing region per active site. The manifest is **57,246 bytes** (11,328 gzip). The largest individual file is a regional graph at **15,460,400 bytes**. Static public assets total **838,256,997 bytes**; the explanation function trace totals **34,903,169 bytes**, below the ordinary 250 MB function limit. This is CDN storage, not a per-visit download. Each file is below 50 MB. Canonical compressed sources total about 46.5 MB; the original study files are test fixtures outside the public directory. Map assets are excluded from the explanation function, which reads only requested compressed neighborhoods.
+
+### Local browser checks and preview handoff
+
+Checked the production build locally in the desktop browser, using the same default parcel in both views. Every row below loaded scores, zoning and public-source evidence. Studio successfully added one single-family building at each site and compared it with all other templates. Explorer successfully placed its A/B comparison options. No browser console errors were captured in either view.
+
+| Neighborhood | Parcel PIN | Studio single-family score | Explorer A / B scores |
+| --- | --- | --- | --- |
+| Squirrel Hill North | `0085L00096000000` | 80.3 | Single-family 69.7 / large apartment 75.4 |
+| East Liberty | `0083F00297000000` | 71.5 | Townhouse/duplex 69.3 / single-family 65.4 |
+| Carrick | `0060A00150000000` | 62.8 | Single-family 63.8 / small apartment 68.6 |
+| Middle Hill | `0010G00045000000` | 75.5 | Townhouse/duplex 66.7 / small apartment 65.9 |
+| Brookline | `0062S00279000000` | 73.7 | Single-family 59.8 / townhouse/duplex 63.1 |
+
+These are separate models, not expected cross-view score parity. Studio retains one draft plus type comparisons, as requested; it has no A/B slots. Middle Hill also produced eligible Studio duplex/triplex scores of 77.6/75.7. Unsupported or conflicting alternatives had no Studio score. Squirrel Hill North's selected parcel lacked a mapped walking connection: access/capacity stayed excluded (5/7 factors), not zero. Explorer is preserved as a reference: its original comparison still displays scores alongside zoning exclusions or special-approval labels.
+
+Neighborhood switching and direct PIN links were exercised. Public-source drawers showed the actual PRT stop, routes and service date for each Explorer parcel. The local `/api/explain` endpoint returned HTTP 200 for all five PINs using the compressed neighborhood sources; the inspected response identified the deterministic template fallback.
+
+The infrastructure UI snapped two Hazelwood points (`-79.943814, 40.411423` → `-79.944191, 40.410018`) and saved a **225 m / 2.8 minute** route. Its underlying network route has ten vertices. Saving it left the displayed stop/park access unchanged, as expected for existing infrastructure. Automated tests additionally cover new connections into edge interiors; visual road crossings alone do not create junctions.
+
+Vercel successfully deployed feature commit `c3540f0` at the [branch preview](https://hack-the-house-git-playhouse-citywide-tej-fff0.vercel.app). The preview requires the team's login, so these browser checks were **local, not preview checks**. The owner has assigned manual preview testing to a teammate. [PR #7](https://github.com/tejaschaudhari131/hack-the-house/pull/7) is prepared for review and must remain unmerged until the team decides to merge.
+
+For the teammate: open each PIN above on `/` and `/explore`, check sources and zoning, add a building in Studio, compare types (A/B in Explorer), and try **Infra → Route between two points**. Confirm camera panning and neighborhood switching on the actual deployed site. No screenshots were generated.
+
+### Neighborhood-scoped rendering follow-up
+
+Zooming out can no longer expand detail loading to every neighborhood. The selected neighborhood plus its immediate polygon-adjacent neighbors defines the maximum display scope (at most nine neighbors in this release). Only members intersecting the current view are requested. The final viewport triggers downloads, with a two-neighborhood concurrency limit and cancellation of obsolete queued work. Collision-context buildings outside that display scope are filtered without dropping them from evidence. Repeated pointer/UI updates no longer rebuild the parcel search catalogue or upload unchanged feature sets. Infra uses the graph already in memory instead of fetching its separate roads file.
+
+All 30 web test files pass, including bounded concurrency/cancellation, one-hop neighborhood scope, unchanged full-resolution coordinates/heights for all 116,502 building outlines, and unchanged graph vertices/costs. A local production-browser check recorded:
+
+- Hazelwood close view: 219 buildings and 521 parcel outlines; selected neighborhood only.
+- Wider view: 6,811 buildings and 8,980 parcel outlines, confined to Hazelwood and its four adjoining neighborhoods.
+- City overview: **0 buildings, 0 parcel outlines, 0 road segments**; housing score remained **80.1**.
+- Zoom back into Infra: 772 buildings, 1,293 parcel outlines and 1,458 road segments across the two visible allowed neighborhoods. The same two-point route still returned **225 m / 2.8 minutes**.
+- Switched to Middle Hill and panned: scope changed to Middle Hill and its adjoining neighborhoods, duplex score stayed **77.6**, and adding a duplex produced a one-building/two-home plan. No browser console errors were captured.
+
+Counts depend on camera size and position. These verify bounded work and correct behavior, not an FPS guarantee on every device. No coordinate simplification, height rounding, scoring change or routing-graph pruning was introduced. Explorer already loads a single neighborhood and retains its reference UI.
+
+### Original-study parity and explicit source corrections
+
+`python pipeline/audit_citywide.py` reproduces [CITY_DATA_AUDIT.json](CITY_DATA_AUDIT.json) against the frozen `527d963` parcel release (unchanged by transit fix `9cf9ce1`). All **8,644 real original PINs** remain. The old ambiguous `COMMON GROUND` record is retained geographically as `SITEB02FAC2205E6ED69`; it is no longer used as a shared parcel identifier.
+
+**6,019 retained PINs have identical score dictionaries; 2,625 differ.** Scoring formulas, type multipliers and weights have not changed. The release regression test requires evidence/factor changes to accompany any score change. Differences are not presented as exact production parity:
+
+- The complete safe-column county assessment extract recovers **307 previously unmatched study records**, including 25 valid sales. Lower Lawrenceville's valid-sale count changes 81 → 106 and median sale price per finished square foot 274.3 → 270.6. This changes neighborhood market inputs and related type scores. The example `0049N00010000000` duplex market score changes 39.9 → 40.9 and equity 26.8 → 26.6; its other scored factors are unchanged.
+- Full source coverage retains anonymous polygons separately and applies maximum-overlap neighborhood assignment. Study counts become Hazelwood 3,604; Lower Lawrenceville 1,352; Central Lawrenceville 2,220; Upper Lawrenceville 1,476. Denominators and rounded market factors can therefore change. PIN `0026C00112000000` moves to Bloomfield and `0120P00222000000` to Stanton Heights, with their actual locations retained.
+- Expanded hazard coverage corrects the long parcel `0080C00250000900`: flood/steep-slope overlaps extend beyond the old study query area. Its single-family hazard score changes 31.5 → 35.1. Two flood-overlap properties also change without necessarily changing rounded scores.
+- The Hazelwood example `0056F00338000000` retains identical parcel scores. Studio access can change with refreshed OSM context; transit capacity additionally uses the explicitly disclosed schedule × spare-place assumption from `9cf9ce1`. These are separate from the parcel score model.
+
+### Remaining limits
+
+Regional routing buffers can omit long detours; unmapped/disconnected access stays unknown. PRT schedules do not establish actual occupancy or utility capacity. Expert zoning, engineering, current occupancy, practitioner validation, mobile frame-rate and 30-user load testing remain unverified. No new paid services or secrets were added.
+
+The initial Studio data for the default Hazelwood site is about **4.77 MB gzip**; the five new-neighborhood examples range from 3.80 to 5.69 MB gzip. These are local file measurements assuming compressed delivery, excluding JS/CSS, basemap tiles and adjacent neighborhoods fetched after camera movement. The benchmark script reproduces them. The largest tracked Git file is the old 27.85 MB regression fixture; no tracked file exceeds 50 MB. Derived browser chunks are generated at build time rather than stored in Git.
+
+## Historical checkpoints
 
 At the Checkpoint 3 commit: JS 66/66 pass; Python `test_score` 18, `test_pii` 5, `test_sites` 5 pass; `next build` succeeds.
 

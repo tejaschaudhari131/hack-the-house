@@ -5,10 +5,10 @@ import { rectangleAt, rectangleInside, fitMassing, slimParcels, geometryBounds, 
 import { evaluatePlanner, nearbyStops, preferredStop, serviceMetrics } from './plannerModel.js'
 import { initialScenario, scenarioReducer, historyFor, EXAMPLES, scenarioExport } from './plannerState.js'
 
-const parcels = JSON.parse(readFileSync(new URL('../public/data/parcels.geojson', import.meta.url)))
-const zoning = JSON.parse(readFileSync(new URL('../public/data/zoning.json', import.meta.url)))
-const stops = JSON.parse(readFileSync(new URL('../public/data/stops.geojson', import.meta.url)))
-const buildings = JSON.parse(readFileSync(new URL('../public/data/existing-buildings.geojson', import.meta.url)))
+const parcels = JSON.parse(readFileSync(new URL('../testdata/study/parcels.geojson', import.meta.url)))
+const zoning = JSON.parse(readFileSync(new URL('../testdata/study/zoning.json', import.meta.url)))
+const stops = JSON.parse(readFileSync(new URL('../testdata/study/stops.geojson', import.meta.url)))
+const buildings = JSON.parse(readFileSync(new URL('../testdata/study/existing-buildings.geojson', import.meta.url)))
 function inputFor(pin = EXAMPLES[0].pin) {
   const feature = parcels.features.find(f => f.properties.pin === pin)
   const stop = preferredStop(nearbyStops(feature, stops))

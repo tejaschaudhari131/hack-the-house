@@ -1,0 +1,333 @@
+{
+  "parcel_count": 142865,
+  "neighborhood_count": 90,
+  "internal_map_id_count": 294,
+  "placeholder_replacements": {
+    "COMMON GROUND": "SITEB02FAC2205E6ED69"
+  },
+  "per_neighborhood": {
+    "Allegheny Center": 69,
+    "Allegheny West": 282,
+    "Allentown": 1555,
+    "Arlington": 1057,
+    "Arlington Heights": 9,
+    "Banksville": 1481,
+    "Bedford Dwellings": 269,
+    "Beechview": 4203,
+    "Beltzhoover": 1750,
+    "Bloomfield": 3469,
+    "Bluff": 780,
+    "Bon Air": 512,
+    "Brighton Heights": 3309,
+    "Brookline": 6495,
+    "California-Kirkbride": 866,
+    "Carrick": 4684,
+    "Central Business District": 1330,
+    "Central Lawrenceville": 2220,
+    "Central Northside": 1781,
+    "Central Oakland": 1118,
+    "Chartiers City": 331,
+    "Chateau": 259,
+    "Crafton Heights": 1975,
+    "Crawford-Roberts": 1464,
+    "Duquesne Heights": 1866,
+    "East Allegheny": 1280,
+    "East Carnegie": 315,
+    "East Hills": 1617,
+    "East Liberty": 1478,
+    "Elliott": 1631,
+    "Esplen": 384,
+    "Fairywood": 279,
+    "Fineview": 883,
+    "Friendship": 381,
+    "Garfield": 2233,
+    "Glen Hazel": 75,
+    "Greenfield": 3584,
+    "Hays": 416,
+    "Hazelwood": 3604,
+    "Highland Park": 2131,
+    "Homewood North": 2536,
+    "Homewood South": 1874,
+    "Homewood West": 662,
+    "Knoxville": 1728,
+    "Larimer": 1700,
+    "Lincoln Place": 1776,
+    "Lincoln-Lemington-Belmar": 2703,
+    "Lower Lawrenceville": 1352,
+    "Manchester": 1486,
+    "Marshall-Shadeland": 2692,
+    "Middle Hill": 1878,
+    "Morningside": 1547,
+    "Mount Washington": 4433,
+    "Mt. Oliver": 298,
+    "New Homestead": 1102,
+    "North Oakland": 1291,
+    "North Shore": 279,
+    "Northview Heights": 97,
+    "Oakwood": 430,
+    "Overbrook": 2090,
+    "Perry North": 2269,
+    "Perry South": 3152,
+    "Point Breeze": 2148,
+    "Point Breeze North": 710,
+    "Polish Hill": 891,
+    "Regent Square": 390,
+    "Ridgemont": 385,
+    "Shadyside": 3985,
+    "Sheraden": 2753,
+    "South Oakland": 1651,
+    "South Shore": 167,
+    "South Side Flats": 3412,
+    "South Side Slopes": 3110,
+    "Spring Garden": 786,
+    "Spring Hill-City View": 1524,
+    "Squirrel Hill North": 2819,
+    "Squirrel Hill South": 4718,
+    "St. Clair": 192,
+    "Stanton Heights": 2388,
+    "Strip District": 829,
+    "Summer Hill": 615,
+    "Swisshelm Park": 762,
+    "Terrace Village": 201,
+    "Troy Hill": 1301,
+    "Upper Hill": 1339,
+    "Upper Lawrenceville": 1476,
+    "West End": 382,
+    "West Oakland": 793,
+    "Westwood": 1583,
+    "Windgap": 755
+  },
+  "baseline_commit": "527d963 (parcel scores unchanged by 9cf9ce1)",
+  "baseline_count": 8645,
+  "baseline_retained": 8644,
+  "identical_scores": 6019,
+  "changed_scores": 2625,
+  "missing_baseline_pins": [
+    "COMMON GROUND"
+  ],
+  "reassigned_baseline_pins": [
+    {
+      "pin": "0026C00112000000",
+      "before": "Lower Lawrenceville",
+      "after": "Bloomfield"
+    },
+    {
+      "pin": "0120P00222000000",
+      "before": "Upper Lawrenceville",
+      "after": "Stanton Heights"
+    }
+  ],
+  "changed_input_counts": {
+    "lot_sqft": 306,
+    "neighborhood": 2,
+    "zip": 307,
+    "land_use": 307,
+    "land_use_class": 307,
+    "vacant_land_use": 307,
+    "address": 307,
+    "area": 2,
+    "living_sqft": 181,
+    "vacant_lot": 286,
+    "year_built": 181,
+    "last_valid_sale_price": 25,
+    "last_valid_sale_year": 25,
+    "sfha_overlap": 2,
+    "steep_slope_overlap": 1,
+    "flood_02_overlap": 1
+  },
+  "changed_factor_counts": {
+    "market_heat": 3568,
+    "turnover_score": 1349,
+    "price_per_sqft": 1349,
+    "valid_sales": 1349,
+    "price_score": 1349,
+    "turnover_per_100": 7168,
+    "displacement": 3568,
+    "lot_fit": 283,
+    "steep_slope_component": 1,
+    "climate_base": 1
+  },
+  "changed_type_factor_counts": {
+    "demand": 5768,
+    "equity": 6471,
+    "confidence": 1228,
+    "confidence_label": 1228,
+    "climate_risk": 4
+  },
+  "examples": {
+    "0056F00338000000": {
+      "same_scores": true,
+      "before": {
+        "single_family": {
+          "demand": 58.1,
+          "transit": 97.5,
+          "equity": 40.5,
+          "climate_risk": 2.2,
+          "displacement_risk": 30.3,
+          "carbon_index": 61.0,
+          "confidence": 0.9,
+          "confidence_label": "high"
+        },
+        "townhouse_duplex": {
+          "demand": 57.6,
+          "transit": 97.5,
+          "equity": 48.5,
+          "climate_risk": 2.3,
+          "displacement_risk": 30.3,
+          "carbon_index": 40.2,
+          "confidence": 0.9,
+          "confidence_label": "high"
+        },
+        "small_apartment": {
+          "demand": 47.2,
+          "transit": 97.5,
+          "equity": 55.0,
+          "climate_risk": 2.5,
+          "displacement_risk": 30.3,
+          "carbon_index": 35.9,
+          "confidence": 0.9,
+          "confidence_label": "high"
+        },
+        "large_apartment": {
+          "demand": 13.1,
+          "transit": 97.5,
+          "equity": 58.0,
+          "climate_risk": 2.7,
+          "displacement_risk": 30.3,
+          "carbon_index": 28.0,
+          "confidence": 0.9,
+          "confidence_label": "high"
+        }
+      },
+      "after": {
+        "single_family": {
+          "demand": 58.1,
+          "transit": 97.5,
+          "equity": 40.5,
+          "climate_risk": 2.2,
+          "displacement_risk": 30.3,
+          "carbon_index": 61.0,
+          "confidence": 0.9,
+          "confidence_label": "high"
+        },
+        "townhouse_duplex": {
+          "demand": 57.6,
+          "transit": 97.5,
+          "equity": 48.5,
+          "climate_risk": 2.3,
+          "displacement_risk": 30.3,
+          "carbon_index": 40.2,
+          "confidence": 0.9,
+          "confidence_label": "high"
+        },
+        "small_apartment": {
+          "demand": 47.2,
+          "transit": 97.5,
+          "equity": 55.0,
+          "climate_risk": 2.5,
+          "displacement_risk": 30.3,
+          "carbon_index": 35.9,
+          "confidence": 0.9,
+          "confidence_label": "high"
+        },
+        "large_apartment": {
+          "demand": 13.1,
+          "transit": 97.5,
+          "equity": 58.0,
+          "climate_risk": 2.7,
+          "displacement_risk": 30.3,
+          "carbon_index": 28.0,
+          "confidence": 0.9,
+          "confidence_label": "high"
+        }
+      }
+    },
+    "0049N00010000000": {
+      "same_scores": false,
+      "before": {
+        "single_family": {
+          "demand": 72.4,
+          "transit": 97.1,
+          "equity": 21.9,
+          "climate_risk": 17.7,
+          "displacement_risk": 87.2,
+          "carbon_index": 61.2,
+          "confidence": 1.0,
+          "confidence_label": "high"
+        },
+        "townhouse_duplex": {
+          "demand": 39.9,
+          "transit": 97.1,
+          "equity": 26.8,
+          "climate_risk": 18.6,
+          "displacement_risk": 87.2,
+          "carbon_index": 40.4,
+          "confidence": 1.0,
+          "confidence_label": "high"
+        },
+        "small_apartment": {
+          "demand": 72.4,
+          "transit": 97.1,
+          "equity": 30.7,
+          "climate_risk": 19.6,
+          "displacement_risk": 87.2,
+          "carbon_index": 36.1,
+          "confidence": 1.0,
+          "confidence_label": "high"
+        },
+        "large_apartment": {
+          "demand": 47.6,
+          "transit": 97.1,
+          "equity": 30.6,
+          "climate_risk": 21.2,
+          "displacement_risk": 87.2,
+          "carbon_index": 28.2,
+          "confidence": 1.0,
+          "confidence_label": "high"
+        }
+      },
+      "after": {
+        "single_family": {
+          "demand": 73.4,
+          "transit": 97.1,
+          "equity": 21.8,
+          "climate_risk": 17.7,
+          "displacement_risk": 87.2,
+          "carbon_index": 61.2,
+          "confidence": 1.0,
+          "confidence_label": "high"
+        },
+        "townhouse_duplex": {
+          "demand": 40.9,
+          "transit": 97.1,
+          "equity": 26.6,
+          "climate_risk": 18.6,
+          "displacement_risk": 87.2,
+          "carbon_index": 40.4,
+          "confidence": 1.0,
+          "confidence_label": "high"
+        },
+        "small_apartment": {
+          "demand": 73.4,
+          "transit": 97.1,
+          "equity": 30.4,
+          "climate_risk": 19.6,
+          "displacement_risk": 87.2,
+          "carbon_index": 36.1,
+          "confidence": 1.0,
+          "confidence_label": "high"
+        },
+        "large_apartment": {
+          "demand": 48.7,
+          "transit": 97.1,
+          "equity": 30.2,
+          "climate_risk": 21.2,
+          "displacement_risk": 87.2,
+          "carbon_index": 28.2,
+          "confidence": 1.0,
+          "confidence_label": "high"
+        }
+      }
+    }
+  }
+}

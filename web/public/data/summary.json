@@ -1,128 +1,1665 @@
 {
-  "project": "Housing Typology, Equity & Climate Matchmaker",
+  "project": "Playhouse",
   "pulled_at": "2026-09-27",
-  "why_these_places": "Hazelwood and Lawrenceville are the two places the scores can actually separate. In this pull, slopes of 25 percent or greater (a landslide-risk proxy, not a landslide inventory) touch about 57 percent of Hazelwood parcels and about 15 percent of Lawrenceville parcels. Mapped undermined areas show up in Hazelwood (about 13 percent of parcels) and not in these Lawrenceville parcels. Mapped FEMA flood zones run the other way: about 6 percent of Lawrenceville parcels and under 1 percent of Hazelwood parcels. Incomes are lower in Hazelwood. Lawrenceville (Lower, Central, and Upper) has frequent bus service and higher sale prices, which is the displacement pressure the equity score is meant to show. Glen Hazel is left out on purpose: it is its own neighborhood, not part of the Hazelwood boundary.",
+  "why_these_places": "All 90 official City of Pittsburgh neighborhoods are included. County parcels are screened against the union of the city neighborhood boundaries and assigned to the neighborhood with the largest polygon overlap. City-edge parcels are retained when their interior representative point is inside the city or at least half their area overlaps it. Original parcel outlines are retained for physical-fit checks. Scores compare housing scenarios at a selected parcel; they do not recommend replacing a neighborhood. Missing evidence and unreviewed zoning stay explicit.",
   "sale_cutoff": "2021-09-26",
   "sale_rule": "SALECODE 0 or SALEDESC starting with VALID SALE, price at least $10,000, on or after the cutoff. Nominal and multi-parcel sales are excluded.",
   "county_median_income": 78548.0,
   "county_median_income_source": "ACS 2024 5-year B19013 for Allegheny County (GEOID 0500000US42003)",
-  "parcel_count": 8645,
+  "parcel_count": 142865,
   "parcels_by_area": {
-    "Lawrenceville": 5045,
-    "Hazelwood": 3600
+    "Allegheny West": 282,
+    "Central Northside": 1781,
+    "Allegheny Center": 69,
+    "East Allegheny": 1280,
+    "North Shore": 279,
+    "California-Kirkbride": 866,
+    "Manchester": 1486,
+    "Chateau": 259,
+    "Mount Washington": 4433,
+    "Allentown": 1555,
+    "South Side Slopes": 3110,
+    "Beltzhoover": 1750,
+    "Knoxville": 1728,
+    "South Side Flats": 3412,
+    "South Shore": 167,
+    "Arlington": 1057,
+    "Mt. Oliver": 298,
+    "St. Clair": 192,
+    "Arlington Heights": 9,
+    "Hays": 416,
+    "Carrick": 4684,
+    "Banksville": 1481,
+    "Beechview": 4203,
+    "Ridgemont": 385,
+    "Westwood": 1583,
+    "Middle Hill": 1878,
+    "Bedford Dwellings": 269,
+    "Strip District": 829,
+    "Crawford-Roberts": 1464,
+    "Polish Hill": 891,
+    "Upper Hill": 1339,
+    "Terrace Village": 201,
+    "Lawrenceville": 5048,
+    "Brookline": 6495,
+    "Duquesne Heights": 1866,
+    "Bon Air": 512,
+    "West End": 382,
+    "Friendship": 381,
+    "Bloomfield": 3469,
+    "Garfield": 2233,
+    "Shadyside": 3985,
+    "North Oakland": 1291,
+    "East Liberty": 1478,
+    "Bluff": 780,
+    "Central Business District": 1330,
+    "West Oakland": 793,
+    "South Oakland": 1651,
+    "Brighton Heights": 3309,
+    "Marshall-Shadeland": 2692,
+    "Perry North": 2269,
+    "Perry South": 3152,
+    "Overbrook": 2090,
+    "Stanton Heights": 2388,
+    "Fineview": 883,
+    "Central Oakland": 1118,
+    "Squirrel Hill South": 4718,
+    "Squirrel Hill North": 2819,
+    "Sheraden": 2753,
+    "Windgap": 755,
+    "Chartiers City": 331,
+    "Esplen": 384,
+    "Fairywood": 279,
+    "Elliott": 1631,
+    "Crafton Heights": 1975,
+    "Spring Hill-City View": 1524,
+    "Troy Hill": 1301,
+    "Spring Garden": 786,
+    "East Carnegie": 315,
+    "Oakwood": 430,
+    "East Hills": 1617,
+    "Homewood South": 1874,
+    "Homewood North": 2536,
+    "Highland Park": 2131,
+    "Larimer": 1700,
+    "Morningside": 1547,
+    "Glen Hazel": 75,
+    "Hazelwood": 3604,
+    "New Homestead": 1102,
+    "Greenfield": 3584,
+    "Lincoln Place": 1776,
+    "Lincoln-Lemington-Belmar": 2703,
+    "Homewood West": 662,
+    "Point Breeze North": 710,
+    "Point Breeze": 2148,
+    "Summer Hill": 615,
+    "Northview Heights": 97,
+    "Regent Square": 390,
+    "Swisshelm Park": 762
   },
   "neighborhoods": [
     {
-      "name": "Lower Lawrenceville",
-      "group": "Lawrenceville",
-      "parcel_count": 1349,
-      "valid_sales": 81,
-      "price_per_sqft": 274.3,
-      "turnover_per_100": 6.0
+      "name": "Allegheny Center",
+      "group": "Allegheny Center",
+      "parcel_count": 69,
+      "valid_sales": 0,
+      "price_per_sqft": null,
+      "turnover_per_100": 0.0
+    },
+    {
+      "name": "Allegheny West",
+      "group": "Allegheny West",
+      "parcel_count": 282,
+      "valid_sales": 14,
+      "price_per_sqft": 215.3,
+      "turnover_per_100": 4.96
+    },
+    {
+      "name": "Allentown",
+      "group": "Allentown",
+      "parcel_count": 1555,
+      "valid_sales": 35,
+      "price_per_sqft": 53.3,
+      "turnover_per_100": 2.25
+    },
+    {
+      "name": "Arlington",
+      "group": "Arlington",
+      "parcel_count": 1057,
+      "valid_sales": 24,
+      "price_per_sqft": 70.2,
+      "turnover_per_100": 2.27
+    },
+    {
+      "name": "Arlington Heights",
+      "group": "Arlington Heights",
+      "parcel_count": 9,
+      "valid_sales": 0,
+      "price_per_sqft": null,
+      "turnover_per_100": 0.0
+    },
+    {
+      "name": "Banksville",
+      "group": "Banksville",
+      "parcel_count": 1481,
+      "valid_sales": 127,
+      "price_per_sqft": 180.3,
+      "turnover_per_100": 8.58
+    },
+    {
+      "name": "Bedford Dwellings",
+      "group": "Bedford Dwellings",
+      "parcel_count": 269,
+      "valid_sales": 1,
+      "price_per_sqft": 84.7,
+      "turnover_per_100": 0.37
+    },
+    {
+      "name": "Beechview",
+      "group": "Beechview",
+      "parcel_count": 4203,
+      "valid_sales": 292,
+      "price_per_sqft": 128.0,
+      "turnover_per_100": 6.95
+    },
+    {
+      "name": "Beltzhoover",
+      "group": "Beltzhoover",
+      "parcel_count": 1750,
+      "valid_sales": 14,
+      "price_per_sqft": 31.1,
+      "turnover_per_100": 0.8
+    },
+    {
+      "name": "Bloomfield",
+      "group": "Bloomfield",
+      "parcel_count": 3469,
+      "valid_sales": 197,
+      "price_per_sqft": 188.5,
+      "turnover_per_100": 5.68
+    },
+    {
+      "name": "Bluff",
+      "group": "Bluff",
+      "parcel_count": 780,
+      "valid_sales": 6,
+      "price_per_sqft": 112.4,
+      "turnover_per_100": 0.77
+    },
+    {
+      "name": "Bon Air",
+      "group": "Bon Air",
+      "parcel_count": 512,
+      "valid_sales": 41,
+      "price_per_sqft": 151.9,
+      "turnover_per_100": 8.01
+    },
+    {
+      "name": "Brighton Heights",
+      "group": "Brighton Heights",
+      "parcel_count": 3309,
+      "valid_sales": 233,
+      "price_per_sqft": 136.1,
+      "turnover_per_100": 7.04
+    },
+    {
+      "name": "Brookline",
+      "group": "Brookline",
+      "parcel_count": 6495,
+      "valid_sales": 605,
+      "price_per_sqft": 159.0,
+      "turnover_per_100": 9.31
+    },
+    {
+      "name": "California-Kirkbride",
+      "group": "California-Kirkbride",
+      "parcel_count": 866,
+      "valid_sales": 6,
+      "price_per_sqft": 92.8,
+      "turnover_per_100": 0.69
+    },
+    {
+      "name": "Carrick",
+      "group": "Carrick",
+      "parcel_count": 4684,
+      "valid_sales": 358,
+      "price_per_sqft": 97.3,
+      "turnover_per_100": 7.64
+    },
+    {
+      "name": "Central Business District",
+      "group": "Central Business District",
+      "parcel_count": 1330,
+      "valid_sales": 138,
+      "price_per_sqft": 246.5,
+      "turnover_per_100": 10.38
     },
     {
       "name": "Central Lawrenceville",
       "group": "Lawrenceville",
-      "parcel_count": 2219,
+      "parcel_count": 2220,
       "valid_sales": 207,
       "price_per_sqft": 266.9,
-      "turnover_per_100": 9.33
+      "turnover_per_100": 9.32
+    },
+    {
+      "name": "Central Northside",
+      "group": "Central Northside",
+      "parcel_count": 1781,
+      "valid_sales": 94,
+      "price_per_sqft": 235.5,
+      "turnover_per_100": 5.28
+    },
+    {
+      "name": "Central Oakland",
+      "group": "Central Oakland",
+      "parcel_count": 1118,
+      "valid_sales": 18,
+      "price_per_sqft": 191.4,
+      "turnover_per_100": 1.61
+    },
+    {
+      "name": "Chartiers City",
+      "group": "Chartiers City",
+      "parcel_count": 331,
+      "valid_sales": 14,
+      "price_per_sqft": 84.8,
+      "turnover_per_100": 4.23
+    },
+    {
+      "name": "Chateau",
+      "group": "Chateau",
+      "parcel_count": 259,
+      "valid_sales": 0,
+      "price_per_sqft": null,
+      "turnover_per_100": 0.0
+    },
+    {
+      "name": "Crafton Heights",
+      "group": "Crafton Heights",
+      "parcel_count": 1975,
+      "valid_sales": 126,
+      "price_per_sqft": 131.4,
+      "turnover_per_100": 6.38
+    },
+    {
+      "name": "Crawford-Roberts",
+      "group": "Crawford-Roberts",
+      "parcel_count": 1464,
+      "valid_sales": 73,
+      "price_per_sqft": 195.3,
+      "turnover_per_100": 4.99
+    },
+    {
+      "name": "Duquesne Heights",
+      "group": "Duquesne Heights",
+      "parcel_count": 1866,
+      "valid_sales": 127,
+      "price_per_sqft": 223.3,
+      "turnover_per_100": 6.81
+    },
+    {
+      "name": "East Allegheny",
+      "group": "East Allegheny",
+      "parcel_count": 1280,
+      "valid_sales": 59,
+      "price_per_sqft": 194.8,
+      "turnover_per_100": 4.61
+    },
+    {
+      "name": "East Carnegie",
+      "group": "East Carnegie",
+      "parcel_count": 315,
+      "valid_sales": 15,
+      "price_per_sqft": 100.1,
+      "turnover_per_100": 4.76
+    },
+    {
+      "name": "East Hills",
+      "group": "East Hills",
+      "parcel_count": 1617,
+      "valid_sales": 19,
+      "price_per_sqft": 64.4,
+      "turnover_per_100": 1.18
+    },
+    {
+      "name": "East Liberty",
+      "group": "East Liberty",
+      "parcel_count": 1478,
+      "valid_sales": 87,
+      "price_per_sqft": 222.8,
+      "turnover_per_100": 5.89
+    },
+    {
+      "name": "Elliott",
+      "group": "Elliott",
+      "parcel_count": 1631,
+      "valid_sales": 60,
+      "price_per_sqft": 69.3,
+      "turnover_per_100": 3.68
+    },
+    {
+      "name": "Esplen",
+      "group": "Esplen",
+      "parcel_count": 384,
+      "valid_sales": 2,
+      "price_per_sqft": 22.6,
+      "turnover_per_100": 0.52
+    },
+    {
+      "name": "Fairywood",
+      "group": "Fairywood",
+      "parcel_count": 279,
+      "valid_sales": 6,
+      "price_per_sqft": 70.2,
+      "turnover_per_100": 2.15
+    },
+    {
+      "name": "Fineview",
+      "group": "Fineview",
+      "parcel_count": 883,
+      "valid_sales": 23,
+      "price_per_sqft": 136.0,
+      "turnover_per_100": 2.6
+    },
+    {
+      "name": "Friendship",
+      "group": "Friendship",
+      "parcel_count": 381,
+      "valid_sales": 13,
+      "price_per_sqft": 182.8,
+      "turnover_per_100": 3.41
+    },
+    {
+      "name": "Garfield",
+      "group": "Garfield",
+      "parcel_count": 2233,
+      "valid_sales": 69,
+      "price_per_sqft": 175.6,
+      "turnover_per_100": 3.09
+    },
+    {
+      "name": "Glen Hazel",
+      "group": "Glen Hazel",
+      "parcel_count": 75,
+      "valid_sales": 0,
+      "price_per_sqft": null,
+      "turnover_per_100": 0.0
+    },
+    {
+      "name": "Greenfield",
+      "group": "Greenfield",
+      "parcel_count": 3584,
+      "valid_sales": 298,
+      "price_per_sqft": 180.4,
+      "turnover_per_100": 8.31
+    },
+    {
+      "name": "Hays",
+      "group": "Hays",
+      "parcel_count": 416,
+      "valid_sales": 7,
+      "price_per_sqft": 52.9,
+      "turnover_per_100": 1.68
     },
     {
       "name": "Hazelwood",
       "group": "Hazelwood",
-      "parcel_count": 3600,
+      "parcel_count": 3604,
       "valid_sales": 74,
       "price_per_sqft": 153.1,
-      "turnover_per_100": 2.06
+      "turnover_per_100": 2.05
+    },
+    {
+      "name": "Highland Park",
+      "group": "Highland Park",
+      "parcel_count": 2131,
+      "valid_sales": 179,
+      "price_per_sqft": 231.9,
+      "turnover_per_100": 8.4
+    },
+    {
+      "name": "Homewood North",
+      "group": "Homewood North",
+      "parcel_count": 2536,
+      "valid_sales": 17,
+      "price_per_sqft": 33.4,
+      "turnover_per_100": 0.67
+    },
+    {
+      "name": "Homewood South",
+      "group": "Homewood South",
+      "parcel_count": 1874,
+      "valid_sales": 12,
+      "price_per_sqft": 62.8,
+      "turnover_per_100": 0.64
+    },
+    {
+      "name": "Homewood West",
+      "group": "Homewood West",
+      "parcel_count": 662,
+      "valid_sales": 3,
+      "price_per_sqft": 38.9,
+      "turnover_per_100": 0.45
+    },
+    {
+      "name": "Knoxville",
+      "group": "Knoxville",
+      "parcel_count": 1728,
+      "valid_sales": 80,
+      "price_per_sqft": 51.3,
+      "turnover_per_100": 4.63
+    },
+    {
+      "name": "Larimer",
+      "group": "Larimer",
+      "parcel_count": 1700,
+      "valid_sales": 15,
+      "price_per_sqft": 46.1,
+      "turnover_per_100": 0.88
+    },
+    {
+      "name": "Lincoln Place",
+      "group": "Lincoln Place",
+      "parcel_count": 1776,
+      "valid_sales": 135,
+      "price_per_sqft": 138.0,
+      "turnover_per_100": 7.6
+    },
+    {
+      "name": "Lincoln-Lemington-Belmar",
+      "group": "Lincoln-Lemington-Belmar",
+      "parcel_count": 2703,
+      "valid_sales": 44,
+      "price_per_sqft": 51.4,
+      "turnover_per_100": 1.63
+    },
+    {
+      "name": "Lower Lawrenceville",
+      "group": "Lawrenceville",
+      "parcel_count": 1352,
+      "valid_sales": 106,
+      "price_per_sqft": 270.6,
+      "turnover_per_100": 7.84
+    },
+    {
+      "name": "Manchester",
+      "group": "Manchester",
+      "parcel_count": 1486,
+      "valid_sales": 35,
+      "price_per_sqft": 163.0,
+      "turnover_per_100": 2.36
+    },
+    {
+      "name": "Marshall-Shadeland",
+      "group": "Marshall-Shadeland",
+      "parcel_count": 2692,
+      "valid_sales": 94,
+      "price_per_sqft": 76.1,
+      "turnover_per_100": 3.49
+    },
+    {
+      "name": "Middle Hill",
+      "group": "Middle Hill",
+      "parcel_count": 1878,
+      "valid_sales": 10,
+      "price_per_sqft": 166.4,
+      "turnover_per_100": 0.53
+    },
+    {
+      "name": "Morningside",
+      "group": "Morningside",
+      "parcel_count": 1547,
+      "valid_sales": 123,
+      "price_per_sqft": 212.5,
+      "turnover_per_100": 7.95
+    },
+    {
+      "name": "Mount Washington",
+      "group": "Mount Washington",
+      "parcel_count": 4433,
+      "valid_sales": 277,
+      "price_per_sqft": 151.5,
+      "turnover_per_100": 6.25
+    },
+    {
+      "name": "Mt. Oliver",
+      "group": "Mt. Oliver",
+      "parcel_count": 298,
+      "valid_sales": 8,
+      "price_per_sqft": 78.1,
+      "turnover_per_100": 2.68
+    },
+    {
+      "name": "New Homestead",
+      "group": "New Homestead",
+      "parcel_count": 1102,
+      "valid_sales": 23,
+      "price_per_sqft": 155.0,
+      "turnover_per_100": 2.09
+    },
+    {
+      "name": "North Oakland",
+      "group": "North Oakland",
+      "parcel_count": 1291,
+      "valid_sales": 200,
+      "price_per_sqft": 199.0,
+      "turnover_per_100": 15.49
+    },
+    {
+      "name": "North Shore",
+      "group": "North Shore",
+      "parcel_count": 279,
+      "valid_sales": 0,
+      "price_per_sqft": null,
+      "turnover_per_100": 0.0
+    },
+    {
+      "name": "Northview Heights",
+      "group": "Northview Heights",
+      "parcel_count": 97,
+      "valid_sales": 1,
+      "price_per_sqft": 88.5,
+      "turnover_per_100": 1.03
+    },
+    {
+      "name": "Oakwood",
+      "group": "Oakwood",
+      "parcel_count": 430,
+      "valid_sales": 36,
+      "price_per_sqft": 152.2,
+      "turnover_per_100": 8.37
+    },
+    {
+      "name": "Overbrook",
+      "group": "Overbrook",
+      "parcel_count": 2090,
+      "valid_sales": 139,
+      "price_per_sqft": 140.2,
+      "turnover_per_100": 6.65
+    },
+    {
+      "name": "Perry North",
+      "group": "Perry North",
+      "parcel_count": 2269,
+      "valid_sales": 115,
+      "price_per_sqft": 111.6,
+      "turnover_per_100": 5.07
+    },
+    {
+      "name": "Perry South",
+      "group": "Perry South",
+      "parcel_count": 3152,
+      "valid_sales": 62,
+      "price_per_sqft": 90.4,
+      "turnover_per_100": 1.97
+    },
+    {
+      "name": "Point Breeze",
+      "group": "Point Breeze",
+      "parcel_count": 2148,
+      "valid_sales": 217,
+      "price_per_sqft": 284.1,
+      "turnover_per_100": 10.1
+    },
+    {
+      "name": "Point Breeze North",
+      "group": "Point Breeze North",
+      "parcel_count": 710,
+      "valid_sales": 46,
+      "price_per_sqft": 174.5,
+      "turnover_per_100": 6.48
+    },
+    {
+      "name": "Polish Hill",
+      "group": "Polish Hill",
+      "parcel_count": 891,
+      "valid_sales": 24,
+      "price_per_sqft": 121.8,
+      "turnover_per_100": 2.69
+    },
+    {
+      "name": "Regent Square",
+      "group": "Regent Square",
+      "parcel_count": 390,
+      "valid_sales": 35,
+      "price_per_sqft": 266.3,
+      "turnover_per_100": 8.97
+    },
+    {
+      "name": "Ridgemont",
+      "group": "Ridgemont",
+      "parcel_count": 385,
+      "valid_sales": 24,
+      "price_per_sqft": 160.0,
+      "turnover_per_100": 6.23
+    },
+    {
+      "name": "Shadyside",
+      "group": "Shadyside",
+      "parcel_count": 3985,
+      "valid_sales": 503,
+      "price_per_sqft": 267.2,
+      "turnover_per_100": 12.62
+    },
+    {
+      "name": "Sheraden",
+      "group": "Sheraden",
+      "parcel_count": 2753,
+      "valid_sales": 109,
+      "price_per_sqft": 77.4,
+      "turnover_per_100": 3.96
+    },
+    {
+      "name": "South Oakland",
+      "group": "South Oakland",
+      "parcel_count": 1651,
+      "valid_sales": 90,
+      "price_per_sqft": 181.9,
+      "turnover_per_100": 5.45
+    },
+    {
+      "name": "South Shore",
+      "group": "South Shore",
+      "parcel_count": 167,
+      "valid_sales": 0,
+      "price_per_sqft": null,
+      "turnover_per_100": 0.0
+    },
+    {
+      "name": "South Side Flats",
+      "group": "South Side Flats",
+      "parcel_count": 3412,
+      "valid_sales": 345,
+      "price_per_sqft": 180.6,
+      "turnover_per_100": 10.11
+    },
+    {
+      "name": "South Side Slopes",
+      "group": "South Side Slopes",
+      "parcel_count": 3110,
+      "valid_sales": 169,
+      "price_per_sqft": 131.7,
+      "turnover_per_100": 5.43
+    },
+    {
+      "name": "Spring Garden",
+      "group": "Spring Garden",
+      "parcel_count": 786,
+      "valid_sales": 12,
+      "price_per_sqft": 78.4,
+      "turnover_per_100": 1.53
+    },
+    {
+      "name": "Spring Hill-City View",
+      "group": "Spring Hill-City View",
+      "parcel_count": 1524,
+      "valid_sales": 44,
+      "price_per_sqft": 113.0,
+      "turnover_per_100": 2.89
+    },
+    {
+      "name": "Squirrel Hill North",
+      "group": "Squirrel Hill North",
+      "parcel_count": 2819,
+      "valid_sales": 285,
+      "price_per_sqft": 296.1,
+      "turnover_per_100": 10.11
+    },
+    {
+      "name": "Squirrel Hill South",
+      "group": "Squirrel Hill South",
+      "parcel_count": 4718,
+      "valid_sales": 407,
+      "price_per_sqft": 239.6,
+      "turnover_per_100": 8.63
+    },
+    {
+      "name": "St. Clair",
+      "group": "St. Clair",
+      "parcel_count": 192,
+      "valid_sales": 0,
+      "price_per_sqft": null,
+      "turnover_per_100": 0.0
+    },
+    {
+      "name": "Stanton Heights",
+      "group": "Stanton Heights",
+      "parcel_count": 2388,
+      "valid_sales": 188,
+      "price_per_sqft": 201.0,
+      "turnover_per_100": 7.87
+    },
+    {
+      "name": "Strip District",
+      "group": "Strip District",
+      "parcel_count": 829,
+      "valid_sales": 24,
+      "price_per_sqft": 409.9,
+      "turnover_per_100": 2.9
+    },
+    {
+      "name": "Summer Hill",
+      "group": "Summer Hill",
+      "parcel_count": 615,
+      "valid_sales": 37,
+      "price_per_sqft": 146.7,
+      "turnover_per_100": 6.02
+    },
+    {
+      "name": "Swisshelm Park",
+      "group": "Swisshelm Park",
+      "parcel_count": 762,
+      "valid_sales": 54,
+      "price_per_sqft": 230.5,
+      "turnover_per_100": 7.09
+    },
+    {
+      "name": "Terrace Village",
+      "group": "Terrace Village",
+      "parcel_count": 201,
+      "valid_sales": 1,
+      "price_per_sqft": 45.0,
+      "turnover_per_100": 0.5
+    },
+    {
+      "name": "Troy Hill",
+      "group": "Troy Hill",
+      "parcel_count": 1301,
+      "valid_sales": 82,
+      "price_per_sqft": 142.4,
+      "turnover_per_100": 6.3
+    },
+    {
+      "name": "Upper Hill",
+      "group": "Upper Hill",
+      "parcel_count": 1339,
+      "valid_sales": 32,
+      "price_per_sqft": 81.8,
+      "turnover_per_100": 2.39
     },
     {
       "name": "Upper Lawrenceville",
       "group": "Lawrenceville",
-      "parcel_count": 1477,
+      "parcel_count": 1476,
       "valid_sales": 115,
       "price_per_sqft": 248.4,
       "turnover_per_100": 7.79
+    },
+    {
+      "name": "West End",
+      "group": "West End",
+      "parcel_count": 382,
+      "valid_sales": 5,
+      "price_per_sqft": 60.3,
+      "turnover_per_100": 1.31
+    },
+    {
+      "name": "West Oakland",
+      "group": "West Oakland",
+      "parcel_count": 793,
+      "valid_sales": 18,
+      "price_per_sqft": 184.2,
+      "turnover_per_100": 2.27
+    },
+    {
+      "name": "Westwood",
+      "group": "Westwood",
+      "parcel_count": 1583,
+      "valid_sales": 132,
+      "price_per_sqft": 167.4,
+      "turnover_per_100": 8.34
+    },
+    {
+      "name": "Windgap",
+      "group": "Windgap",
+      "parcel_count": 755,
+      "valid_sales": 31,
+      "price_per_sqft": 127.2,
+      "turnover_per_100": 4.11
     }
   ],
   "zoning_codes_observed": {
-    "R1A-H": 2655,
-    "R1A-VH": 2454,
-    "H": 896,
-    "R1D-M": 741,
-    "LNC": 721,
-    "R1D-H": 384,
-    "UI": 198,
-    "RIV-IMU": 196,
-    "RIV-MU": 90,
-    "P": 89,
-    "NDI": 63,
-    "GI": 60,
-    "R2-L": 37,
+    "R1D-H": 20021,
+    "R1D-L": 19657,
+    "R1D-M": 14428,
+    "R2-L": 12170,
+    "H": 10674,
+    "R1A-VH": 10148,
+    "RM-M": 9673,
+    "R1A-H": 8242,
+    "LNC": 5894,
+    "R2-H": 4856,
+    "P": 4514,
+    "R2-M": 2834,
+    "UI": 2110,
+    "R1D-VL": 1668,
+    "RP": 1625,
+    "UC-MU": 1117,
+    "R1A-M": 1057,
+    "RIV-IMU": 1000,
+    "R2-VH": 925,
+    "RM-H": 784,
+    "R3-M": 774,
+    "NDI": 740,
+    "UPR-B": 668,
+    "EMI": 661,
+    "UNC": 573,
+    "RIV-MU": 540,
+    "R-MU": 526,
+    "GT-C": 490,
+    "RIV-RM": 463,
+    "GT-A": 344,
+    "GT-D": 342,
+    "RIV-NS": 338,
+    "UPR-A": 313,
+    "HC": 296,
+    "AP": 281,
+    "UC-E": 238,
+    "GT-E": 219,
+    "GPRB": 201,
+    "GI": 200,
+    "GT-B": 197,
+    "R3-L": 187,
+    "GPRA": 152,
+    "RIV-GI": 135,
+    "NDO": 114,
+    "SP-5": 89,
+    "SP-9": 69,
+    "GPRC": 56,
+    "R1D-VH": 52,
+    "SP-1": 49,
+    "SP-4": 30,
+    "CP": 28,
     "SP-10": 24,
-    "RIV-GI": 19,
-    "EMI": 9,
-    "RM-M": 5,
-    "SP-1": 2,
-    "RP": 1,
-    "R1D-L": 1
+    "SP-8": 23,
+    "SP-11": 21,
+    "RM-VH": 18,
+    "RM-VL": 9,
+    "(none)": 8
   },
   "zoning_codes_unmapped": [],
   "transit_service_date": "2026-09-25",
   "sources_failed": [],
   "decision_support_only": true,
-  "chas_status": "Loaded HUD CHAS 2018-2022 Table 8, census tract summary level 140, Allegheny County. 8641 of 8645 parcels have a tract share (13 tracts). The measured input is the share of renter households at or below 80% of HAMFI with housing cost burden greater than 30%, among households whose cost burden was computed. Joined on the 11-digit tract GEOID (the suffix of geoid 1400000US\u2026). ACS 2024 rent burden stays a separate input. CHAS lags that ACS release by several years.",
+  "chas_status": "Loaded HUD CHAS 2018-2022 Table 8, census tract summary level 140, Allegheny County. 142373 of 142865 parcels have a tract share (152 tracts). The measured input is the share of renter households at or below 80% of HAMFI with housing cost burden greater than 30%, among households whose cost burden was computed. Joined on the 11-digit tract GEOID (the suffix of geoid 1400000US\u2026). ACS 2024 rent burden stays a separate input. CHAS lags that ACS release by several years.",
   "sites": {
     "totals": {
-      "tax_delinquent": 1491,
-      "tax_delinquent_prior_years": 1164,
-      "vacant_lot": 1911,
-      "city_owned": 986,
-      "city_open_space": 436,
-      "condemned_or_dead_end": 190,
-      "qct_2026": 3599
+      "vacant_lot": 29183,
+      "city_owned": 12435,
+      "city_open_space": 2477,
+      "tax_delinquent": 26762,
+      "tax_delinquent_prior_years": 21520,
+      "condemned_or_dead_end": 2890,
+      "qct_2026": 53909
     },
     "unknown": {
-      "vacant_lot": 390
+      "vacant_lot": 1881,
+      "city_owned": 294,
+      "city_open_space": 294,
+      "tax_delinquent": 294,
+      "tax_delinquent_prior_years": 294,
+      "condemned_or_dead_end": 294
     },
     "by_neighborhood": {
+      "Allegheny Center": {
+        "vacant_lot": 18,
+        "city_owned": 15,
+        "city_open_space": 11
+      },
+      "Allegheny West": {
+        "tax_delinquent": 41,
+        "tax_delinquent_prior_years": 28,
+        "vacant_lot": 9,
+        "city_owned": 4,
+        "condemned_or_dead_end": 1
+      },
+      "Allentown": {
+        "vacant_lot": 450,
+        "qct_2026": 1538,
+        "tax_delinquent": 392,
+        "tax_delinquent_prior_years": 313,
+        "city_owned": 194,
+        "city_open_space": 41,
+        "condemned_or_dead_end": 68
+      },
+      "Arlington Heights": {
+        "vacant_lot": 4,
+        "tax_delinquent": 3,
+        "tax_delinquent_prior_years": 3,
+        "condemned_or_dead_end": 1,
+        "city_owned": 1
+      },
+      "Arlington": {
+        "vacant_lot": 220,
+        "tax_delinquent": 311,
+        "tax_delinquent_prior_years": 229,
+        "city_owned": 86,
+        "condemned_or_dead_end": 46,
+        "city_open_space": 2
+      },
+      "Banksville": {
+        "tax_delinquent": 128,
+        "tax_delinquent_prior_years": 92,
+        "vacant_lot": 150,
+        "city_owned": 16,
+        "city_open_space": 4,
+        "condemned_or_dead_end": 2
+      },
+      "Bedford Dwellings": {
+        "vacant_lot": 109,
+        "qct_2026": 269,
+        "city_owned": 56,
+        "city_open_space": 33,
+        "tax_delinquent": 81,
+        "tax_delinquent_prior_years": 68,
+        "condemned_or_dead_end": 19
+      },
+      "Beechview": {
+        "tax_delinquent": 703,
+        "tax_delinquent_prior_years": 542,
+        "vacant_lot": 771,
+        "city_owned": 204,
+        "city_open_space": 43,
+        "condemned_or_dead_end": 35
+      },
+      "Beltzhoover": {
+        "qct_2026": 1737,
+        "vacant_lot": 785,
+        "city_owned": 375,
+        "tax_delinquent": 694,
+        "tax_delinquent_prior_years": 609,
+        "condemned_or_dead_end": 122,
+        "city_open_space": 11
+      },
+      "Bloomfield": {
+        "vacant_lot": 179,
+        "tax_delinquent": 452,
+        "tax_delinquent_prior_years": 323,
+        "qct_2026": 2,
+        "city_owned": 39,
+        "condemned_or_dead_end": 20,
+        "city_open_space": 4
+      },
+      "Bluff": {
+        "qct_2026": 760,
+        "tax_delinquent": 83,
+        "tax_delinquent_prior_years": 58,
+        "condemned_or_dead_end": 33,
+        "city_owned": 31,
+        "vacant_lot": 142,
+        "city_open_space": 4
+      },
+      "Bon Air": {
+        "qct_2026": 510,
+        "vacant_lot": 79,
+        "city_owned": 48,
+        "city_open_space": 3,
+        "tax_delinquent": 61,
+        "tax_delinquent_prior_years": 45,
+        "condemned_or_dead_end": 9
+      },
+      "Brighton Heights": {
+        "tax_delinquent": 472,
+        "city_owned": 173,
+        "vacant_lot": 377,
+        "tax_delinquent_prior_years": 382,
+        "condemned_or_dead_end": 29,
+        "city_open_space": 14,
+        "qct_2026": 8
+      },
+      "Brookline": {
+        "vacant_lot": 606,
+        "tax_delinquent": 697,
+        "tax_delinquent_prior_years": 499,
+        "condemned_or_dead_end": 25,
+        "city_owned": 226,
+        "city_open_space": 41,
+        "qct_2026": 1
+      },
+      "California-Kirkbride": {
+        "vacant_lot": 457,
+        "city_owned": 255,
+        "tax_delinquent": 160,
+        "city_open_space": 17,
+        "tax_delinquent_prior_years": 144,
+        "condemned_or_dead_end": 23,
+        "qct_2026": 1
+      },
+      "Carrick": {
+        "vacant_lot": 565,
+        "city_owned": 185,
+        "qct_2026": 2830,
+        "tax_delinquent": 909,
+        "tax_delinquent_prior_years": 698,
+        "condemned_or_dead_end": 72,
+        "city_open_space": 26
+      },
+      "Central Business District": {
+        "vacant_lot": 44,
+        "tax_delinquent": 163,
+        "tax_delinquent_prior_years": 108,
+        "city_owned": 21,
+        "city_open_space": 7,
+        "condemned_or_dead_end": 1
+      },
       "Central Lawrenceville": {
         "tax_delinquent": 318,
         "tax_delinquent_prior_years": 229,
-        "vacant_lot": 91,
+        "vacant_lot": 92,
         "city_owned": 6,
         "condemned_or_dead_end": 9,
         "city_open_space": 1
       },
+      "Central Northside": {
+        "qct_2026": 1781,
+        "vacant_lot": 355,
+        "condemned_or_dead_end": 29,
+        "tax_delinquent": 321,
+        "tax_delinquent_prior_years": 261,
+        "city_owned": 41,
+        "city_open_space": 4
+      },
+      "Central Oakland": {
+        "qct_2026": 1117,
+        "vacant_lot": 51,
+        "tax_delinquent": 119,
+        "tax_delinquent_prior_years": 88,
+        "city_owned": 13,
+        "city_open_space": 5,
+        "condemned_or_dead_end": 1
+      },
+      "Chartiers City": {
+        "vacant_lot": 93,
+        "city_owned": 23,
+        "tax_delinquent": 95,
+        "tax_delinquent_prior_years": 74,
+        "city_open_space": 5,
+        "condemned_or_dead_end": 7
+      },
+      "Chateau": {
+        "tax_delinquent": 12,
+        "tax_delinquent_prior_years": 12,
+        "city_owned": 14,
+        "vacant_lot": 22,
+        "city_open_space": 2
+      },
+      "Crafton Heights": {
+        "tax_delinquent": 323,
+        "tax_delinquent_prior_years": 247,
+        "vacant_lot": 494,
+        "city_owned": 185,
+        "qct_2026": 1082,
+        "condemned_or_dead_end": 27,
+        "city_open_space": 5
+      },
+      "Crawford-Roberts": {
+        "qct_2026": 1463,
+        "vacant_lot": 450,
+        "city_owned": 180,
+        "tax_delinquent": 285,
+        "tax_delinquent_prior_years": 241,
+        "condemned_or_dead_end": 34,
+        "city_open_space": 65
+      },
+      "Duquesne Heights": {
+        "vacant_lot": 560,
+        "city_owned": 362,
+        "city_open_space": 255,
+        "tax_delinquent": 198,
+        "tax_delinquent_prior_years": 149,
+        "condemned_or_dead_end": 1,
+        "qct_2026": 2
+      },
+      "East Allegheny": {
+        "qct_2026": 1273,
+        "vacant_lot": 277,
+        "tax_delinquent": 236,
+        "tax_delinquent_prior_years": 174,
+        "city_owned": 66,
+        "condemned_or_dead_end": 29,
+        "city_open_space": 4
+      },
+      "East Carnegie": {
+        "tax_delinquent": 31,
+        "vacant_lot": 44,
+        "tax_delinquent_prior_years": 23,
+        "city_owned": 12,
+        "city_open_space": 1
+      },
+      "East Hills": {
+        "vacant_lot": 551,
+        "tax_delinquent": 728,
+        "tax_delinquent_prior_years": 672,
+        "qct_2026": 1587,
+        "city_owned": 152,
+        "condemned_or_dead_end": 72,
+        "city_open_space": 1
+      },
+      "East Liberty": {
+        "qct_2026": 721,
+        "tax_delinquent": 256,
+        "tax_delinquent_prior_years": 189,
+        "vacant_lot": 106,
+        "city_owned": 25,
+        "condemned_or_dead_end": 11,
+        "city_open_space": 13
+      },
+      "Elliott": {
+        "qct_2026": 1628,
+        "vacant_lot": 520,
+        "tax_delinquent": 394,
+        "tax_delinquent_prior_years": 327,
+        "city_owned": 256,
+        "condemned_or_dead_end": 63,
+        "city_open_space": 11
+      },
+      "Esplen": {
+        "tax_delinquent": 150,
+        "tax_delinquent_prior_years": 142,
+        "condemned_or_dead_end": 19,
+        "qct_2026": 383,
+        "vacant_lot": 186,
+        "city_owned": 32,
+        "city_open_space": 2
+      },
+      "Fairywood": {
+        "condemned_or_dead_end": 7,
+        "tax_delinquent": 54,
+        "tax_delinquent_prior_years": 43,
+        "vacant_lot": 68,
+        "city_owned": 47
+      },
+      "Fineview": {
+        "tax_delinquent": 175,
+        "tax_delinquent_prior_years": 131,
+        "qct_2026": 883,
+        "vacant_lot": 428,
+        "condemned_or_dead_end": 40,
+        "city_owned": 288,
+        "city_open_space": 13
+      },
+      "Friendship": {
+        "tax_delinquent": 35,
+        "tax_delinquent_prior_years": 29,
+        "vacant_lot": 5,
+        "city_owned": 1,
+        "condemned_or_dead_end": 1
+      },
+      "Garfield": {
+        "vacant_lot": 778,
+        "tax_delinquent": 460,
+        "tax_delinquent_prior_years": 354,
+        "city_owned": 410,
+        "city_open_space": 26,
+        "condemned_or_dead_end": 61
+      },
+      "Glen Hazel": {
+        "tax_delinquent": 9,
+        "tax_delinquent_prior_years": 8,
+        "condemned_or_dead_end": 3,
+        "qct_2026": 75,
+        "vacant_lot": 17,
+        "city_owned": 5,
+        "city_open_space": 1
+      },
+      "Greenfield": {
+        "tax_delinquent": 410,
+        "tax_delinquent_prior_years": 292,
+        "vacant_lot": 368,
+        "city_owned": 116,
+        "condemned_or_dead_end": 21,
+        "qct_2026": 19,
+        "city_open_space": 26
+      },
+      "Hays": {
+        "vacant_lot": 191,
+        "city_owned": 81,
+        "city_open_space": 2,
+        "tax_delinquent": 90,
+        "tax_delinquent_prior_years": 79,
+        "condemned_or_dead_end": 10
+      },
+      "Hazelwood": {
+        "vacant_lot": 1531,
+        "qct_2026": 3603,
+        "tax_delinquent": 752,
+        "tax_delinquent_prior_years": 607,
+        "city_owned": 884,
+        "city_open_space": 400,
+        "condemned_or_dead_end": 166
+      },
+      "Highland Park": {
+        "tax_delinquent": 297,
+        "tax_delinquent_prior_years": 230,
+        "vacant_lot": 66,
+        "city_owned": 15,
+        "city_open_space": 7,
+        "condemned_or_dead_end": 4
+      },
+      "Homewood North": {
+        "vacant_lot": 1217,
+        "tax_delinquent": 1074,
+        "tax_delinquent_prior_years": 990,
+        "qct_2026": 2534,
+        "city_owned": 582,
+        "condemned_or_dead_end": 167,
+        "city_open_space": 28
+      },
+      "Homewood South": {
+        "qct_2026": 1874,
+        "vacant_lot": 827,
+        "tax_delinquent": 577,
+        "tax_delinquent_prior_years": 492,
+        "city_owned": 401,
+        "condemned_or_dead_end": 106,
+        "city_open_space": 1
+      },
+      "Homewood West": {
+        "vacant_lot": 319,
+        "qct_2026": 662,
+        "city_owned": 191,
+        "tax_delinquent": 180,
+        "tax_delinquent_prior_years": 163,
+        "condemned_or_dead_end": 24,
+        "city_open_space": 2
+      },
+      "Knoxville": {
+        "tax_delinquent": 664,
+        "tax_delinquent_prior_years": 560,
+        "qct_2026": 1728,
+        "vacant_lot": 243,
+        "condemned_or_dead_end": 143,
+        "city_owned": 61
+      },
+      "Larimer": {
+        "vacant_lot": 804,
+        "qct_2026": 1700,
+        "tax_delinquent": 378,
+        "tax_delinquent_prior_years": 286,
+        "city_owned": 476,
+        "condemned_or_dead_end": 50,
+        "city_open_space": 3
+      },
+      "Lincoln-Lemington-Belmar": {
+        "tax_delinquent": 1194,
+        "tax_delinquent_prior_years": 1063,
+        "qct_2026": 1147,
+        "vacant_lot": 1080,
+        "condemned_or_dead_end": 171,
+        "city_owned": 395,
+        "city_open_space": 49
+      },
+      "Lincoln Place": {
+        "vacant_lot": 203,
+        "tax_delinquent": 263,
+        "tax_delinquent_prior_years": 196,
+        "condemned_or_dead_end": 23,
+        "city_owned": 25,
+        "city_open_space": 4
+      },
       "Lower Lawrenceville": {
         "tax_delinquent": 200,
         "tax_delinquent_prior_years": 155,
-        "vacant_lot": 119,
-        "city_owned": 39,
+        "vacant_lot": 153,
+        "city_owned": 38,
         "city_open_space": 8,
         "condemned_or_dead_end": 6
       },
+      "Manchester": {
+        "vacant_lot": 422,
+        "condemned_or_dead_end": 45,
+        "tax_delinquent": 351,
+        "tax_delinquent_prior_years": 284,
+        "city_owned": 109,
+        "city_open_space": 3
+      },
+      "Marshall-Shadeland": {
+        "qct_2026": 2545,
+        "vacant_lot": 582,
+        "tax_delinquent": 885,
+        "tax_delinquent_prior_years": 749,
+        "condemned_or_dead_end": 136,
+        "city_owned": 175,
+        "city_open_space": 8
+      },
+      "Middle Hill": {
+        "vacant_lot": 840,
+        "city_owned": 333,
+        "qct_2026": 1878,
+        "tax_delinquent": 549,
+        "tax_delinquent_prior_years": 472,
+        "condemned_or_dead_end": 146
+      },
+      "Morningside": {
+        "tax_delinquent": 166,
+        "tax_delinquent_prior_years": 117,
+        "vacant_lot": 161,
+        "condemned_or_dead_end": 6,
+        "city_owned": 55,
+        "city_open_space": 30
+      },
+      "Mount Washington": {
+        "tax_delinquent": 652,
+        "tax_delinquent_prior_years": 507,
+        "vacant_lot": 526,
+        "qct_2026": 16,
+        "city_owned": 126,
+        "city_open_space": 51,
+        "condemned_or_dead_end": 33
+      },
+      "Mt. Oliver": {
+        "vacant_lot": 77,
+        "city_owned": 32,
+        "tax_delinquent": 96,
+        "tax_delinquent_prior_years": 69,
+        "condemned_or_dead_end": 7,
+        "city_open_space": 2
+      },
+      "New Homestead": {
+        "vacant_lot": 503,
+        "city_owned": 218,
+        "tax_delinquent": 216,
+        "tax_delinquent_prior_years": 167,
+        "condemned_or_dead_end": 9,
+        "city_open_space": 4
+      },
+      "North Oakland": {
+        "qct_2026": 554,
+        "vacant_lot": 48,
+        "tax_delinquent": 110,
+        "tax_delinquent_prior_years": 78,
+        "city_owned": 23,
+        "city_open_space": 21,
+        "condemned_or_dead_end": 2
+      },
+      "North Shore": {
+        "vacant_lot": 98,
+        "city_owned": 23,
+        "tax_delinquent": 19,
+        "tax_delinquent_prior_years": 19,
+        "condemned_or_dead_end": 1,
+        "city_open_space": 5
+      },
+      "Northview Heights": {
+        "vacant_lot": 49,
+        "city_owned": 34,
+        "qct_2026": 97,
+        "tax_delinquent": 20,
+        "tax_delinquent_prior_years": 19,
+        "condemned_or_dead_end": 5
+      },
+      "Oakwood": {
+        "vacant_lot": 83,
+        "city_owned": 41,
+        "city_open_space": 22,
+        "tax_delinquent": 61,
+        "tax_delinquent_prior_years": 48,
+        "condemned_or_dead_end": 3
+      },
+      "Overbrook": {
+        "vacant_lot": 347,
+        "tax_delinquent": 310,
+        "city_owned": 78,
+        "tax_delinquent_prior_years": 232,
+        "condemned_or_dead_end": 20,
+        "city_open_space": 12,
+        "qct_2026": 4
+      },
+      "Perry North": {
+        "vacant_lot": 639,
+        "tax_delinquent": 431,
+        "tax_delinquent_prior_years": 351,
+        "city_owned": 421,
+        "city_open_space": 260,
+        "qct_2026": 4,
+        "condemned_or_dead_end": 27
+      },
+      "Perry South": {
+        "qct_2026": 3137,
+        "tax_delinquent": 934,
+        "tax_delinquent_prior_years": 827,
+        "vacant_lot": 1437,
+        "city_owned": 833,
+        "city_open_space": 217,
+        "condemned_or_dead_end": 169
+      },
+      "Point Breeze North": {
+        "city_owned": 8,
+        "city_open_space": 1,
+        "vacant_lot": 61,
+        "tax_delinquent": 135,
+        "tax_delinquent_prior_years": 92,
+        "qct_2026": 4,
+        "condemned_or_dead_end": 4
+      },
+      "Point Breeze": {
+        "tax_delinquent": 235,
+        "tax_delinquent_prior_years": 189,
+        "vacant_lot": 67,
+        "city_owned": 14,
+        "condemned_or_dead_end": 3,
+        "city_open_space": 5
+      },
+      "Polish Hill": {
+        "vacant_lot": 282,
+        "tax_delinquent": 165,
+        "tax_delinquent_prior_years": 135,
+        "city_owned": 144,
+        "condemned_or_dead_end": 9,
+        "city_open_space": 101
+      },
+      "Regent Square": {
+        "tax_delinquent": 31,
+        "tax_delinquent_prior_years": 20,
+        "condemned_or_dead_end": 1,
+        "vacant_lot": 4
+      },
+      "Ridgemont": {
+        "vacant_lot": 151,
+        "tax_delinquent": 43,
+        "city_owned": 70,
+        "tax_delinquent_prior_years": 39,
+        "condemned_or_dead_end": 4
+      },
+      "Shadyside": {
+        "qct_2026": 1125,
+        "vacant_lot": 149,
+        "tax_delinquent": 443,
+        "tax_delinquent_prior_years": 349,
+        "condemned_or_dead_end": 7,
+        "city_owned": 15
+      },
+      "Sheraden": {
+        "qct_2026": 1625,
+        "vacant_lot": 730,
+        "tax_delinquent": 656,
+        "tax_delinquent_prior_years": 541,
+        "city_owned": 427,
+        "city_open_space": 73,
+        "condemned_or_dead_end": 84
+      },
+      "South Oakland": {
+        "vacant_lot": 377,
+        "city_owned": 199,
+        "qct_2026": 1590,
+        "tax_delinquent": 199,
+        "city_open_space": 86,
+        "tax_delinquent_prior_years": 144,
+        "condemned_or_dead_end": 12
+      },
+      "South Shore": {
+        "vacant_lot": 51,
+        "city_owned": 32,
+        "tax_delinquent": 13,
+        "tax_delinquent_prior_years": 11,
+        "city_open_space": 13
+      },
+      "South Side Flats": {
+        "qct_2026": 2223,
+        "vacant_lot": 194,
+        "tax_delinquent": 486,
+        "tax_delinquent_prior_years": 366,
+        "city_owned": 35,
+        "city_open_space": 6,
+        "condemned_or_dead_end": 18
+      },
+      "South Side Slopes": {
+        "tax_delinquent": 545,
+        "tax_delinquent_prior_years": 397,
+        "vacant_lot": 813,
+        "city_owned": 245,
+        "city_open_space": 70,
+        "condemned_or_dead_end": 59
+      },
+      "Spring Garden": {
+        "vacant_lot": 287,
+        "city_owned": 141,
+        "condemned_or_dead_end": 41,
+        "tax_delinquent": 176,
+        "tax_delinquent_prior_years": 141,
+        "qct_2026": 30,
+        "city_open_space": 17
+      },
+      "Spring Hill-City View": {
+        "tax_delinquent": 409,
+        "tax_delinquent_prior_years": 347,
+        "qct_2026": 1511,
+        "vacant_lot": 539,
+        "condemned_or_dead_end": 46,
+        "city_owned": 275,
+        "city_open_space": 52
+      },
+      "Squirrel Hill North": {
+        "city_owned": 11,
+        "tax_delinquent": 290,
+        "tax_delinquent_prior_years": 238,
+        "vacant_lot": 99,
+        "condemned_or_dead_end": 1,
+        "city_open_space": 1
+      },
+      "Squirrel Hill South": {
+        "vacant_lot": 219,
+        "city_owned": 57,
+        "city_open_space": 13,
+        "qct_2026": 1353,
+        "tax_delinquent": 480,
+        "tax_delinquent_prior_years": 367,
+        "condemned_or_dead_end": 12
+      },
+      "St. Clair": {
+        "vacant_lot": 99,
+        "tax_delinquent": 54,
+        "tax_delinquent_prior_years": 37,
+        "condemned_or_dead_end": 5,
+        "city_owned": 62
+      },
+      "Stanton Heights": {
+        "tax_delinquent": 357,
+        "tax_delinquent_prior_years": 259,
+        "condemned_or_dead_end": 13,
+        "vacant_lot": 275,
+        "city_owned": 120,
+        "city_open_space": 78
+      },
+      "Strip District": {
+        "vacant_lot": 123,
+        "city_owned": 78,
+        "city_open_space": 64,
+        "tax_delinquent": 95,
+        "tax_delinquent_prior_years": 71,
+        "condemned_or_dead_end": 2
+      },
+      "Summer Hill": {
+        "qct_2026": 588,
+        "tax_delinquent": 91,
+        "vacant_lot": 108,
+        "city_owned": 36,
+        "tax_delinquent_prior_years": 64,
+        "city_open_space": 4,
+        "condemned_or_dead_end": 2
+      },
+      "Swisshelm Park": {
+        "vacant_lot": 123,
+        "city_owned": 27,
+        "tax_delinquent": 57,
+        "tax_delinquent_prior_years": 42,
+        "city_open_space": 7,
+        "condemned_or_dead_end": 1
+      },
+      "Terrace Village": {
+        "vacant_lot": 33,
+        "qct_2026": 201,
+        "city_owned": 14,
+        "condemned_or_dead_end": 6,
+        "tax_delinquent": 45,
+        "tax_delinquent_prior_years": 36
+      },
+      "Troy Hill": {
+        "vacant_lot": 162,
+        "city_owned": 69,
+        "tax_delinquent": 207,
+        "tax_delinquent_prior_years": 166,
+        "condemned_or_dead_end": 21,
+        "city_open_space": 6
+      },
+      "Upper Hill": {
+        "tax_delinquent": 408,
+        "tax_delinquent_prior_years": 327,
+        "qct_2026": 1333,
+        "vacant_lot": 379,
+        "condemned_or_dead_end": 72,
+        "city_owned": 154,
+        "city_open_space": 3
+      },
       "Upper Lawrenceville": {
-        "vacant_lot": 176,
+        "vacant_lot": 175,
         "tax_delinquent": 221,
         "tax_delinquent_prior_years": 173,
-        "city_owned": 57,
-        "city_open_space": 27,
+        "city_owned": 56,
+        "city_open_space": 26,
         "condemned_or_dead_end": 9
       },
-      "Hazelwood": {
-        "condemned_or_dead_end": 166,
-        "qct_2026": 3599,
-        "vacant_lot": 1525,
-        "city_owned": 884,
-        "city_open_space": 400,
-        "tax_delinquent": 752,
-        "tax_delinquent_prior_years": 607
+      "West End": {
+        "qct_2026": 378,
+        "city_owned": 61,
+        "vacant_lot": 149,
+        "tax_delinquent": 71,
+        "tax_delinquent_prior_years": 57,
+        "condemned_or_dead_end": 7,
+        "city_open_space": 1
+      },
+      "West Oakland": {
+        "tax_delinquent": 118,
+        "condemned_or_dead_end": 12,
+        "qct_2026": 793,
+        "vacant_lot": 263,
+        "city_owned": 156,
+        "tax_delinquent_prior_years": 95,
+        "city_open_space": 3
+      },
+      "Westwood": {
+        "vacant_lot": 315,
+        "city_owned": 95,
+        "tax_delinquent": 179,
+        "tax_delinquent_prior_years": 134,
+        "condemned_or_dead_end": 11,
+        "city_open_space": 4
+      },
+      "Windgap": {
+        "tax_delinquent": 125,
+        "tax_delinquent_prior_years": 97,
+        "vacant_lot": 80,
+        "qct_2026": 2,
+        "city_owned": 21,
+        "city_open_space": 3,
+        "condemned_or_dead_end": 8
       }
     },
     "frequent_stop_min_trips": 60,
     "walk_meters_per_minute": 80,
     "nearby_affordable_meters": 800,
     "caveat": "Ownership, vacancy, delinquency, and condemnation records are not availability. Verify with the Urban Redevelopment Authority, the Pittsburgh Land Bank, or the City before acting."
-  }
+  },
+  "internal_map_id_count": 294
 }

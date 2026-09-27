@@ -8,7 +8,7 @@ import { prepareNetwork } from './networkModel.js'
 import { geometryBounds, boundsOverlap } from './plannerGeometry.js'
 
 const close = (a, b) => assert.ok(Math.abs(a - b) < 1e-9, `${a} != ${b}`)
-const read = name => JSON.parse(readFileSync(new URL(`../public/data/${name}`, import.meta.url)))
+const read = name => JSON.parse(readFileSync(new URL(`../testdata/study/${name}`, import.meta.url)))
 
 test('factor contributions exactly reconcile score gaps and infrastructure changes for both examples', () => {
   const parcels = read('parcels.geojson'), zoning = read('zoning.json'), stops = read('stops.geojson'), buildings = read('existing-buildings.geojson'), networkContext = prepareNetwork(read('walking-network.json'))

@@ -236,9 +236,9 @@ export function createExplainHandler({ loadData, env = process.env, model: model
 
     let data
     try {
-      data = await loadData()
+      data = await loadData(input)
     } catch (error) {
-      return jsonError(`Parcel data did not load on the server (${error.message}).`, 500)
+      return jsonError(`Parcel data did not load on the server (${error.message}).`, error.status || 500)
     }
 
     let context

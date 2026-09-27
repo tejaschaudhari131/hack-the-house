@@ -1,5 +1,8 @@
 "use client"
 
+import { endpointCoordinates } from '../lib/networkRouting.js'
+import { PITTSBURGH_BOUNDS } from '../lib/pittsburgh.js'
+
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Map as GLMap, Marker, Popup, NavigationControl, ScaleControl } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
@@ -8,15 +11,15 @@ import { configureMapWorkers } from '../lib/maplibreSetup.js'
 import { haversineMeters } from '../lib/geo.js'
 import { simulatedColor } from '../lib/buildingUses.js'
 import { buildingHeightDescription, buildingHeightSource } from '../lib/buildingHeights.js'
-import { DETAIL_ZOOM, spatialIndex } from '../lib/studioData.js'
+import { DETAIL_ZOOM, sameFeatureSet, spatialIndex } from '../lib/studioData.js'
+import { networkDisplayIndex } from '../lib/networkDisplay.js'
 
 const empty = () => ({ type: 'FeatureCollection', features: [] })
 const fc = features => ({ type: 'FeatureCollection', features })
-// Rounded outward from PennDOT's state extent; navigation bounds, not a polygon mask.
-// https://mapservices.pasda.psu.edu/server/rest/services/pasda/PennDOT/MapServer
-const PENNSYLVANIA_BOUNDS = [[-80.52, 39.71], [-74.68, 42.27]]
+// Official neighborhood union extent: navigation bounds, not a polygon mask.
 
-export default function PlannerMap({ parcels, neighborhoods, stops, existingBuildings, showExisting, selected, buildingPreview, stop, proposed, additionalDepartures, view3d, onSelect, onStop, tool, placing, onPlace, onHover, placedBuildings = [], network, networkResult, reservations, connections, drawing, draftNode, onDraw, discoveryPins = [], onViewport }) {
+
+export default function PlannerMap({ parcels, neighborhoods, stops, existingBuildings, showExisting, selected, buildingPreview, stop, proposed, additionalDepartures, view3d, onSelect, onStop, tool, placing, onPlace, onHover, placedBuildings = [], network, visibleNeighborhoodIds = [], networkResult, reservations, connections, routes = [], drawing, draftNode, onDraw, discoveryPins = [], onViewport }) {
   const container = useRef(null), mapRef = useRef(null), callbacks = useRef({ onSelect, onStop, tool, placing, onPlace })
   const [ready, setReady] = useState(false), [error, setError] = useState(null)
   const [viewport, setViewport] = useState(null)
@@ -27,7 +30,15 @@ export default function PlannerMap({ parcels, neighborhoods, stops, existingBuil
   const lastPin = useRef(null)
   const marker = useRef(null)
   const popup = useRef(null)
-  const networkDisplayed = useRef(false)
+  const uploaded = useRef(new Map())
+  const roadIndex = useMemo(() => tool === 'network' && network ? networkDisplayIndex(network, neighborhoods) : null, [tool, network, neighborhoods])
+  const visibleKey = visibleNeighborhoodIds.join('|')
+  const visibleRoads = useMemo(() => viewport?.zoom >= DETAIL_ZOOM && roadIndex ? roadIndex.query(viewport.bounds, visibleKey.split('|').filter(Boolean)) : [], [roadIndex, viewport, visibleKey])
+  function updateFeatures(id, features) {
+    if (sameFeatureSet(uploaded.current.get(id), features)) return
+    mapRef.current.getSource(id).setData(fc(features))
+    uploaded.current.set(id, features)
+  }
   callbacks.current = { onSelect, onStop, tool, placing, onPlace, onHover, drawing, onDraw, onViewport }
 
   useEffect(() => {
@@ -35,7 +46,7 @@ export default function PlannerMap({ parcels, neighborhoods, stops, existingBuil
     try {
       configureMapWorkers()
       map = new GLMap({ container: container.current, center: geometryCenter(selected.geometry), zoom: 17.6, pitch: 55, bearing: -25, attributionControl: true,
-        maxBounds: PENNSYLVANIA_BOUNDS, renderWorldCopies: false,
+        maxBounds: PITTSBURGH_BOUNDS, renderWorldCopies: false,
         style: { version: 8, sources: { basemap: { type: 'raster', tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize: 256, attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' } }, layers: [
           { id: 'background', type: 'background', paint: { 'background-color': '#dde5df' } },
           { id: 'basemap', type: 'raster', source: 'basemap', paint: { 'raster-saturation': -.7, 'raster-opacity': .75 } },
@@ -53,7 +64,7 @@ export default function PlannerMap({ parcels, neighborhoods, stops, existingBuil
       map.addSource('districts', { type: 'geojson', data: neighborhoods })
       map.addSource('stops', { type: 'geojson', data: stops || empty() })
       map.addSource('existing-buildings', { type: 'geojson', data: empty(), promoteId: 'id', attribution: '<a href="https://mapservices.pasda.psu.edu/server/rest/services/pasda/AlleghenyCounty/MapServer/11">Allegheny County / PASDA buildings</a> · Heights: County / <a href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors, ODbL</a>' })
-      for (const id of ['discovery', 'placed-buildings', 'building', 'selected', 'service', 'network-nodes', 'parks', 'reservations', 'connections', 'draft-node']) map.addSource(id, { type: 'geojson', data: empty() })
+      for (const id of ['discovery', 'placed-buildings', 'building', 'selected', 'service', 'network-nodes', 'parks', 'reservations', 'connections', 'saved-routes', 'draft-node']) map.addSource(id, { type: 'geojson', data: empty() })
       map.addSource('walking-network', { type: 'geojson', data: empty(), attribution: '<a href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors · ODbL</a>' })
       map.addLayer({ id: 'district-line', type: 'line', source: 'districts', paint: { 'line-color': '#78978c', 'line-width': 2, 'line-dasharray': [3, 3] } })
       map.addLayer({ id: 'district-fill', type: 'fill', source: 'districts', maxzoom: DETAIL_ZOOM, paint: { 'fill-color': '#78978c', 'fill-opacity': .12 } }, 'district-line')
@@ -67,6 +78,7 @@ export default function PlannerMap({ parcels, neighborhoods, stops, existingBuil
       map.addLayer({ id: 'network-nodes', type: 'circle', source: 'network-nodes', minzoom: 16, paint: { 'circle-color': '#fff', 'circle-radius': 3, 'circle-stroke-color': '#467a9c', 'circle-stroke-width': 1.5 } })
       map.addLayer({ id: 'reservation-fill', type: 'fill', source: 'reservations', paint: { 'fill-color': ['case', ['==', ['get', 'kind'], 'park'], '#70aa53', '#bd8d55'], 'fill-opacity': .6 } })
       map.addLayer({ id: 'connection-line', type: 'line', source: 'connections', paint: { 'line-color': '#a16736', 'line-width': 4 } })
+      map.addLayer({ id: 'saved-route-line', type: 'line', source: 'saved-routes', paint: { 'line-color': '#137bd1', 'line-width': 5 } })
       map.addLayer({ id: 'draft-point', type: 'circle', source: 'draft-node', paint: { 'circle-color': '#f3b45b', 'circle-radius': 7, 'circle-stroke-color': '#fff', 'circle-stroke-width': 2 } })
       map.addLayer({ id: 'existing-buildings-overview', type: 'fill', source: 'existing-buildings', minzoom: DETAIL_ZOOM, maxzoom: 16, paint: { 'fill-color': ['coalesce', ['get', 'use_color'], '#cbd5e1'], 'fill-opacity': .8 } })
       map.addLayer({ id: 'existing-buildings-fill', type: 'fill-extrusion', source: 'existing-buildings', minzoom: 16, paint: { 'fill-extrusion-height': ['get', 'height_m'], 'fill-extrusion-color': ['coalesce', ['get', 'use_color'], '#cbd5e1'], 'fill-extrusion-opacity': .8 } })
@@ -77,7 +89,7 @@ export default function PlannerMap({ parcels, neighborhoods, stops, existingBuil
       map.addLayer({ id: 'placed-buildings-outline', type: 'line', source: 'placed-buildings', paint: { 'line-color': ['case', ['get', 'valid'], '#fff', '#dc2626'], 'line-width': 2, 'line-dasharray': [2, 1] } })
       map.addLayer({ id: 'building-fill', type: 'fill-extrusion', source: 'building', paint: { 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-color': ['get', 'color'], 'fill-extrusion-opacity': .6 } })
       map.addLayer({ id: 'building-outline', type: 'line', source: 'building', paint: { 'line-color': ['get', 'color'], 'line-width': 2.5, 'line-dasharray': [2, 1] } })
-      for (const id of ['discovery-outline', 'selected-fill', 'selected-line', 'park-fill', 'reservation-fill', 'connection-line', 'draft-point', 'service-link', 'service-zone', 'placed-buildings-fill', 'placed-buildings-outline', 'building-fill', 'building-outline']) map.setLayerZoomRange(id, DETAIL_ZOOM, 24)
+      for (const id of ['discovery-outline', 'selected-fill', 'selected-line', 'park-fill', 'reservation-fill', 'connection-line', 'saved-route-line', 'draft-point', 'service-link', 'service-zone', 'placed-buildings-fill', 'placed-buildings-outline', 'building-fill', 'building-outline']) map.setLayerZoomRange(id, DETAIL_ZOOM, 24)
       let hoverFrame = null
       map.on('mousemove', event => {
         if (!callbacks.current.placing || hoverFrame) return
@@ -113,35 +125,35 @@ export default function PlannerMap({ parcels, neighborhoods, stops, existingBuil
       })
       map.on('mouseenter', 'parcel-fill', () => { map.getCanvas().style.cursor = callbacks.current.placing || callbacks.current.drawing ? 'crosshair' : 'pointer' })
       map.on('mouseleave', 'parcel-fill', () => { map.getCanvas().style.cursor = callbacks.current.placing || callbacks.current.drawing ? 'crosshair' : '' })
-      publishViewport()
+      publishViewport(true)
       setReady(true)
     })
     let viewportTimer = null
-    const publishViewport = () => {
+    const publishViewport = (loadNeighborhoods = false) => {
       clearTimeout(viewportTimer); viewportTimer = null
-      const bounds = map.getBounds(), dx = (bounds.getEast() - bounds.getWest()) * .35, dy = (bounds.getNorth() - bounds.getSouth()) * .35
-      const next = { zoom: map.getZoom(), bounds: [bounds.getWest() - dx, bounds.getSouth() - dy, bounds.getEast() + dx, bounds.getNorth() + dy] }
-      setViewport(next); callbacks.current.onViewport?.(next)
+      const bounds = map.getBounds()
+      const next = { zoom: map.getZoom(), bounds: [bounds.getWest(), bounds.getSouth(), bounds.getEast(), bounds.getNorth()] }
+      setViewport(next)
+      if (loadNeighborhoods) callbacks.current.onViewport?.(next)
       if (marker.current) marker.current.getElement().hidden = next.zoom < DETAIL_ZOOM
       if (next.zoom < DETAIL_ZOOM) popup.current?.remove()
     }
-    // A buffered view and throttled updates keep panning responsive without
-    // rebuilding GeoJSON or requesting neighborhoods on every animation frame.
-    map.on('move', () => { viewportTimer ??= setTimeout(publishViewport, 150) })
-    map.on('moveend', publishViewport)
-    map.on('resize', publishViewport)
+    // Cull existing detail while moving, but request new neighborhoods only after
+    // the camera settles. Zooming out cannot start a burst of intermediate loads.
+    map.on('move', () => { viewportTimer ??= setTimeout(() => publishViewport(false), 150) })
+    map.on('moveend', () => publishViewport(true))
+    map.on('resize', () => publishViewport(true))
     const observer = new ResizeObserver(() => map.resize())
     observer.observe(container.current)
-    return () => { clearTimeout(viewportTimer); observer.disconnect(); marker.current?.remove(); marker.current = null; popup.current?.remove(); map.remove(); mapRef.current = null; networkDisplayed.current = false }
+    return () => { clearTimeout(viewportTimer); observer.disconnect(); marker.current?.remove(); marker.current = null; popup.current?.remove(); map.remove(); mapRef.current = null; uploaded.current.clear() }
   }, [neighborhoods, stops])
 
   useEffect(() => {
     if (!ready || !viewport) return
     const pins = new Set(discoveryPins)
-    const map = mapRef.current
-    map.getSource('parcels').setData(fc(visibleParcels))
-    map.getSource('discovery').setData(fc(visibleParcels.filter(f => pins.has(f.properties.pin))))
-    map.getSource('existing-buildings').setData(fc(visibleBuildings))
+    updateFeatures('parcels', visibleParcels)
+    updateFeatures('discovery', visibleParcels.filter(f => pins.has(f.properties.pin)))
+    updateFeatures('existing-buildings', visibleBuildings)
   }, [ready, visibleParcels, visibleBuildings, discoveryPins])
   useEffect(() => {
     if (!ready) return
@@ -154,19 +166,20 @@ export default function PlannerMap({ parcels, neighborhoods, stops, existingBuil
   useEffect(() => {
     if (!ready) return
     const map = mapRef.current, visible = tool === 'network', point = selected && geometryCenter(selected.geometry)
-    if (visible && !networkDisplayed.current) { map.getSource('walking-network').setData('/data/walking-network.geojson'); networkDisplayed.current = true }
     map.setLayoutProperty('network-line', 'visibility', visible ? 'visible' : 'none')
     map.getSource('network-nodes').setData(visible && network && point ? fc(network.nodes.flatMap((coordinates, id) => network.ground[id] && haversineMeters(...point, ...coordinates) < 600 ? [{ type: 'Feature', properties: { node: id }, geometry: { type: 'Point', coordinates } }] : [])) : empty())
     map.getSource('parks').setData(visible && network ? fc(network.parks.map(p => ({ type: 'Feature', properties: { name: p.name }, geometry: p.geometry }))) : empty())
   }, [ready, tool, network, selected])
+  useEffect(() => { if (ready) updateFeatures('walking-network', visibleRoads) }, [ready, visibleRoads])
 
   useEffect(() => {
     if (!ready) return
     mapRef.current.getSource('reservations').setData(proposed ? fc(reservations || []) : empty())
-    mapRef.current.getSource('connections').setData(proposed && network ? fc((connections || []).filter(c => network.nodes[c.from] && network.nodes[c.to]).map(c => ({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [network.nodes[c.from], network.nodes[c.to]] } }))) : empty())
-  }, [ready, proposed, reservations, connections, network])
+    mapRef.current.getSource('connections').setData(proposed && network ? fc((connections || []).filter(c => endpointCoordinates(network,c.from) && endpointCoordinates(network,c.to)).map(c => ({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [endpointCoordinates(network,c.from), endpointCoordinates(network,c.to)] } }))) : empty())
+    mapRef.current.getSource('saved-routes').setData(fc(routes.map(r => ({type:'Feature',properties:{},geometry:{type:'LineString',coordinates:r.coordinates}}))))
+  }, [ready, proposed, reservations, connections, routes, network])
   useEffect(() => {
-    if (ready) mapRef.current.getSource('draft-node').setData(drawing && network && draftNode !== null ? fc([{ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: network.nodes[draftNode] } }]) : empty())
+    if (ready) mapRef.current.getSource('draft-node').setData(drawing && network && draftNode !== null ? fc([{ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: draftNode.coordinates } }]) : empty())
   }, [ready, drawing, network, draftNode])
 
   useEffect(() => {
@@ -218,5 +231,5 @@ export default function PlannerMap({ parcels, neighborhoods, stops, existingBuil
     if (point) lastPin.current = selected.properties.pin
   }, [ready, selected, view3d])
 
-  return <><div ref={container} className="planner-map" data-detail-level={!viewport || viewport.zoom < DETAIL_ZOOM ? 'overview' : viewport.zoom < 16 ? 'footprints' : '3d'} data-visible-parcels={visibleParcels.length} data-visible-buildings={visibleBuildings.length} aria-label="3D parcel planning map. Select a parcel on the map or use the address search." />{error && <div className="planner-map-error" role="alert">{error}</div>}</>
+  return <><div ref={container} className="planner-map" data-detail-level={!viewport || viewport.zoom < DETAIL_ZOOM ? 'overview' : viewport.zoom < 16 ? 'footprints' : '3d'} data-visible-neighborhoods={visibleKey} data-visible-parcels={visibleParcels.length} data-visible-buildings={visibleBuildings.length} data-visible-roads={visibleRoads.length} aria-label="3D parcel planning map. Select a parcel on the map or use the address search." />{error && <div className="planner-map-error" role="alert">{error}</div>}</>
 }

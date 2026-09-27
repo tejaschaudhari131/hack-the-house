@@ -24,19 +24,19 @@ Challenge 3: Housing Typology, Equity & Climate Matchmaker *(confirm the exact o
 
 ## Project title
 
-Hack the House: housing-site decision support for Hazelwood and Lawrenceville, Pittsburgh
+Playhouse: housing and infrastructure decision support for Pittsburgh
 
 ## Project description
 
-**What it does.** Hack the House helps a community development corporation or city planner answer one question: which real parcel and housing option should we investigate next, why does it rank the way it does, and what must we verify before acting? It covers 8,645 parcels in Hazelwood and Lower, Central, and Upper Lawrenceville. You can shortlist sites with Find Sites (for example, City-owned vacant lots where a triplex is allowed by right, outside mapped flood zones, near frequent transit), compare two housing options on a real lot, and see each option's §911.02 zoning reading separately from its score. You can also inspect the evidence behind six factors (market activity and lot fit, transit, equity, climate hazard, a displacement screening signal, and a relative carbon-related proxy), change priorities, and print a decision brief with three rule-based next steps. The comparison shows how many points each factor adds, so a close result is labeled close. Five illustrative priorities and a one-factor sweep with exactly solved crossing points show whether the answer is about data or values. Scenarios are reproducible through a versioned share link or a JSON file.
+**What it does.** Playhouse helps a community development corporation or city planner answer one question: which real parcel and housing option should we investigate next, why does it rank the way it does, and what must we verify before acting? Studio and Explorer cover 142,865 parcels across all 90 Pittsburgh neighborhoods; none is omitted. Neighborhood data loads on demand. Studio compares a next-building draft with selected housing types, with seven decision dimensions and editable assumptions. It also tests walking connections, parks and added bus service; results are scenarios, not a citywide redevelopment recommendation. You can shortlist sites with Find Sites (for example, City-owned vacant lots where a triplex is allowed by right, outside mapped flood zones, near frequent transit), compare two housing options on a real lot, and see each option's §911.02 zoning reading separately from its score. You can also inspect the evidence behind six factors (market activity and lot fit, transit, equity, climate hazard, a displacement screening signal, and a relative carbon-related proxy), change priorities, and print a decision brief with three rule-based next steps. The comparison shows how many points each factor adds, so a close result is labeled close. Five illustrative priorities and a one-factor sweep with exactly solved crossing points show whether the answer is about data or values. Scenarios are reproducible through a versioned share link or a JSON file.
 
 **Who it's for.** CDC staff and municipal planners preparing a housing-site shortlist; also residents and officials who want to see trade-offs before a meeting.
 
 **How it's built.** A Python pipeline joins county parcels and assessments, Pittsburgh zoning and the §911.02 use table, PRT GTFS, ACS, HUD CHAS, FEMA flood zones, steep slopes, undermined areas, City property records, LIHTC/QCT context, EIA RECS, and published embodied-carbon research into static files. A Next.js app with Leaflet and MapLibre ranks on the client with one shared factor definition. Python and JavaScript are checked for parity. An explanation route (Vercel AI SDK) rebuilds all facts on the server and falls back to a labeled deterministic template.
 
-**What's next.** A two-week pilot with one CDC and one qualified zoning reviewer (proposed, not agreed): review a small set of real sites, compare the shortlist and explanations with practitioner judgment, log consequential errors and missing checks, and measure time to prepare a brief. On the roadmap (not built): reviewed dimensional envelopes, rehab and no-change baselines, affordability and subsidy scenarios, real pedestrian routes, and shared feedback storage.
+**What's next.** A two-week pilot with one CDC and one qualified zoning reviewer (proposed, not agreed): review a small set of real sites, compare the shortlist and explanations with practitioner judgment, log consequential errors and missing checks, and measure time to prepare a brief. On the roadmap (not built): reviewed dimensional envelopes, rehab and no-change baselines, affordability and subsidy scenarios, shared feedback storage and traffic/utility engineering.
 
-**Limitations.** Decision support only: not a permit, zoning determination, feasibility study, appraisal, affordability guarantee, or displacement prediction. The §911.02 mapping has not had expert review. Setbacks, lot width, height, parking, utilities, and geotechnical conditions are not evaluated. Distances are straight-line. Displacement is a tract-level screen; the carbon proxy is relative, not tonnes. Public records are not availability. On the live deployment no language-model key is configured, so explanations show the labeled template built from the same numbers.
+**Limitations.** Decision support only: not a permit, zoning determination, feasibility study, appraisal, affordability guarantee, or displacement prediction. The §911.02 mapping has not had expert review. Studio applies supported Title Nine screens and marks unsupported checks unassessed; it uses mapped walking routes with assumed last-metre connectors. Explorer retains its original straight-line access screen. Utilities and geotechnical capacity are not modeled. Displacement is a tract-level screen; the carbon proxy is relative, not tonnes. Public records are not availability. On the live deployment no language-model key is configured, so explanations show the labeled template built from the same numbers.
 
 ## Demo video link
 
@@ -49,6 +49,8 @@ https://github.com/tejaschaudhari131/hack-the-house
 ## Live app
 
 https://hack-the-house.vercel.app
+
+Citywide release preview (PR #7, not merged): https://hack-the-house-git-playhouse-citywide-tej-fff0.vercel.app. Vercel deployment succeeded; the team will perform the protected-preview walkthrough. Local five-neighborhood checks are recorded in [VALIDATION.md](VALIDATION.md).
 
 ## Data sources
 
@@ -65,3 +67,5 @@ Allegheny County parcel boundaries and property assessments (WPRDC/County GIS, p
 - 18+ / eligibility: **TODO: each member attests personally. The agent does not answer this.**
 - Original work during the event / prior code: **TODO: team confirms.** The git history starts 2026-09-26 with the initial commit.
 - Partner or expert endorsement: none claimed.
+
+Coverage note: the 142,865 mapped records include 142,571 identified parcels and 294 county polygons without a unique PIN. Those polygons have stable `SITE…` map IDs, retain the source label, and disclose that assessment and parcel-ID-based property flags are unknown. No neighborhood is omitted.
