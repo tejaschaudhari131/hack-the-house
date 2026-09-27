@@ -3,9 +3,10 @@
 import dynamic from 'next/dynamic'
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import { BUILDINGS, BUILDING_IDS } from '../lib/buildings.js'
-import { colorBuildingUses } from '../lib/buildingUses.js'
 import { buildingHeightCoverage } from '../lib/buildingHeights.js'
-import { slimParcels, geometryBounds, boundsOverlap, placementAt, geometriesOverlap, rectangleAt, fitMassing } from '../lib/plannerGeometry.js'
+import { slimParcels, geometryBounds, placementAt, geometriesOverlap, rectangleAt, fitMassing } from '../lib/plannerGeometry.js'
+import { DETAIL_ZOOM, mergeNeighborhoods, spatialIndex, containsBounds } from '../lib/studioData.js'
+import useNeighborhoodData, { fetchNeighborhood } from './useNeighborhoodData.js'
 import { nearestNode, validateConnection, validatePark, connectionGeometry, prepareNetwork } from '../lib/networkModel.js'
 import InfrastructurePanel from './InfrastructurePanel.js'
 import RecommendationAudit from './RecommendationAudit.js'
@@ -102,13 +103,19 @@ export default function Planner() {
   const [data, setData] = useState(null), [error, setError] = useState(null), [attempt, setAttempt] = useState(0)
   useEffect(() => {
     const controller = new AbortController()
-    const names = ['parcels.geojson', 'neighborhoods.geojson', 'stops.geojson', 'zoning.json', 'summary.json']
+    const names = ['studio/manifest.json', 'neighborhoods.geojson', 'stops.geojson', 'zoning.json', 'summary.json', 'existing-buildings.sources.json']
     setError(null)
     Promise.all(names.map(async name => {
       const response = await fetch(`/data/${name}`, { signal: controller.signal })
       if (!response.ok) throw new Error(`${name}: ${response.status}`)
       return response.json()
-    })).then(([parcels, neighborhoods, stops, zoning, summary]) => setData({ parcels, neighborhoods, stops, zoning, summary }))
+    })).then(async ([manifest, neighborhoods, stops, zoning, summary, buildingManifest]) => {
+      const linked = new URLSearchParams(window.location.search).get('pin')
+      const initialPin = manifest.catalogue.some(p => p[0] === linked) ? linked : EXAMPLES[0].pin
+      const id = manifest.catalogue.find(p => p[0] === initialPin)[2]
+      const chunk = await fetchNeighborhood(manifest.neighborhoods.find(n => n.id === id), controller.signal)
+      if (!controller.signal.aborted) setData({ manifest, neighborhoods, stops, zoning, summary, buildingManifest, initialPin, initialChunk: { id, data: chunk } })
+    })
       .catch(error => { if (error.name !== 'AbortError') setError(error.message) })
     return () => controller.abort()
   }, [attempt])
@@ -117,8 +124,12 @@ export default function Planner() {
 }
 
 function Studio({ data }) {
-  const { parcels, neighborhoods, stops, zoning, summary } = data
-  const [context, setContext] = useState(null), [contextError, setContextError] = useState(null), [contextAttempt, setContextAttempt] = useState(0)
+  const { manifest, neighborhoods, stops, zoning, summary, buildingManifest, initialChunk, initialPin } = data
+  const catalogue = useMemo(() => new Map(manifest.catalogue.map(([pin, address, id]) => {
+    const n = manifest.neighborhoods.find(n => n.id === id)
+    return [pin, { id, properties: { pin, address, neighborhood: n.name, area: n.area } }]
+  })), [manifest])
+  const [viewport, setViewport] = useState(null), [pendingPin, setPendingPin] = useState(null), [pendingHistory, setPendingHistory] = useState(null)
   const [showExisting, setShowExisting] = useState(true)
   const [networkData, setNetworkData] = useState(null), [networkError, setNetworkError] = useState(null), [networkAttempt, setNetworkAttempt] = useState(0)
   const network = networkData?.network || null
@@ -131,26 +142,9 @@ function Studio({ data }) {
     })).then(([network, manifest]) => setNetworkData({ network, manifest })).catch(error => { if (error.name !== 'AbortError') setNetworkError(error.message) })
     return () => controller.abort()
   }, [networkAttempt])
-  useEffect(() => {
-    const controller = new AbortController()
-    setContextError(null)
-    Promise.all(['existing-buildings.geojson', 'existing-buildings.sources.json'].map(async name => {
-      const response = await fetch(`/data/${name}`, { signal: controller.signal })
-      if (!response.ok) throw new Error(`Building context: ${response.status}`)
-      return response.json()
-    })).then(([buildings, manifest]) => setContext({ buildings, manifest })).catch(error => { if (error.name !== 'AbortError') setContextError(error.message) })
-    return () => controller.abort()
-  }, [contextAttempt])
-  const byPin = useMemo(() => new Map(parcels.features.map(f => [f.properties.pin, f])), [parcels])
-  const coloredBuildings = useMemo(() => context ? colorBuildingUses(context.buildings, byPin) : null, [context, byPin])
-  const mapParcels = useMemo(() => slimParcels(parcels), [parcels])
-  const makeScenario = useCallback(pin => {
-    const feature = byPin.get(pin)
-    return { ...initialStudioScenario(pin, feature.properties, String(preferredStop(nearbyStops(feature, stops))?.stop_id || '')), accessMode: 'network' }
-  }, [byPin, stops])
   const [history, dispatch] = useReducer(scenarioReducer, null, () => {
-    const linked = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('pin') : null
-    return historyFor(makeScenario(byPin.has(linked) ? linked : EXAMPLES[0].pin))
+    const feature = initialChunk.data.parcels.features.find(f => f.properties.pin === initialPin)
+    return historyFor({ ...initialStudioScenario(initialPin, feature.properties, String(preferredStop(nearbyStops(feature, stops))?.stop_id || '')), accessMode: 'network' })
   })
   const scenario = history.present
   useEffect(() => {
@@ -158,9 +152,31 @@ function Studio({ data }) {
     url.searchParams.set('pin', scenario.pin)
     window.history.replaceState(null, '', url)
   }, [scenario.pin])
-  const selected = byPin.get(scenario.pin), props = selected.properties
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [tool, setActiveTool] = useState('housing'), [proposed, setProposed] = useState(true), [view3d, setView3d] = useState(true)
+  const requiredIds = [...new Set([scenario.pin, ...(scenario.buildings || []).map(b => b.pin)].map(pin => catalogue.get(pin).id))].sort()
+  const historyTarget = pendingHistory === 'undo' ? history.past.at(-1) : pendingHistory === 'redo' ? history.future[0] : null
+  const historyIds = historyTarget ? [...new Set([historyTarget.pin, ...(historyTarget.buildings || []).map(b => b.pin)].map(pin => catalogue.get(pin).id))] : []
+  const extraIds = [...historyIds, ...(pendingPin ? [catalogue.get(pendingPin).id] : []), ...(tool === 'sites' ? manifest.neighborhoods.filter(n => n.area === catalogue.get(scenario.pin).properties.area).map(n => n.id) : [])]
+  const loaded = useNeighborhoodData(manifest, initialChunk, requiredIds, viewport, extraIds)
+  const { parcels } = loaded
+  const byPin = useMemo(() => new Map(parcels.features.map(f => [f.properties.pin, f])), [parcels])
+  const selected = byPin.get(scenario.pin), props = selected.properties
+  const mapParcels = useMemo(() => slimParcels(loaded.mapParcels), [loaded.mapParcels])
+  // Panning may load map context, but cannot change the plan's evidence or rerun its scores.
+  const evidenceKey = requiredIds.map(id => `${id}:${loaded.chunks.has(id)}`).join('|')
+  const context = useMemo(() => requiredIds.every(id => loaded.chunks.has(id)) ? { buildings: mergeNeighborhoods(requiredIds.map(id => loaded.chunks.get(id)), 'buildings'), manifest: buildingManifest } : null, [evidenceKey, buildingManifest])
+  const planByPin = useMemo(() => new Map(mergeNeighborhoods(requiredIds.map(id => loaded.chunks.get(id)), 'parcels').features.map(f => [f.properties.pin, f])), [evidenceKey])
+  const makeScenario = useCallback(pin => {
+    const feature = byPin.get(pin)
+    return { ...initialStudioScenario(pin, feature.properties, String(preferredStop(nearbyStops(feature, stops))?.stop_id || '')), accessMode: 'network' }
+  }, [byPin, stops])
+  useEffect(() => { if (pendingPin && byPin.has(pendingPin)) { select(pendingPin); setPendingPin(null) } }, [pendingPin, byPin])
+  useEffect(() => {
+    if (pendingHistory && historyTarget && historyIds.every(id => loaded.chunks.has(id))) {
+      dispatch({ type: pendingHistory }); setPendingHistory(null)
+    }
+  }, [pendingHistory, historyTarget, loaded.chunks])
   const returningCamera = useRef(null)
   function setTool(value) { setActiveTool(value); setSidebarOpen(true) }
   useEffect(() => {
@@ -191,22 +207,24 @@ function Studio({ data }) {
     tourReturn.current = null
   }, [])
   const [siteFilters, setSiteFilters] = useState({})
-  const sites = useMemo(() => studioSites(parcels, zoning, props.area, siteFilters), [parcels, zoning, props.area, siteFilters])
+  const sitesLoading = manifest.neighborhoods.some(n => n.area === props.area && !loaded.chunks.has(n.id))
+  const sites = useMemo(() => tool === 'sites' ? studioSites(parcels, zoning, props.area, siteFilters) : [], [tool, parcels, zoning, props.area, siteFilters])
   const discoveryPins = useMemo(() => tool === 'sites' ? sites.map(f => f.properties.pin) : [], [tool, sites])
   const nearby = useMemo(() => nearbyStops(selected, stops), [selected, stops])
   const stop = nearby.find(s => String(s.stop_id) === scenario.stopId) || null
-  const buildingIndex = useMemo(() => context?.buildings.features.map(feature => ({ feature, bounds: geometryBounds(feature.geometry) })), [context])
+  const buildingIndex = useMemo(() => context ? spatialIndex(context.buildings.features) : null, [context])
+  const loadedBuildingIndex = useMemo(() => spatialIndex(mergeNeighborhoods([...loaded.chunks.values()], 'buildings').features), [loaded.chunks])
   const nearbyBuildings = useMemo(() => {
     if (!buildingIndex) return null
     const bounds = geometryBounds(selected.geometry)
-    return buildingIndex.filter(b => boundsOverlap(bounds, b.bounds)).map(b => b.feature)
+    return buildingIndex.query(bounds)
   }, [buildingIndex, selected])
   const areaSites = useMemo(() => (scenario.buildings || []).map(building => {
-    const feature = byPin.get(building.pin), bounds = geometryBounds(feature.geometry)
+    const feature = planByPin.get(building.pin), bounds = geometryBounds(feature.geometry)
     const areaStop = stops.features.find(s => String(s.properties.stop_id) === building.stopId)
-    return { ...building, feature, existingBuildings: buildingIndex ? buildingIndex.filter(b => boundsOverlap(bounds, b.bounds)).map(b => b.feature) : null,
+    return { ...building, feature, existingBuildings: buildingIndex ? buildingIndex.query(bounds) : null,
       stop: areaStop ? { ...areaStop.properties, coordinates: areaStop.geometry.coordinates, distance: nearbyStops(feature, stops).find(s => String(s.stop_id) === building.stopId)?.distance ?? 0 } : null }
-  }), [scenario.buildings, byPin, buildingIndex, stops])
+  }), [scenario.buildings, planByPin, buildingIndex, stops])
   const input = useMemo(() => ({ feature: selected, zoning, scenario, stop, existingBuildings: nearbyBuildings, areaSites }), [selected, zoning, scenario, stop, nearbyBuildings, areaSites])
   const evaluation = useEvaluation(input, network)
   const result = evaluation.pin === scenario.pin ? evaluation.result : null
@@ -214,10 +232,13 @@ function Studio({ data }) {
   const option = scenario.draft, evaluated = options?.[option.typeId]
   const zoningInputs = scenario.zoningInputsByPin?.[scenario.pin] || {}
   function setZoningInput(key, value) { set('zoningInputsByPin', { ...scenario.zoningInputsByPin, [scenario.pin]: { ...zoningInputs, [key]: value } }) }
-  const matches = useMemo(() => query.trim().length > 1 ? parcels.features.filter(f => `${f.properties.address || ''} ${f.properties.pin}`.toLowerCase().includes(query.toLowerCase().trim())).slice(0, 6) : [], [query, parcels])
+  const matches = useMemo(() => query.trim().length > 1 ? [...catalogue.values()].filter(f => `${f.properties.address} ${f.properties.pin}`.toLowerCase().includes(query.toLowerCase().trim())).slice(0, 6) : [], [query, catalogue])
 
   function select(pin) {
-    if (!byPin.has(pin)) return
+    if (!catalogue.has(pin)) return
+    setPendingHistory(null)
+    if (!byPin.has(pin)) { setPendingPin(pin); setNotice('Loading the selected neighborhood…'); return }
+    setPendingPin(null)
     if (pin === scenario.pin) { setTool('housing'); setInspectorTab('edit'); setQuery(''); return }
     const sameArea = byPin.get(pin).properties.area === props.area
     const next = makeScenario(pin)
@@ -230,6 +251,7 @@ function Studio({ data }) {
     if (nearby.some(s => String(s.stop_id) === id)) { dispatch({ type: 'set', key: 'stopId', value: id }); setNotice('Selected stop updated. The same stop is used for baseline and proposal.') }
     else setNotice('Choose a scheduled stop within 1,200 m of this parcel.')
   }
+  function restoreHistory(direction) { setPendingPin(null); setPendingHistory(direction) }
   function changeType(typeId) { setInspectorTab('edit'); dispatch({ type: 'draft', value: { typeId, ...MASSING_DEFAULTS[typeId], height: BUILDINGS[typeId].heightM, floors: BUILDINGS[typeId].floors, residentialForm: 'duplex', placement: null } }) }
   function previewTemplate(template) {
     if (evaluation.pending) return
@@ -273,7 +295,8 @@ function Studio({ data }) {
     if (error) { setNotice(error); return }
     const geometry = drawing === 'park' ? rectangleAt(coordinates, 20, 20) : connectionGeometry(network, operation)
     const bounds = geometryBounds(geometry)
-    if (buildingIndex.some(b => boundsOverlap(bounds, b.bounds) && geometriesOverlap(geometry, b.feature.geometry))) { setNotice('This reservation overlaps a recorded building. Choose a clear location; demolition is not modeled.'); return }
+    if (!manifest.neighborhoods.some(n => loaded.chunks.has(n.id) && containsBounds(n.bounds, bounds))) { setNotice('Pan closer to a study neighborhood to load its building evidence before drawing here.'); return }
+    if (loadedBuildingIndex.query(bounds).some(b => geometriesOverlap(geometry, b.geometry))) { setNotice('This reservation overlaps a recorded building. Choose a clear location; demolition is not modeled.'); return }
     const key = drawing === 'park' ? 'parks' : 'connections'
     if (scenario[key].length >= 12) { setNotice('This local scenario supports up to 12 edits of each kind.'); return }
     set(key, [...scenario[key], operation]); setProposed(true); cancelDrawing(); setNotice('Hypothetical infrastructure added. Access and reserved land are recalculated; buildability remains unverified.')
@@ -294,14 +317,15 @@ function Studio({ data }) {
     </header>
     <StudioWorkspace sidebarOpen={sidebarOpen} expanded={tool === 'compare'} map={
       <section className="studio-canvas" aria-label="Planning map">
-        <PlannerMap parcels={mapParcels} neighborhoods={neighborhoods} stops={stops} existingBuildings={coloredBuildings} showExisting={showExisting} selected={selected} buildingPreview={buildingPreview} stop={stop} proposed={proposed} additionalDepartures={scenario.additionalDepartures} view3d={view3d} onSelect={select} onStop={selectStop} tool={tool} placing={placing} onPlace={placeProposal} onHover={setHoverPoint} placedBuildings={result?.committed?.[proposed ? 'proposal' : 'baseline'] || []} network={network} networkResult={evaluated?.access} reservations={result?.reservations} connections={scenario.connections} drawing={drawing} draftNode={draftNode} onDraw={drawInfrastructure} discoveryPins={discoveryPins}/>
+        <PlannerMap parcels={mapParcels} neighborhoods={neighborhoods} stops={stops} existingBuildings={loaded.mapBuildings} showExisting={showExisting} selected={selected} buildingPreview={buildingPreview} stop={stop} proposed={proposed} additionalDepartures={scenario.additionalDepartures} view3d={view3d} onSelect={select} onStop={selectStop} tool={tool} placing={placing} onPlace={placeProposal} onHover={setHoverPoint} placedBuildings={result?.committed?.[proposed ? 'proposal' : 'baseline'] || []} network={network} networkResult={evaluated?.access} reservations={result?.reservations} connections={scenario.connections} drawing={drawing} draftNode={draftNode} onDraw={drawInfrastructure} discoveryPins={discoveryPins} onViewport={setViewport}/>
+        <div className="map-detail-status" role="status">{loaded.error ? <button onClick={loaded.retry}>Neighborhood data unavailable · Retry</button> : pendingPin || pendingHistory || loaded.pending ? 'Loading neighborhood…' : viewport && viewport.zoom < DETAIL_ZOOM ? 'Zoom in for buildings and parcels' : null}</div>
         {placing && <div className="placement-banner" role="status">Click to add {housingSpec(option).label}. Green: passes placement screen · red: needs review. <button onClick={() => setPlacing(false)}>Cancel placement</button></div>}
         <nav data-tour="tools" className="studio-tools" aria-label="Planning tools">{[['sites', 'pin', 'Sites'], ['housing', 'building', 'Housing'], ['service', 'bus', 'Transit'], ['network', 'network', 'Infra'], ['compare', 'chart', 'Compare']].map(([id, icon, label]) => <button key={id} className={tool === id ? 'active' : ''} aria-pressed={tool === id} onClick={() => { setTool(id); setInspectorTab(id === 'compare' ? 'rankings' : 'edit') }}><Icon name={icon}/><span>{label}</span></button>)}<div className="tool-divider"/><button onClick={() => setView3d(!view3d)} aria-pressed={view3d}><Icon name="layers"/><span>{view3d ? '3D' : '2D'}</span></button></nav>
         <div className="canvas-heading"><span className="eyebrow">PITTSBURGH / {props.area?.toUpperCase()}</span></div>
-        <div className="canvas-mode"><div className="segmented" aria-label="Infrastructure view"><button className={!proposed ? 'active' : ''} aria-pressed={!proposed} onClick={() => setProposed(false)}>Baseline</button><button className={proposed ? 'active' : ''} aria-pressed={proposed} onClick={() => setProposed(true)}>Proposal {scenario.additionalDepartures > 0 && <i/>}</button></div><div className="history-controls"><button aria-label="Undo scenario edit" disabled={!history.past.length} onClick={() => dispatch({ type: 'undo' })}>↶</button><button aria-label="Redo scenario edit" disabled={!history.future.length} onClick={() => dispatch({ type: 'redo' })}>↷</button></div></div>
+        <div className="canvas-mode"><div className="segmented" aria-label="Infrastructure view"><button className={!proposed ? 'active' : ''} aria-pressed={!proposed} onClick={() => setProposed(false)}>Baseline</button><button className={proposed ? 'active' : ''} aria-pressed={proposed} onClick={() => setProposed(true)}>Proposal {scenario.additionalDepartures > 0 && <i/>}</button></div><div className="history-controls"><button aria-label="Undo scenario edit" disabled={!history.past.length || !!pendingHistory} onClick={() => restoreHistory('undo')}>↶</button><button aria-label="Redo scenario edit" disabled={!history.future.length || !!pendingHistory} onClick={() => restoreHistory('redo')}>↷</button></div></div>
         <div className="map-overlays">
         {tool === 'housing' && <div data-tour="housing" className="massing-tray"><div className="tray-top"><div><span className="eyebrow">CURRENT DRAFT</span><strong>{housingSpec(option).label}</strong></div><span className="option-chip">{housingSpec(option).units} homes</span></div><div className="type-cycler"><button aria-label="Previous housing type" onClick={() => cycle(-1)}>←</button><div className="type-dots">{BUILDING_IDS.map(id => <button key={id} title={BUILDINGS[id].label} aria-label={`Preview ${BUILDINGS[id].label}`} aria-pressed={id === option.typeId} className={id === option.typeId ? 'active' : ''} onClick={() => changeType(id)}><Icon name="building" size={18}/></button>)}</div><button aria-label="Next housing type" onClick={() => cycle(1)}>→</button></div><p>{option.width} × {option.depth} m footprint · {option.height} m high <span>Proposed dimensions</span></p><div className="draft-preview-status" role="status"><i style={{ background: buildingPreview?.properties.color || "#94a3b8" }}/>{buildingPreview?.properties.status || "Preparing preview…"}<small>Preview only · not added to plan</small></div></div>}
-        <MapLegend showExisting={showExisting} onShowExisting={setShowExisting} context={context} error={contextError} onRetry={() => setContextAttempt(n => n + 1)}/>
+        <MapLegend showExisting={showExisting} onShowExisting={setShowExisting} context={context} error={loaded.error} onRetry={loaded.retry}/>
         </div>
       </section>
     }>
@@ -309,7 +333,7 @@ function Studio({ data }) {
         <div className="inspector-top">{tool === 'compare' && <button className="comparison-back" onClick={() => setTool('housing')}>← Back to map</button>}<div className="inspector-status"><span className="live-dot"/>{evaluation.pending ? 'Recalculating…' : 'Scenario ready'}<span>{MODEL_VERSION}</span></div><label data-tour="site" className="site-search"><Icon name="pin" size={16}/><input aria-label="Search address or parcel ID" placeholder="Find an address or parcel…" value={query} onChange={e => setQuery(e.target.value)}/></label>{query.length > 1 && <div className="search-results">{matches.length ? matches.map(f => <button key={f.properties.pin} onClick={() => select(f.properties.pin)}>{f.properties.address || f.properties.pin}<small>{f.properties.neighborhood}</small></button>) : <p>No matching study parcels.</p>}</div>}</div>
         <nav className="inspector-tabs" aria-label="Inspector sections">{[['edit', tool === 'sites' ? 'Sites' : 'Edit'], ['rankings','Rankings'], ['priorities','Priorities'], ['assumptions','Assumptions']].map(([id,label]) => <button key={id} aria-pressed={inspectorTab === id} onClick={() => setInspectorTab(id)}>{label}</button>)}</nav>
         <div className="inspector-scroll" key={inspectorTab}>
-          {inspectorTab === 'edit' && tool === 'sites' && <StudioSites filters={siteFilters} setFilters={setSiteFilters} sites={sites} selectedPin={scenario.pin} onSelect={select}/>}
+          {inspectorTab === 'edit' && tool === 'sites' && <StudioSites filters={siteFilters} setFilters={setSiteFilters} sites={sites} selectedPin={scenario.pin} onSelect={select} loading={sitesLoading}/>}
           {inspectorTab === 'priorities' && <StudioPriorities pending={evaluation.pending} weights={scenario.weights} included={result?.comparison?.included} onChange={weights => set('weights', weights)}/>}
           {inspectorTab !== 'priorities' && !(inspectorTab === 'edit' && tool === 'sites') && <div className="site-heading"><span className="eyebrow">YOUR SELECTED SITE</span><h2>{props.address || 'Unnamed parcel'}</h2><p>{props.neighborhood} · {fmt(props.lot_sqft)} sq ft</p><div className="site-tags"><span>{props.land_use || 'Land use unknown'}</span><span>{props.zoning_code || 'Zoning unknown'}</span>{props.city_owned && <span>City inventory</span>}</div></div>}
           {evaluation.error && <p role="alert" className="planner-warning">Calculation failed: {evaluation.error}</p>}

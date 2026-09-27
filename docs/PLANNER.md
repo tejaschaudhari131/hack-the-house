@@ -10,6 +10,20 @@ A six-step tour opens on the first visit to Studio. **Tour** in the header repla
 
 The map legend starts collapsed, with short labels and the existing building colours. Expand **Legend** for full labels, map symbols and the building-layer toggle.
 
+### Neighborhood loading and map detail
+
+Studio loads a compact address index and the initial site's neighborhood. Panning at zoom 14 or closer requests intersecting neighborhood chunks; search and the example buttons load their destination before switching sites. Opening Sites loads the selected study area's neighborhoods for complete filter results. Failed requests expose Retry and never create empty building evidence.
+
+Only geometry around the camera is sent to MapLibre, with a buffer and updates throttled to 150 ms during movement. Zoom 16+ uses 3D buildings, zoom 14–16 uses flat coloured footprints, and lower zooms retain the basemap and neighborhood boundaries without parcel/building detail. New chunks update sources without recreating the map or changing its camera angle.
+
+The cache retains six recently needed neighborhoods, plus any additional neighborhoods needed by the visible view or active plan. Selected and placed sites retain their full recorded collision evidence even when off screen; camera movement does not recalculate housing scores. Undo/redo loads required evidence before restoring a scenario. The shared walking graph remains intact because useful routes may leave the camera or neighborhood. This is preparation for wider coverage, not a citywide release.
+
+`web/scripts/prepare-studio-data.mjs` derives content-addressed neighborhood files during `predev` and `prebuild`. Original source records, geometry, scoring formulas and Explorer are unchanged. Overlapping building context is duplicated at neighborhood edges and deduplicated in the browser; unlinked footprints are included. Generated files are ignored by Git and regenerated from committed inputs. Hashed files receive immutable cache headers; the small manifest can revalidate on deployment.
+
+Run `npm run benchmark:studio` for file-size and local CPU measurements. On the development machine (Ryzen 7 PRO 8840U, Node 26.8.1), initial required data including the shared walking graph fell from 36.3 MB raw / 3.44 MB gzip to 18.4 MB / 2.15 MB for Hazelwood or 11.1 MB / 1.63 MB for the Lower Lawrenceville example. These exclude JS, CSS, basemap tiles and additional neighborhoods entering view. Parcel/building JSON parsing fell from about 149 ms median to 66 ms / 28 ms for the respective chunks. These are local Node measurements, not browser frame-rate, mobile or 30-user load guarantees.
+
+Tests check complete parcel round trips, collision-evidence coverage for every study parcel, spatial-index equivalence, viewport selection, cache retention and exact recommendation parity with the original full data.
+
 Studio has one editable next-building draft, with no A/B controls. Cycle its housing type on the map or in Edit. In Rankings, **Compare to** adds any of the other four templates; **All types** compares all five, including triplex. **Expand comparison** opens the table at full width; **Back to map** returns to the same scene.
 
 Drag the sidebar's left divider to resize it, or focus the divider and use Left/Right arrows (Shift for larger steps). Enter or double-click restores the default width. **Hide sidebar** gives the map the full workspace; **Show sidebar** restores the panel and its width without clearing the scenario. On narrow screens the panel stacks below the map and can still be hidden.

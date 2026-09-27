@@ -25,6 +25,8 @@ The two study areas are **Hazelwood** and **Lawrenceville** (Lower, Central and 
 
 Studio navigation is limited to Pennsylvania's bounding rectangle. Neighboring areas can appear along its irregular borders; this does not expand the study data coverage.
 
+Neighborhood detail loads as you pan or select a site. Close views show 3D buildings; wider views use flat footprints, then neighborhood outlines. A small cache makes revisiting areas faster. The active plan keeps its evidence even when its buildings are off screen.
+
 There is one editable **next-building draft**. Use **Compare to** to add other housing types to the comparison; all selected types share the same costs, priorities and evidence coverage. Each visitor has their own local Studio scenario. This is not a shared multiplayer session; export before reloading to keep a copy.
 
 Priority sliders are relative: all 1s, all 50s or all 100s give the same result. Each slider shows its percentage of the score after excluding missing evidence. Turning every priority off disables ranking.
@@ -61,7 +63,7 @@ For a new Vercel project: import this repository, select **Next.js**, set the ro
 
 Studio works without AI credentials. Explorer has a template explanation fallback; set `AI_EXPLANATIONS=off` for a template-only demo. See [web setup](web/README.md) for optional model configuration. Vercel Hobby is intended for personal, non-commercial use; check [plan eligibility](https://vercel.com/docs/plans/hobby) before using it for paid work.
 
-Most simulation work happens in each visitor's browser. The full parcel download remains about 27 MB; reducing it is deferred to the recommendation-layer review. A 30-user load test has not been run.
+Most simulation work happens in each visitor's browser. Studio loads generated neighborhood files instead of the full parcel/building download. `npm run dev` and `npm run build` prepare these automatically; the original files remain available to Explorer. The shared walking graph stays loaded so routes can cross neighborhood boundaries. A 30-user load test has not been run.
 
 ## Next with the team
 

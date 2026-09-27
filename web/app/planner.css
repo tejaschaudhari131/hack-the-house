@@ -191,6 +191,9 @@
 .inspector-footer { border-top: 1px solid var(--line); padding: 12px 21px; font-size: 9px; color: #88927c; display: flex; align-items: center; gap: 7px; background: #f5f7ee; }
 .planner-warning { font-size: 10px; color: #9a6d35; line-height: 1.6; }
 .planner-map-error { position: absolute; top: 48%; left: 20%; right: 12%; background: #fff6de; padding: 18px; border-radius: 8px; font-size: 13px; border: 1px solid #d8ba7c; }
+.map-detail-status { position: absolute; left: 88px; top: 111px; padding: 6px 9px; background: #fffffff0; border-radius: 6px; font-size: 11px; color: #365447; }
+.map-detail-status:empty { display: none; }
+.map-detail-status button { border: 0; padding: 0; background: none; color: inherit; cursor: pointer; font: inherit; }
 .planner-announcement { position: fixed; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
 .planner-loading { min-height: 100dvh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f4f6ef; color: #31513a; padding: 30px; text-align: center; }
 .planner-loading h1 { font-size: 26px; font-weight: 550; margin: 18px 0 2px; }

@@ -6,13 +6,14 @@
     "node": ">=22"
   },
   "scripts": {
-    "predev": "node scripts/prepare-maplibre.mjs",
+    "predev": "node scripts/prepare-maplibre.mjs && node scripts/prepare-studio-data.mjs",
     "dev": "next dev",
-    "prebuild": "node scripts/prepare-maplibre.mjs",
+    "prebuild": "node scripts/prepare-maplibre.mjs && node scripts/prepare-studio-data.mjs",
     "build": "next build",
     "start": "next start",
     "test": "node --test lib/*.test.js",
-    "benchmark:planner": "node scripts/benchmark-planner.mjs"
+    "benchmark:planner": "node scripts/benchmark-planner.mjs",
+    "benchmark:studio": "node scripts/benchmark-studio.mjs"
   },
   "overrides": {
     "postcss": "8.5.23"

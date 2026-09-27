@@ -12,6 +12,9 @@ function commitSha() {
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  async headers() {
+    return [{ source: '/data/studio/:file([a-z-]+\\.[0-9a-f]{16}\\.json)', headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }] }]
+  },
   async redirects() {
     // Explorer links created before Studio became the home page keep their scenario.
     return [{ source: "/", has: [{ type: "query", key: "s" }], destination: "/explore", permanent: false }]
