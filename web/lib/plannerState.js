@@ -1,6 +1,6 @@
 import { BUILDINGS } from './buildings.js'
 
-export const MODEL_VERSION = 'planner-screen-1.6'
+export const MODEL_VERSION = 'planner-screen-1.7'
 export const EXAMPLES = [
   { id: 'hazelwood', label: 'Hazelwood', pin: '0056F00338000000', caption: 'City inventory · Hazelwood Ave' },
   { id: 'lawrenceville', label: 'Lawrenceville', pin: '0049N00010000000', caption: 'City inventory · 3480 Butler St' },
@@ -24,7 +24,7 @@ export const PLANNER_FACTORS = [
 export const INITIAL_WEIGHTS = { demand: 20, physical: 15, affordability: 20, displacement: 10, capacity: 10, access: 15, carbon: 10 }
 
 export function optionFor(typeId, rent) {
-  return { typeId, ...MASSING_DEFAULTS[typeId], height: BUILDINGS[typeId].heightM, rent, utilities: 150, placement: null }
+  return { typeId, ...MASSING_DEFAULTS[typeId], height: BUILDINGS[typeId].heightM, floors: BUILDINGS[typeId].floors, residentialForm: 'duplex', rent, utilities: 150, placement: null }
 }
 export function initialScenario(pin, props = {}, stopId = '') {
   // ACS gross rent includes utilities; subtract the explicit utility assumption once.
@@ -36,6 +36,7 @@ export function initialScenario(pin, props = {}, stopId = '') {
     additionalDepartures: 0, serviceHours: 15, availablePlacesPerDeparture: 20,
     spareBoardings: null, boardingsPerHome: 2,
     connections: [], parks: [], parkAccessShare: 0, buildings: [],
+    zoningInputsByPin: {}, projectInputs: {},
     weights: { ...INITIAL_WEIGHTS },
   }
 }
@@ -77,5 +78,5 @@ export function scenarioReducer(state, action) {
 }
 
 export function scenarioExport(scenario, summary) {
-  return { schemaVersion: scenario.draft ? 4 : 3, modelVersion: MODEL_VERSION, dataVersion: summary?.pulled_at || null, exportedAt: new Date().toISOString(), scenario, limitations: ['Dimensions, access connectors and infrastructure buildability are user/model assumptions.', 'This model does not evaluate utilities, engineering, route schedules, travel to jobs or marginal tonnes of CO2.'] }
+  return { schemaVersion: scenario.draft ? 5 : 3, modelVersion: MODEL_VERSION, dataVersion: summary?.pulled_at || null, exportedAt: new Date().toISOString(), scenario, limitations: ['Dimensions, access connectors and infrastructure buildability are user/model assumptions.', 'Title Nine checks without sufficient evidence are excluded, not passed. A score is not zoning approval.', 'This model does not evaluate utilities, engineering, route schedules, travel to jobs or marginal tonnes of CO2.'] }
 }

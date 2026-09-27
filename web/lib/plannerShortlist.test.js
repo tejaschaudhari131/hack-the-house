@@ -34,7 +34,7 @@ test('both real examples screen all five templates with identical no-op states a
     for (const entry of result.shortlist.entries) {
       assert.deepEqual(entry.baseline, entry.proposal)
       assert.equal(entry.factors.length, 7)
-      assert.equal(entry.delta, 0)
+      assert.equal(entry.delta, entry.proposal.eligible ? 0 : null)
       for (const id of result.shortlist.included) assert.ok(Number.isFinite(entry.baseline.scores[id]))
     }
     assert.equal(result.shortlist.changed, false)
@@ -85,7 +85,7 @@ test('reserved land changes eligibility while malformed infrastructure withholds
   assert.ok(result.shortlist.entries.every(e => /validation/.test(e.proposal.gate)))
 })
 
-test('missing evidence uses one denominator for every template; no zoning/context/weight earns a ranking', () => {
+test('missing factors use one denominator; missing zoning is excluded, while physical context and weights remain required', () => {
   const input = fixture()
   input.scenario.options = { A: optionFor('single_family', 1000), B: optionFor('townhouse_duplex', 1000) }
   input.feature.properties.scores.small_apartment.carbon_index = null
@@ -94,7 +94,10 @@ test('missing evidence uses one denominator for every template; no zoning/contex
   assert.ok(result.shortlist.excluded.includes('carbon'))
   assert.match(result.shortlist.factors.find(f => f.id === 'carbon').exclusion, /Unknown/)
   for (const entry of result.shortlist.entries) assert.equal(entry.factors.find(f => f.id === 'carbon').weightedDelta, null)
-  for (const patch of [{ existingBuildings: null }, { zoning: {} }, { scenario: { ...input.scenario, weights: {} } }]) {
+  const unassessed = evaluatePlanner({ ...input, zoning: {} }).shortlist
+  assert.ok(unassessed.proposal.order.length > 0)
+  assert.ok(unassessed.entries.every(e => e.proposal.titleNine.excluded.includes('use')))
+  for (const patch of [{ existingBuildings: null }, { scenario: { ...input.scenario, weights: {} } }]) {
     const list = evaluatePlanner({ ...input, ...patch }).shortlist
     assert.deepEqual(list.baseline.leaders, [])
     assert.deepEqual(list.proposal.leaders, [])

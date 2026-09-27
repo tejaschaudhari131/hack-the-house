@@ -49,6 +49,6 @@ export function recommendationAudit(result, scenario, props = {}) {
     ['steep_slope_overlap', 'Steep-slope proxy'], ['undermined_overlap', 'Mapped undermining'],
   ].map(([id, label]) => ({ id, label, overlap: finite(props[id]) ? props[id] : null, review: !finite(props[id]) || props[id] > 0 }))
   return { factors, sensitivity, hazards, sourceNotes: props.confidence_notes || [],
-    unreviewed: ['Setbacks, height limits and detailed zoning', 'Legal access, ownership, occupancy and demolition', 'Water/sewer and peak transit capacity', 'Engineering, slopes and infrastructure construction costs', 'Financing, subsidies, rent forecasts and marginal emissions'],
+    unreviewed: ['Title Nine checks marked not assessed, contextual exceptions and approvals', 'Legal access, ownership, occupancy and demolition', 'Water/sewer and peak transit capacity', 'Engineering, slopes and infrastructure construction costs', 'Financing, subsidies, rent forecasts and marginal emissions'],
   }
 }

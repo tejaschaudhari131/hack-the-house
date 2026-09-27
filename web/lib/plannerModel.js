@@ -1,4 +1,3 @@
-import { BUILDINGS } from './buildings.js'
 import { haversineMeters } from './geo.js'
 import { geometryCenter, fitMassing } from './plannerGeometry.js'
 import { resolveZoning, unitPermission } from './zoning.js'
@@ -6,6 +5,7 @@ import { PLANNER_FACTORS } from './plannerState.js'
 import { networkAccess, infrastructureReservations, validateConnection, validatePark } from './networkModel.js'
 import { rankedWinner, recommendationAudit } from './plannerRecommendation.js'
 import { shortlistTemplates, comparisonTemplates, summarizeShortlist } from './plannerShortlist.js'
+import { evaluateTitleNine, housingSpec } from './titleNine.js'
 
 const clamp = value => Math.max(0, Math.min(100, value))
 const numeric = value => typeof value === 'number' && Number.isFinite(value)
@@ -35,7 +35,7 @@ export function serviceMetrics(stop, scenario, proposed, networkMetric = undefin
 }
 
 function evaluateOption(option, feature, zoning, state, stop, proposed, massing, access) {
-  const spec = BUILDINGS[option.typeId]
+  const spec = housingSpec(option)
   if (!spec) throw new Error('Unknown building type')
   const props = feature.properties, raw = props.scores?.[spec.scoreType] || {}
   const permission = unitPermission(spec.scoreType, spec.useRow, resolveZoning(props.zoning_code, zoning), spec.units)
@@ -60,10 +60,23 @@ function evaluateOption(option, feature, zoning, state, stop, proposed, massing,
     access: accessScore,
     carbon: numeric(raw.carbon_index) ? 100 - raw.carbon_index : null,
   }
-  const eligible = massing.fits && massing.collisions === 0 && permission.category === 'permitted'
-  return { ...option, label: spec.label, units: spec.units, floors: spec.floors, permission, massing, scores, eligible, service, access, monthly, burden, demandBoardings, groupBoardings, addedPlaces, supply, raw,
-    gate: !massing.fits ? 'Footprint needs review' : massing.collisions > 0 ? 'Building or infrastructure overlap — review required' : massing.collisions === null ? 'Building overlap check unavailable' : permission.category !== 'permitted' ? permission.label : 'Passes outline + mapped-building + use screen',
+  const physicalEligible = massing.fits && massing.collisions === 0
+  return { ...option, pin: props.pin, label: spec.label, units: spec.units, floors: option.floors ?? spec.floors, permission, massing, scores, eligible: physicalEligible, physicalEligible, service, access, monthly, burden, demandBoardings, groupBoardings, addedPlaces, supply, raw,
+    gate: !massing.fits ? 'Footprint does not fit' : massing.collisions > 0 ? 'Building or infrastructure overlap' : massing.collisions === null ? 'Building overlap check unavailable' : 'No supported conflict found',
   }
+}
+
+function screenZoningPortfolio(members, context) {
+  const { zoningSites, scenario, zoning } = context
+  const legalMembers = members.map(member => ({ option: member, massing: member.massing, feature: zoningSites.get(member.pin).feature, izStatus: scenario.zoningInputsByPin?.[member.pin]?.izStatus }))
+  return members.map(member => {
+    const site = zoningSites.get(member.pin)
+    const titleNine = evaluateTitleNine({ ...site, option: member, massing: member.massing, zoning, members: legalMembers,
+      siteInputs: scenario.zoningInputsByPin?.[member.pin], projectInputs: scenario.projectInputs })
+    const conflict = titleNine.checks.find(c => c.status === 'conflict')
+    return { ...member, titleNine, permission: titleNine.permission, eligible: member.physicalEligible && !titleNine.conflict,
+      gate: !member.physicalEligible ? member.gate : conflict ? `Zoning conflict: ${conflict.label}` : `${titleNine.assessed.length} checks assessed · ${titleNine.excluded.length} not assessed` }
+  })
 }
 
 function weighted(option, weights, included) {
@@ -71,7 +84,8 @@ function weighted(option, weights, included) {
   return denominator > 0 ? included.reduce((sum, id) => sum + option.scores[id] * weights[id], 0) / denominator : null
 }
 
-function screenOptions(options, { feature, zoning, scenario, stop, existingBuildings, reservations, infrastructureErrors, accessBefore, accessAfter, committed = { baseline: [], proposal: [] } }) {
+function screenOptions(options, context) {
+  const { feature, zoning, scenario, stop, existingBuildings, reservations, infrastructureErrors, accessBefore, accessAfter, committed = { baseline: [], proposal: [] } } = context
   const baseline = {}, proposal = {}
   const ids = Object.keys(options)
   for (const slot of ids) {
@@ -82,14 +96,18 @@ function screenOptions(options, { feature, zoning, scenario, stop, existingBuild
     proposal[slot] = evaluateOption(option, feature, zoning, scenario, stop, true, proposalMassing, accessAfter)
     if (infrastructureErrors.length) {
       proposal[slot].eligible = false
+      proposal[slot].physicalEligible = false
       proposal[slot].scores.physical = null
       proposal[slot].gate = 'Infrastructure validation unavailable or failed — review required'
     }
   }
-  if (committed.baseline.length) {
-    for (const [state, values] of Object.entries({ baseline, proposal })) for (const slot of ids) {
-      const candidate = values[slot]
-      const members = committed[state].map(member => {
+  for (const [state, values] of Object.entries({ baseline, proposal })) for (const slot of ids) {
+      // The next building can change checks on already placed buildings (FAR, IZ, parking).
+      const screened = screenZoningPortfolio([...committed[state], values[slot]], context)
+      const candidate = screened.at(-1)
+      values[slot] = candidate
+      if (!committed[state].length) continue
+      const members = screened.slice(0, -1).map(member => {
         const sameStop = member.stopId === String(stop?.stop_id)
         const groupUnits = (scenario.committedUnitsByStop?.[member.stopId] || 0) + (sameStop ? candidate.units : 0)
         const demand = groupUnits * scenario.boardingsPerHome
@@ -105,11 +123,10 @@ function screenOptions(options, { feature, zoning, scenario, stop, existingBuild
       candidate.eligible = portfolio.every(m => m.eligible)
       if (candidate.area.invalid.length) candidate.gate = `${candidate.area.invalid.length} placed building(s) need review`
     }
-  }
   // One evidence denominator across every candidate AND both infrastructure states.
   const included = PLANNER_FACTORS.map(f => f.id).filter(id => numeric(scenario.weights[id]) && scenario.weights[id] > 0 && [...Object.values(baseline), ...Object.values(proposal)].every(o => numeric(o.scores[id])))
   const excluded = PLANNER_FACTORS.map(f => f.id).filter(id => !included.includes(id))
-  for (const values of [baseline, proposal]) for (const slot of ids) values[slot].total = weighted(values[slot], scenario.weights, included)
+  for (const values of [baseline, proposal]) for (const slot of ids) values[slot].total = values[slot].eligible ? weighted(values[slot], scenario.weights, included) : null
   return { baseline, proposal, included, excluded }
 }
 
@@ -138,14 +155,14 @@ export function evaluatePlanner({ feature, zoning, scenario, stop, existingBuild
   // Explicit, fixed placements survive changes in infrastructure. All proposed buildings
   // share the same per-stop boarding pool; reserve is not multiplied by building count.
   const committedUnitsByStop = {}
-  for (const site of areaSites) committedUnitsByStop[String(site.stop?.stop_id)] = (committedUnitsByStop[String(site.stop?.stop_id)] || 0) + BUILDINGS[site.option.typeId].units
+  for (const site of areaSites) committedUnitsByStop[String(site.stop?.stop_id)] = (committedUnitsByStop[String(site.stop?.stop_id)] || 0) + housingSpec(site.option).units
   const areaScenario = { ...scenario, committedUnitsByStop }
   const geometries = areaSites.map(site => ({ type: 'Feature', properties: { id: site.id }, geometry: fitMassing(site.feature.geometry, site.option.width, site.option.depth, site.option.placement, []).geometry })).filter(f => f.geometry)
   const committed = { baseline: [], proposal: [] }, routeCache = new Map()
   for (const site of areaSites) {
     const otherBuildings = site.existingBuildings === null ? null : [...site.existingBuildings, ...geometries.filter(f => f.properties.id !== site.id)]
     const stopId = String(site.stop?.stop_id)
-    const ownUnits = BUILDINGS[site.option.typeId].units
+    const ownUnits = housingSpec(site.option).units
     const siteScenario = { ...areaScenario, targetIncome: site.targetIncome, committedUnitsByStop: { ...committedUnitsByStop, [stopId]: committedUnitsByStop[stopId] - ownUnits } }
     for (const state of ['baseline', 'proposal']) {
       const isProposal = state === 'proposal'
@@ -155,12 +172,15 @@ export function evaluatePlanner({ feature, zoning, scenario, stop, existingBuild
       const massing = fitMassing(site.feature.geometry, site.option.width, site.option.depth, site.option.placement, obstacles)
       const member = evaluateOption(site.option, site.feature, zoning, siteScenario, site.stop, isProposal, massing, routeCache.get(key))
       Object.assign(member, { id: site.id, pin: site.feature.properties.pin, stopId })
-      if (isProposal && infrastructureErrors.length) { member.eligible = false; member.scores.physical = null; member.gate = 'Infrastructure validation unavailable or failed' }
+      if (isProposal && infrastructureErrors.length) { member.eligible = false; member.physicalEligible = false; member.scores.physical = null; member.gate = 'Infrastructure validation unavailable or failed' }
       committed[state].push(member)
     }
   }
   const allBuildings = existingBuildings === null ? null : [...existingBuildings, ...geometries]
-  const context = { feature, zoning, scenario: areaScenario, stop, existingBuildings: allBuildings, reservations, infrastructureErrors, accessBefore, accessAfter, committed }
+  const zoningSites = new Map(areaSites.map(site => [site.feature.properties.pin, site]))
+  zoningSites.set(feature.properties.pin, { feature, existingBuildings })
+  const context = { feature, zoning, scenario: areaScenario, stop, existingBuildings: allBuildings, zoningSites, reservations, infrastructureErrors, accessBefore, accessAfter, committed }
+  for (const state of ['baseline', 'proposal']) committed[state] = screenZoningPortfolio(committed[state], context)
   const { baseline, proposal, included, excluded } = screenOptions(scenario.draft ? comparisonTemplates(scenario) : scenario.options, context)
   const sourceSlot = shortlistSlot === 'A' ? 'A' : 'B'
   const templates = scenario.draft ? comparisonTemplates(scenario) : shortlistTemplates(scenario, sourceSlot)

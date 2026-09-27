@@ -94,10 +94,11 @@ test('physical failures never win merely because other scores are high', () => {
 test('use-table prohibition excludes a housing proposal', () => {
   const input = inputFor()
   input.feature = { ...input.feature, properties: { ...input.feature.properties, zoning_code: 'test' } }
-  input.zoning = { districts: { test: { use_table_read: true, code_section: 'test', allowed: [], use_rows: { 'Three-Unit': '' } } } }
+  input.zoning = { districts: { test: { use_table_read: true, code_section: 'test', allowed: [], use_rows: { 'Two-Unit': '', 'Three-Unit': '' } } } }
   const result = evaluatePlanner(input)
   assert.equal(result.proposal.B.permission.category, 'not_permitted')
   assert.equal(result.proposal.B.eligible, false)
+  assert.equal(result.proposal.B.total, null)
   assert.equal(result.after, null)
 })
 

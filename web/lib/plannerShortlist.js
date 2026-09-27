@@ -43,7 +43,7 @@ export function summarizeShortlist(screen, templates, scenario, sourceSlot) {
   return { entries, factors, included: screen.included, excluded: screen.excluded, baseline, proposal, changed, ...(scenario.draft ? { currentType: source.typeId } : { sourceSlot }),
     assumptions: { rent: source.rent, utilities: source.utilities, targetIncome: scenario.targetIncome, dimensions: scenario.draft ? 'Current draft uses your dimensions and placement; alternatives use standard dimensions and automatic alignment.' : 'Standard housing templates; automatic parcel alignment; no silent resizing.' },
     explanation: !screen.included.length ? 'No ranking: all priorities are zero or usable evidence is missing.'
-      : !proposal.leaders.length ? 'No selected option passes the proposal screen. Inspect the fit, overlap and use checks below; no development feasibility is implied.'
+      : !proposal.leaders.length ? 'No housing score: inspect physical fit and supported zoning conflicts. Code checks without sufficient evidence are excluded.'
       : changed ? 'The leading template set changes under this infrastructure scenario. Inspect each template’s factor changes and eligibility checks below.'
       : 'The leading template set is unchanged. Shared access improvements can benefit every type without changing their order.',
   }
