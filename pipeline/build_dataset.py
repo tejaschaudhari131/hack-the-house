@@ -1076,7 +1076,7 @@ def write_outputs(neighborhoods, parcels, market, county_income, sources, transi
         "rules_file": "zoning/districts.json",
         "observed_codes": summary["zoning_codes_observed"],
         "unmapped_codes": unmapped,
-        "note": "allowed stays empty until a person cites a use-table section and sets use_table_read. needs_expert_review stays true. variance_or_exception is the optional list for types that likely need a variance or special exception.",
+        "note": "Base districts are filled from Pittsburgh Zoning Code §911.02. allowed is P. variance_or_exception keeps A, S, C, or P/S and the app calls that special approval. Districts with not_in_use_table are not marked prohibited. needs_expert_review stays true.",
     }
     card = model_card()
     files = {

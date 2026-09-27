@@ -1,34 +1,32 @@
 # Zoning rules (Chris)
 
-This folder is the zoning hook. The pipeline does not decide which housing types a district allows. It only records the district code it found on each parcel (`zon_new` from the City of Pittsburgh zoning layer).
+This folder is the zoning hook. The pipeline records the district code on each parcel (`zon_new` from the City of Pittsburgh zoning layer). Which housing types that code allows is `districts.json`, read from Pittsburgh Zoning Code §911.02.
 
-The code, the map, and the department page:
-
-- Zoning code (Title 9, General Code): https://ecode360.com/45474054
+- Use table: https://ecode360.com/45476524#45476524
+- Code root: https://ecode360.com/45474054
 - Zoning map: https://pittsburghpa.maps.arcgis.com/apps/instant/sidebar/index.html?appid=4bb79ea64bf848b3a0560e3856efeccb
 - City Planning zoning page: https://www.pittsburghpa.gov/Business-Development/City-Planning/Zoning
 
-On 2026-09-26, ecode360 returned HTTP 403 with a Cloudflare challenge (`cf-mitigated: challenge`). The use tables were not read. Every district in `districts.json` has:
+Legend (§911.01F): P permitted by right, A administrator exception, S special exception, C conditional use, blank not permitted.
 
-- `allowed: []`
-- `use_table_read: false`
-- `code_section: null`
-- `needs_expert_review: true`
-- a `todo` that says to cite the use table before filling `allowed`
+Subdistricts use the base column. R1D-VL uses R1D. GT-A uses GT. RIV-MU uses the RIV MU column. The second DT column in the table header is unlabeled and blank for these residential rows, so it is not mapped.
 
-The app ignores `allowed` until `use_table_read` is true and `code_section` is set. Until then it does not filter housing types, and the drop-a-building badge stays "Needs expert review" rather than "Not allowed." That is not a finding that every type is allowed. Do not fill `allowed` from the district title.
+The four app types are an assumption:
 
-Optional `variance_or_exception` is a list of housing-type ids that the drop badge should call "Likely needs variance or special exception." Leave it off until the use table, overlays, and exception rules have actually been read.
+- `single_family` = Single-Unit Detached
+- `townhouse_duplex` = Single-Unit Attached or Two-Unit
+- `small_apartment` = Three-Unit for 3 units, Multi-Unit for 4–19
+- `large_apartment` = Multi-Unit (20 or more units)
 
-Edit `districts.json`. The web app reads a copy at `web/public/data/zoning.json`.
+`allowed` is P. `partial` is a split, such as a triplex permitted and 4+ units not. `variance_or_exception` keeps the letter A, S, C, or P/S. The screen calls those needs special approval, not a variance. Standards cited from the table are §911.04A.69, §911.04A.69A, and §911.04A.85.
 
-After you change the rules, copy them into the app:
+Districts that are not columns (SP-*, planned unit developments, public-realm districts, Mount Oliver Borough) have `not_in_use_table: true` and an empty `allowed` list. The app says to check with the City. It does not mark them prohibited.
+
+`needs_expert_review` stays true. Overlays, the R1D 35-foot lot-width test, and review procedure are not applied automatically. This is decision support, not a determination of what may be built.
+
+The web app reads `web/public/data/zoning.json`. After you change the rules:
 
 ```bash
 cp zoning/districts.json web/public/data/zoning.json
 cp zoning/districts.json pipeline/data/processed/zoning.json
 ```
-
-You do not need to rerun the parcel download for a rules-only change. Scores do not depend on this file.
-
-`needs_expert_review` stays true after a section is cited. Overlays, exceptions, and review rules are still a person's job. The tool is a screening aid. It does not determine what may be built.
