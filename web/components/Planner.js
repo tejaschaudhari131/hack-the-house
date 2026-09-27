@@ -3,7 +3,9 @@
 import dynamic from 'next/dynamic'
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import { BUILDINGS, BUILDING_IDS } from '../lib/buildings.js'
-import { slimParcels, geometryBounds, boundsOverlap, placementAt } from '../lib/plannerGeometry.js'
+import { slimParcels, geometryBounds, boundsOverlap, placementAt, geometriesOverlap, rectangleAt } from '../lib/plannerGeometry.js'
+import { nearestNode, validateConnection, validatePark, connectionGeometry, prepareNetwork } from '../lib/networkModel.js'
+import InfrastructurePanel from './InfrastructurePanel.js'
 import { evaluatePlanner, nearbyStops, preferredStop, round } from '../lib/plannerModel.js'
 import { EXAMPLES, MODEL_VERSION, PLANNER_FACTORS, MASSING_DEFAULTS, initialScenario, historyFor, scenarioReducer, scenarioExport } from '../lib/plannerState.js'
 
@@ -16,6 +18,7 @@ function Icon({ name, size = 20 }) {
     building: <><path d="M4 21V8l8-5 8 5v13M2 21h20M9 21v-6h6v6"/><path d="M8 9h1m6 0h1M8 12h1m6 0h1"/></>,
     bus: <><rect x="5" y="3" width="14" height="16" rx="3"/><path d="M5 11h14M8 19v2m8-2v2M8 15h1m6 0h1"/></>,
     chart: <><path d="M4 3v17h17M8 15V9m5 6V5m5 10v-4"/></>,
+    network: <><path d="M4 20 9 4m6 0 5 16M12 5v3m0 4v3m0 4v2"/></>,
     layers: <><path d="m3 8 9-5 9 5-9 5-9-5Zm0 5 9 5 9-5M3 18l9 5 9-5"/></>,
     undo: <><path d="M8 4 3 9l5 5M3 9h10a7 7 0 0 1 0 14"/></>,
     arrow: <path d="M5 12h14m-5-5 5 5-5 5"/>,
@@ -39,8 +42,14 @@ function Numeric({ label, value, onChange, min = 0, max = 100000, step = 1, hint
   return <label className="planner-field"><span>{label}</span><input type="number" min={min} max={max} step={step} value={draft} onChange={e => { dirty.current = true; setDraft(e.target.value) }} onBlur={commit} onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur() }} placeholder={nullable ? 'Unknown' : undefined} />{hint && <small>{hint}</small>}</label>
 }
 
-function useEvaluation(input) {
+function useEvaluation(input, network) {
   const worker = useRef(null), latest = useRef(0), current = useRef(input)
+  const networkRef = useRef(network), fallback = useRef(null)
+  networkRef.current = network
+  function compute(input) {
+    if (fallback.current?.source !== networkRef.current) fallback.current = { source: networkRef.current, prepared: networkRef.current ? prepareNetwork(networkRef.current) : null }
+    return evaluatePlanner({ ...input, networkContext: fallback.current.prepared })
+  }
   const [state, setState] = useState({ result: null, pending: true, error: null })
   current.current = input
   useEffect(() => {
@@ -50,28 +59,29 @@ function useEvaluation(input) {
       worker.current = w
       w.onmessage = ({ data }) => {
         if (data.revision !== latest.current) return
-        setState({ result: data.result || null, pending: false, error: data.error || null, pin: current.current.feature.properties.pin })
+        setState({ result: data.result || null, pending: false, error: data.error || null, pin: data.pin })
       }
       w.onerror = () => {
         w.terminate(); worker.current = null
-        try { setState({ result: evaluatePlanner(current.current), pending: false, error: null, pin: current.current.feature.properties.pin }) }
+        try { setState({ result: compute(current.current), pending: false, error: null, pin: current.current.feature.properties.pin }) }
         catch (error) { setState({ result: null, pending: false, error: error.message }) }
       }
     } catch { worker.current = null }
     return () => { w?.terminate(); worker.current = null }
   }, [])
+  useEffect(() => { worker.current?.postMessage({ type: 'network', network }) }, [network])
   useEffect(() => {
     const revision = ++latest.current
     setState(old => ({ ...old, pending: true, error: null }))
     const timer = setTimeout(() => {
       if (worker.current) worker.current.postMessage({ revision, input })
       else {
-        try { setState({ result: evaluatePlanner(input), pending: false, error: null, pin: input.feature.properties.pin }) }
+        try { setState({ result: compute(input), pending: false, error: null, pin: input.feature.properties.pin }) }
         catch (error) { setState({ result: null, pending: false, error: error.message }) }
       }
     }, 60)
     return () => clearTimeout(timer)
-  }, [input])
+  }, [input, network])
   return state
 }
 
@@ -97,6 +107,17 @@ function Studio({ data }) {
   const { parcels, neighborhoods, stops, zoning, summary } = data
   const [context, setContext] = useState(null), [contextError, setContextError] = useState(null), [contextAttempt, setContextAttempt] = useState(0)
   const [showExisting, setShowExisting] = useState(true)
+  const [networkData, setNetworkData] = useState(null), [networkError, setNetworkError] = useState(null), [networkAttempt, setNetworkAttempt] = useState(0)
+  const network = networkData?.network || null
+  useEffect(() => {
+    const controller = new AbortController(); setNetworkError(null)
+    Promise.all(['walking-network.json', 'walking-network.sources.json'].map(async name => {
+      const response = await fetch(`/data/${name}`, { signal: controller.signal })
+      if (!response.ok) throw new Error(`Network data: ${response.status}`)
+      return response.json()
+    })).then(([network, manifest]) => setNetworkData({ network, manifest })).catch(error => { if (error.name !== 'AbortError') setNetworkError(error.message) })
+    return () => controller.abort()
+  }, [networkAttempt])
   useEffect(() => {
     const controller = new AbortController()
     setContextError(null)
@@ -111,7 +132,7 @@ function Studio({ data }) {
   const mapParcels = useMemo(() => slimParcels(parcels), [parcels])
   const makeScenario = useCallback(pin => {
     const feature = byPin.get(pin)
-    return initialScenario(pin, feature.properties, String(preferredStop(nearbyStops(feature, stops))?.stop_id || ''))
+    return { ...initialScenario(pin, feature.properties, String(preferredStop(nearbyStops(feature, stops))?.stop_id || '')), accessMode: 'network' }
   }, [byPin, stops])
   const [history, dispatch] = useReducer(scenarioReducer, null, () => {
     const linked = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('pin') : null
@@ -126,7 +147,9 @@ function Studio({ data }) {
   const selected = byPin.get(scenario.pin), props = selected.properties
   const [slot, setSlot] = useState('B'), [tool, setTool] = useState('housing'), [proposed, setProposed] = useState(true), [view3d, setView3d] = useState(true)
   const [placing, setPlacing] = useState(false)
+  const [drawing, setDrawing] = useState(null), [draftNode, setDraftNode] = useState(null)
   useEffect(() => { setPlacing(false) }, [slot, tool, scenario.pin])
+  useEffect(() => { setDrawing(null); setDraftNode(null) }, [tool, scenario.pin])
   const [query, setQuery] = useState(''), [notice, setNotice] = useState(''), [evidence, setEvidence] = useState(false)
   const nearby = useMemo(() => nearbyStops(selected, stops), [selected, stops])
   const stop = nearby.find(s => String(s.stop_id) === scenario.stopId) || null
@@ -137,14 +160,21 @@ function Studio({ data }) {
     return buildingIndex.filter(b => boundsOverlap(bounds, b.bounds)).map(b => b.feature)
   }, [buildingIndex, selected])
   const input = useMemo(() => ({ feature: selected, zoning, scenario, stop, existingBuildings: nearbyBuildings }), [selected, zoning, scenario, stop, nearbyBuildings])
-  const evaluation = useEvaluation(input)
+  const evaluation = useEvaluation(input, network)
   const result = evaluation.pin === scenario.pin ? evaluation.result : null
   const options = result ? (proposed ? result.proposal : result.baseline) : null
   const option = scenario.options[slot], evaluated = options?.[slot]
   const winner = result ? (proposed ? result.after : result.before) : null
   const matches = useMemo(() => query.trim().length > 1 ? parcels.features.filter(f => `${f.properties.address || ''} ${f.properties.pin}`.toLowerCase().includes(query.toLowerCase().trim())).slice(0, 6) : [], [query, parcels])
 
-  function select(pin) { if (byPin.has(pin)) { dispatch({ type: 'reset', scenario: makeScenario(pin) }); setQuery(''); setNotice('Site changed. Service and housing assumptions reset for this parcel.') } }
+  function select(pin) {
+    if (!byPin.has(pin) || pin === scenario.pin) return
+    const sameArea = byPin.get(pin).properties.area === props.area
+    const next = makeScenario(pin)
+    if (sameArea) Object.assign(next, { connections: scenario.connections, parks: scenario.parks, parkAccessShare: scenario.parkAccessShare, weights: scenario.weights })
+    dispatch({ type: 'reset', scenario: next }); setQuery('')
+    setNotice(sameArea ? 'Site changed. Local infrastructure and priorities retained; housing and stop assumptions reset for this parcel.' : 'Study area changed. A new local scenario starts here.')
+  }
   function selectStop(id) {
     if (nearby.some(s => String(s.stop_id) === id)) { dispatch({ type: 'set', key: 'stopId', value: id }); setNotice('Selected stop updated. The same stop is used for baseline and proposal.') }
     else setNotice('Choose a scheduled stop within 1,200 m of this parcel.')
@@ -156,8 +186,26 @@ function Studio({ data }) {
   const placement = option.placement || evaluated?.massing.placement || { east: 0, north: 0, bearing: 0 }
   function moveProposal(changes) { setOption('placement', { ...placement, ...changes }) }
   function placeProposal(coordinates) { setOption('placement', placementAt(selected.geometry, coordinates, placement.bearing)); setPlacing(false); setNotice('Proposal moved to the clicked location. Check the boundary and existing-building review below.') }
+  function beginDrawing(kind) { setPlacing(false); setDrawing(kind); setDraftNode(null); setNotice('') }
+  function cancelDrawing() { setDrawing(null); setDraftNode(null) }
+  function drawInfrastructure(coordinates) {
+    if (!network || !drawing || !context) { setNotice('Wait for network and building context to load before drawing.'); return }
+    const snapped = nearestNode(network, coordinates, drawing === 'park' ? 50 : 35)
+    if (!snapped) { setNotice('No eligible ground-level node nearby. Choose a point closer to the blue walking network.'); return }
+    if (drawing !== 'park' && draftNode === null) { setDraftNode(snapped.node); setNotice('First endpoint selected. Choose the second endpoint.'); return }
+    const id = crypto.randomUUID()
+    const operation = drawing === 'park' ? { id, name: `Proposed park ${scenario.parks.length + 1}`, coordinates, node: snapped.node, width: 20, depth: 20 } : { id, kind: drawing, from: draftNode, to: snapped.node, width: drawing === 'path' ? 3 : 12 }
+    const error = drawing === 'park' ? validatePark(network, operation) : validateConnection(network, operation)
+    if (error) { setNotice(error); return }
+    const geometry = drawing === 'park' ? rectangleAt(coordinates, 20, 20) : connectionGeometry(network, operation)
+    const bounds = geometryBounds(geometry)
+    if (buildingIndex.some(b => boundsOverlap(bounds, b.bounds) && geometriesOverlap(geometry, b.feature.geometry))) { setNotice('This reservation overlaps a recorded building. Choose a clear location; demolition is not modeled.'); return }
+    const key = drawing === 'park' ? 'parks' : 'connections'
+    if (scenario[key].length >= 12) { setNotice('This local scenario supports up to 12 edits of each kind.'); return }
+    set(key, [...scenario[key], operation]); setProposed(true); cancelDrawing(); setNotice('Hypothetical infrastructure added. Access and reserved land are recalculated; buildability remains unverified.')
+  }
   function download() {
-    const payload = { ...scenarioExport(scenario, summary), results: result, buildingContext: context ? { sha256: context.manifest.sha256, retrievedAt: context.manifest.retrieved_at } : null, sources: { parcels: '/data/parcels.geojson', zoning: '/data/zoning.json', stops: '/data/stops.geojson', buildings: '/data/existing-buildings.sources.json' } }
+    const payload = { ...scenarioExport(scenario, summary), results: result, networkContext: networkData?.manifest.sha256 || null, buildingContext: context ? { sha256: context.manifest.sha256, retrievedAt: context.manifest.retrieved_at } : null, sources: { parcels: '/data/parcels.geojson', zoning: '/data/zoning.json', stops: '/data/stops.geojson', buildings: '/data/existing-buildings.sources.json', network: '/data/walking-network.sources.json' } }
     const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }))
     const link = document.createElement('a'); link.href = url; link.download = `housing-scenario-${scenario.pin}.json`; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000)
     setNotice('Scenario exported with model version, assumptions and comparison results.')
@@ -172,13 +220,13 @@ function Studio({ data }) {
     </header>
     <div className="studio-workspace">
       <section className="studio-canvas" aria-label="Planning map">
-        <PlannerMap parcels={mapParcels} neighborhoods={neighborhoods} stops={stops} existingBuildings={context?.buildings} showExisting={showExisting} selected={selected} option={evaluated} slot={slot} stop={stop} proposed={proposed} additionalDepartures={scenario.additionalDepartures} view3d={view3d} onSelect={select} onStop={selectStop} tool={tool} placing={placing} onPlace={placeProposal}/>
+        <PlannerMap parcels={mapParcels} neighborhoods={neighborhoods} stops={stops} existingBuildings={context?.buildings} showExisting={showExisting} selected={selected} option={evaluated} slot={slot} stop={stop} proposed={proposed} additionalDepartures={scenario.additionalDepartures} view3d={view3d} onSelect={select} onStop={selectStop} tool={tool} placing={placing} onPlace={placeProposal} network={network} networkResult={evaluated?.access} reservations={result?.reservations} connections={scenario.connections} drawing={drawing} draftNode={draftNode} onDraw={drawInfrastructure}/>
         {placing && <div className="placement-banner" role="status">Click the map to place option {slot}. <button onClick={() => setPlacing(false)}>Cancel placement</button></div>}
-        <nav className="studio-tools" aria-label="Planning tools">{[['housing', 'building', 'Housing'], ['service', 'bus', 'Transit'], ['compare', 'chart', 'Compare']].map(([id, icon, label]) => <button key={id} className={tool === id ? 'active' : ''} aria-pressed={tool === id} onClick={() => setTool(id)}><Icon name={icon}/><span>{label}</span></button>)}<div className="tool-divider"/><button onClick={() => setView3d(!view3d)} aria-pressed={view3d}><Icon name="layers"/><span>{view3d ? '3D' : '2D'}</span></button></nav>
+        <nav className="studio-tools" aria-label="Planning tools">{[['housing', 'building', 'Housing'], ['service', 'bus', 'Transit'], ['network', 'network', 'Infra'], ['compare', 'chart', 'Compare']].map(([id, icon, label]) => <button key={id} className={tool === id ? 'active' : ''} aria-pressed={tool === id} onClick={() => setTool(id)}><Icon name={icon}/><span>{label}</span></button>)}<div className="tool-divider"/><button onClick={() => setView3d(!view3d)} aria-pressed={view3d}><Icon name="layers"/><span>{view3d ? '3D' : '2D'}</span></button></nav>
         <div className="canvas-heading"><span className="eyebrow">PITTSBURGH / {props.area?.toUpperCase()}</span><h1>What could we build here?</h1><p>Test a place. Compare the possibilities.</p></div>
         <div className="canvas-mode"><div className="segmented" aria-label="Infrastructure view"><button className={!proposed ? 'active' : ''} aria-pressed={!proposed} onClick={() => setProposed(false)}>Baseline</button><button className={proposed ? 'active' : ''} aria-pressed={proposed} onClick={() => setProposed(true)}>Proposal {scenario.additionalDepartures > 0 && <i/>}</button></div><div className="history-controls"><button aria-label="Undo scenario edit" disabled={!history.past.length} onClick={() => dispatch({ type: 'undo' })}>↶</button><button aria-label="Redo scenario edit" disabled={!history.future.length} onClick={() => dispatch({ type: 'redo' })}>↷</button></div></div>
-        <div className="massing-tray"><div className="tray-top"><div><span className="eyebrow">HOUSING OPTION {slot}</span><strong>{BUILDINGS[option.typeId].label}</strong></div><span className={`option-chip slot-${slot}`}>{BUILDINGS[option.typeId].units} homes</span></div><div className="type-cycler"><button aria-label="Previous housing type" onClick={() => cycle(-1)}>←</button><div className="type-dots">{BUILDING_IDS.map(id => <button key={id} title={BUILDINGS[id].label} aria-label={`Preview ${BUILDINGS[id].label}`} aria-pressed={id === option.typeId} className={id === option.typeId ? 'active' : ''} onClick={() => changeType(id)}><Icon name="building" size={18}/></button>)}</div><button aria-label="Next housing type" onClick={() => cycle(1)}>→</button></div><p>{option.width} × {option.depth} m footprint · {option.height} m high <span>Proposed dimensions</span></p></div>
-        <div className="canvas-legend"><label className="existing-toggle"><input type="checkbox" checked={showExisting} onChange={e => setShowExisting(e.target.checked)}/><i className="legend-existing"/> Existing buildings</label><span><i className="legend-parcel"/> Site</span><span><i className={`legend-building slot-${slot}`}/> Housing {slot}</span><span><i className="legend-stop"/> Stop</span><small>{contextError ? <button onClick={() => setContextAttempt(n => n + 1)}>Retry building layer</button> : context ? `${context.manifest.count.toLocaleString()} recorded outlines · heights estimated / placeholder` : 'Loading building context…'} · Dashed line: straight-line access</small></div>
+        {tool !== 'network' && <div className="massing-tray"><div className="tray-top"><div><span className="eyebrow">HOUSING OPTION {slot}</span><strong>{BUILDINGS[option.typeId].label}</strong></div><span className={`option-chip slot-${slot}`}>{BUILDINGS[option.typeId].units} homes</span></div><div className="type-cycler"><button aria-label="Previous housing type" onClick={() => cycle(-1)}>←</button><div className="type-dots">{BUILDING_IDS.map(id => <button key={id} title={BUILDINGS[id].label} aria-label={`Preview ${BUILDINGS[id].label}`} aria-pressed={id === option.typeId} className={id === option.typeId ? 'active' : ''} onClick={() => changeType(id)}><Icon name="building" size={18}/></button>)}</div><button aria-label="Next housing type" onClick={() => cycle(1)}>→</button></div><p>{option.width} × {option.depth} m footprint · {option.height} m high <span>Proposed dimensions</span></p></div>}
+        <div className="canvas-legend"><label className="existing-toggle"><input type="checkbox" checked={showExisting} onChange={e => setShowExisting(e.target.checked)}/><i className="legend-existing"/> Existing buildings</label><span><i className="legend-parcel"/> Site</span><span><i className={`legend-building slot-${slot}`}/> Housing {slot}</span><span><i className="legend-stop"/> Stop</span><small>{contextError ? <button onClick={() => setContextAttempt(n => n + 1)}>Retry building layer</button> : context ? `${context.manifest.count.toLocaleString()} recorded outlines · heights estimated / placeholder` : 'Loading building context…'} · Blue line: modeled walk to stop</small></div>
       </section>
 
       <aside id="planner-inspector" className="studio-inspector" tabIndex={-1}>
@@ -201,7 +249,7 @@ function Studio({ data }) {
               </fieldset>
             </details>
             {evaluated && <div className={`fit-note ${evaluated.eligible ? 'fits' : 'review'}`}><strong>{evaluated.gate}</strong><p>{evaluated.massing.reason}</p><small>{evaluated.permission.label} · §911.02. Unit count remains {evaluated.units}; dimensions do not calculate dwelling capacity.</small></div>}
-            {evaluated && <p className="section-help">{evaluated.massing.collisions === null ? 'Recorded-building overlap check unavailable; no option is ranked until the building layer loads.' : evaluated.massing.collisions > 0 ? `${evaluated.massing.collisions} recorded building outline(s) touch or overlap this proposal. Redevelopment or demolition needs review; existing structures are not removed.` : 'No overlap with the loaded recorded building outlines. This is not proof of vacancy.'}</p>}
+            {evaluated && <p className="section-help">{evaluated.massing.collisions === null ? 'Recorded-building overlap check unavailable; no option is ranked until the building layer loads.' : evaluated.massing.collisions > 0 ? `${evaluated.massing.collisions} recorded building or proposed infrastructure reservation(s) touch or overlap this housing. Move the proposal or revise the infrastructure; demolition is not modeled.` : 'No overlap with recorded buildings or active reservations. This is not proof of vacancy.'}</p>}
             <div className="section-heading"><h3>Affordability assumptions</h3><span className="data-badge">Editable</span></div><p className="section-help">Starting income and gross rent come from the selected Census geography as context. Proposed rent and utilities are independent assumptions, not a forecast.</p>
             <Numeric label="Target household income / year ($)" value={scenario.targetIncome} min={1000} max={500000} step={1000} onChange={v => set('targetIncome', v)}/>
             <div className="field-grid"><Numeric label={`Rent / month · ${slot} ($)`} value={option.rent} max={10000} step={50} onChange={v => setOption('rent', v)}/><Numeric label="Utilities / month ($)" value={option.utilities} max={2000} step={25} onChange={v => setOption('utilities', v)}/></div>
@@ -214,21 +262,22 @@ function Studio({ data }) {
             {stop && <div className="service-baseline"><Icon name="bus"/><div><strong>{stop.weekday_trips} scheduled stop departures</strong><small>Baseline weekday · route labels {(stop.routes || []).join(', ') || 'unavailable'}</small></div></div>}
             <label className="service-slider"><span>Additional departures / weekday <strong>+{scenario.additionalDepartures}</strong></span><input type="range" min="0" max="120" step="5" value={scenario.additionalDepartures} disabled={!stop} onChange={e => set('additionalDepartures', Number(e.target.value))}/><small>0 <span>120 new departures</span></small></label>
             <div className="service-presets">{[0, 30, 60].map(n => <button key={n} aria-pressed={scenario.additionalDepartures === n} className={scenario.additionalDepartures === n ? 'active' : ''} onClick={() => { set('additionalDepartures', n); setProposed(true) }} disabled={!stop}>{n ? `+${n} / day` : 'No change'}</button>)}</div>
-            {result?.baseline.A.service && <div className="before-after"><div><span>Baseline walk + wait</span><strong>{fmt(result.baseline.A.service.minutes, ' min')}</strong></div><Icon name="arrow"/><div><span>With added service</span><strong>{fmt(result.proposal.A.service.minutes, ' min')}</strong></div></div>}
-            <p className="section-help">Straight-line walking at 80 m/min plus half the average departure interval. Assumes evenly spaced, usable departures in the service span. Route destinations, transfers, hills and actual arrival times are not modeled.</p>
+            {result?.baseline.A.service && <div className="before-after"><div><span>Baseline walk + wait</span><strong>{fmt(result.baseline.A.service.minutes, ' min')}</strong></div><Icon name="arrow"/><div><span>With added service</span><strong>{fmt(result.proposal.A.service?.minutes, ' min')}</strong></div></div>}
+            <p className="section-help">Routed walking at 80 m/min (stairs: assumed 40 m/min), plus assumed last-metre connectors and half the average departure interval. Assumes evenly spaced, usable departures in the service span. Route destinations, transfers, hills and actual arrival times are not modeled.</p>
             <Numeric label="Assumed service span (hours/day)" value={scenario.serviceHours} min={1} max={24} onChange={v => set('serviceHours', v)}/>
             <details className="planner-details"><summary>Capacity assumptions <span>{scenario.spareBoardings === null ? 'Unknown until supplied' : 'User-supplied scenario'}</span></summary><p>No observed spare-capacity or utility data is available. Enter a hypothetical transit reserve to test a conditional capacity scenario.</p><Numeric label="Baseline spare boardings / day" value={scenario.spareBoardings} nullable max={100000} onChange={v => set('spareBoardings', v)}/><Numeric label="Available boarding places / added departure" value={scenario.availablePlacesPerDeparture} min={0} max={100} onChange={v => set('availablePlacesPerDeparture', v)}/><Numeric label="Added daily boardings / proposed home" value={scenario.boardingsPerHome} min={0} max={20} step={.5} onChange={v => set('boardingsPerHome', v)}/><p>These assumed daily totals do not establish peak load, vehicle occupancy, funding, route feasibility or water/sewer capacity.</p></details>
             <button className="next-tool" onClick={() => setTool('compare')}>Compare the housing outcomes <Icon name="arrow" size={18}/></button>
           </>}
+          {tool === 'network' && <InfrastructurePanel network={network} manifest={networkData?.manifest} error={networkError} retry={() => setNetworkAttempt(n => n + 1)} scenario={scenario} set={set} result={result} drawing={drawing} begin={beginDrawing} cancel={cancelDrawing} draftNode={draftNode} remove={(key, id) => set(key, scenario[key].filter(edit => edit.id !== id))} numeric={Numeric}/>}
           {tool === 'compare' && <><div className="section-heading"><h3>Seven decision factors</h3><span className="data-badge">{proposed ? 'Proposal' : 'Baseline'}</span></div><p className="section-help">Scores are screening preferences, not probabilities. Both options use the same available factors. Select a factor to inspect its calculation.</p>{options && <div className="factor-list"><div className="factor-table-heading"><span>Suitability / 100 · higher is preferred</span><b>A</b><b>B</b></div>{PLANNER_FACTORS.map(factor => <Factor key={factor.id} factor={factor} options={options} result={result} scenario={scenario} onWeight={value => dispatch({ type: 'weight', key: factor.id, value })}/>)}</div>}<div className="coverage-note">Included: {result?.included.length || 0}/7 factors. {result?.excluded.length ? `Not weighted: ${result.excluded.map(id => PLANNER_FACTORS.find(f => f.id === id).short).join(', ')}.` : 'All factors weighted.'} Missing factors never become zero. Unknown utilities remain outside this score.</div></>}
           {result && <div className="recommendation" aria-busy={evaluation.pending}><div className="eyebrow">CONDITIONAL COMPARISON</div><h3>{winner === 'tie' ? 'The options are close' : winner ? `Option ${winner} leads this screen` : 'No ranked, permitted option'}</h3><div className="score-pair">{['A', 'B'].map(id => <div key={id}><span className={`score-slot slot-${id}`}>{id}</span><strong>{fmt(options[id].total)}</strong><small>{!options[id].eligible ? 'Needs review' : 'screening score'}</small></div>)}</div><span className="effect-label">Infrastructure effect · baseline → proposal</span><p>{result.explanation}</p><small>Passing this screen is not a feasibility determination. All options require planning and site review.</small>{tool !== 'compare' && <button onClick={() => setTool('compare')}>Inspect all seven factors <span>→</span></button>}</div>}
           <button className="evidence-toggle" onClick={() => setEvidence(!evidence)} aria-expanded={evidence}>Sources, assumptions & limits <span>{evidence ? '−' : '+'}</span></button>
-          {evidence && <div className="evidence-panel"><p><strong>Observed:</strong> County parcels/assessments, ACS 2020–2024, CHAS 2018–2022, PRT stop aggregates, mapped hazards. Snapshot {summary.pulled_at}.</p><p><strong>Existing buildings:</strong> County roof outlines in their recorded positions. {context ? `${context.manifest.height_methods.stories_estimate || 0} heights estimated from assessment stories; ${context.manifest.height_methods.placeholder || 0} use a 9 m visual placeholder.` : 'Building evidence is loading or unavailable.'} Click a building to inspect its height method. No surveyed heights or terrain model; source dates and coverage vary. Nonresidential buildings are included.</p><p><strong>Proposed:</strong> dimensions, rents, utilities, target income, additional departures, service span and optional capacity. No LiDAR-derived heights have been added.</p><p><strong>Calculated:</strong> sampled outline fit, cost burden, aggregate walk/wait, conditional boarding capacity and weighted comparison.</p><p><strong>Not evaluated:</strong> setbacks, height limits, utility capacity, occupied-site acquisition, engineering, travel destinations, displacement caused by development, or marginal tonnes of CO₂.</p><p>Hazard context: {props.flood_zones?.length ? props.flood_zones.join(', ') : 'no mapped flood overlap recorded'}; steep slope {fmt(typeof props.steep_slope_overlap === 'number' ? props.steep_slope_overlap * 100 : null, '%')}; mine overlap {fmt(typeof props.undermined_overlap === 'number' ? props.undermined_overlap * 100 : null, '%')}. Missing data is not a clean site finding.</p><a href="/data/existing-buildings.sources.json" target="_blank" rel="noreferrer">Building evidence & height assumptions ↗</a><a href="/data/sources.json" target="_blank" rel="noreferrer">Source manifest ↗</a><a href="/data/score_model.json" target="_blank" rel="noreferrer">Baseline model assumptions ↗</a><a href="https://ecode360.com/45476524#45476524" target="_blank" rel="noreferrer">Zoning use table ↗</a></div>}
+          {evidence && <div className="evidence-panel"><p><strong>Observed:</strong> OSM walking graph and mapped parks; County parcels/assessments, ACS 2020–2024, CHAS 2018–2022, PRT stop aggregates, mapped hazards. Snapshot {summary.pulled_at}.</p><p><strong>Existing buildings:</strong> County roof outlines in their recorded positions. {context ? `${context.manifest.height_methods.stories_estimate || 0} heights estimated from assessment stories; ${context.manifest.height_methods.placeholder || 0} use a 9 m visual placeholder.` : 'Building evidence is loading or unavailable.'} Click a building to inspect its height method. No surveyed heights or terrain model; source dates and coverage vary. Nonresidential buildings are included.</p><p><strong>Proposed:</strong> dimensions, rents, utilities, target income, additional departures, service span and optional capacity. No LiDAR-derived heights have been added.</p><p><strong>Calculated:</strong> sampled outline fit, cost burden, aggregate walk/wait, conditional boarding capacity and weighted comparison.</p><p><strong>Not evaluated:</strong> setbacks, height limits, utility capacity, occupied-site acquisition, engineering, travel destinations, displacement caused by development, or marginal tonnes of CO₂.</p><p>Hazard context: {props.flood_zones?.length ? props.flood_zones.join(', ') : 'no mapped flood overlap recorded'}; steep slope {fmt(typeof props.steep_slope_overlap === 'number' ? props.steep_slope_overlap * 100 : null, '%')}; mine overlap {fmt(typeof props.undermined_overlap === 'number' ? props.undermined_overlap * 100 : null, '%')}. Missing data is not a clean site finding.</p><a href="/data/walking-network.sources.json" target="_blank" rel="noreferrer">Walking network & park assumptions ↗</a><a href="/data/existing-buildings.sources.json" target="_blank" rel="noreferrer">Building evidence & height assumptions ↗</a><a href="/data/sources.json" target="_blank" rel="noreferrer">Source manifest ↗</a><a href="/data/score_model.json" target="_blank" rel="noreferrer">Baseline model assumptions ↗</a><a href="https://ecode360.com/45476524#45476524" target="_blank" rel="noreferrer">Zoning use table ↗</a></div>}
         </div>
         <footer className="inspector-footer"><span className="live-dot"/>Local scenario · public data · human review</footer>
       </aside>
     </div>
-    <div className="planner-announcement" role="status" aria-live="polite">{notice}</div>
+    <div className={tool === 'network' && notice ? 'network-notice' : 'planner-announcement'} role="status" aria-live="polite">{notice}</div>
   </main>
 }
 
@@ -240,7 +289,7 @@ function Factor({ factor, options, result, scenario, onWeight }) {
     affordability: 'Monthly proposed rent + utilities divided by target monthly household income. Score falls linearly from 100 at 20% burden to 0 at 50%; these anchors are value judgments.',
     displacement: '100 minus the existing tract displacement screen. Same for both types. New service does not predict or rewrite displacement.',
     capacity: 'Available daily boardings divided by assumed new housing boardings, capped at 100. Baseline reserve + added departures × available places. Unknown reserve excludes this factor in both comparisons. Utilities not assessed.',
-    access: 'Transit-access proxy: 100 × (1 − straight-line walk plus average wait / 30 minutes), clamped to 0–100. The 30-minute anchor is a choice. No job or service destinations are evaluated.',
+    access: 'Routed transit access: 100 × (1 − walk plus average wait / 30 minutes). Park access: 100 × (1 − walk to mapped/proposed park / 15 minutes). Both are clamped and blended by your park-share preference (default 0%). The anchors are policy choices. No jobs, actual timetables or safe crossings are evaluated.',
     carbon: '100 minus the existing relative carbon proxy per home. Not incremental tonnes. Unchanged by this service edit because travel mode shifts and infrastructure emissions are not modeled.',
   }
   function metric(o) {

@@ -22,18 +22,18 @@ npm run dev
 6. Optionally enter hypothetical spare daily boarding capacity under Capacity assumptions. Unknown reserve stays null, not zero. Utility capacity is not supplied by this field.
 7. Undo/redo, switch baseline/proposal, or export the versioned scenario and computed results as JSON.
 
-## Model boundary: planner-screen-1.1
+## Model boundary: planner-screen-1.2
 
 This is a new, explicit screening comparison alongside the original six-factor explorer; its totals are not comparable with the explorer's totals. It is not a validated development forecast.
 
 | Dimension | Calculation |
 | --- | --- |
 | Demand | Existing precomputed market-activity/lot-fit score for the chosen type; no household-demand forecast. |
-| Physical feasibility | 100 if the fixed-size rectangle fits the parcel without touching a recorded building; otherwise 0. Missing building context excludes this factor and withholds ranking. Use-table permission is a separate eligibility gate. Setbacks, height restrictions, access and engineering are unreviewed. |
+| Physical feasibility | 100 if the fixed-size rectangle fits the parcel without touching a recorded building or proposed infrastructure reservation; otherwise 0. Missing building context excludes this factor and withholds ranking. Use-table permission is a separate eligibility gate. Setbacks, height restrictions, access and engineering are unreviewed. |
 | Affordability | `(rent + utilities) × 12 / target income`. A chosen preference curve maps 20% burden to 100 and 50% to 0, clamped. Target income starts with the local Census estimate; assumed net rent starts at gross rent minus the utility assumption, avoiding double counting. Neither is a proposed-market forecast. |
 | Displacement | 100 minus the committed tract risk screen. Unchanged by interventions. |
-| Infrastructure capacity | `100 × assumed available daily boardings / assumed new daily housing boardings`, capped at 100. Supply is entered baseline reserve plus extra departures times entered available boarding places. Only evaluated if reserve and a scheduled stop are present. No peak, occupancy, utility or funding model. |
-| Access to opportunity | Explicit **transit-access proxy**: straight-line walking at 80 m/min plus half an average departure interval. Interval = assumed service hours × 60 / baseline stop departures plus proposed departures. A chosen 30-minute anchor maps to a 0–100 preference. This does not model destinations, transfers, route usefulness, actual timing or hills. |
+| Infrastructure capacity | `100 × assumed available daily boardings / assumed new daily housing boardings`, capped at 100. Supply is entered baseline reserve plus extra departures times entered available boarding places. Only evaluated if reserve and a reachable scheduled stop are present. No peak, occupancy, utility or funding model. |
+| Access to opportunity | Explicit **access proxy**: routed walking at 80 m/min (40 on stairs) plus half an average departure interval; optionally blended with nearest-park walking preference using an explicit user weight. Interval = assumed service hours × 60 / baseline stop departures plus proposed departures. A chosen 30-minute anchor maps to a 0–100 preference. This does not model destinations, transfers, route usefulness, actual timing or hills. |
 | Marginal carbon | 100 minus the existing relative per-home carbon index. It remains unchanged by service edits: no mode-shift, added-service emissions or marginal tonnes model has been introduced. |
 
 Only factors available in **both housing alternatives and both infrastructure states** enter the weighted totals. This avoids comparison artifacts from mismatched evidence coverage. Zero usable weight produces no winner. A gap below 0.1 is displayed as a tie; this threshold is not statistical significance.
@@ -59,7 +59,7 @@ The original AI endpoint reconstructs baseline facts. The new studio deliberatel
 
 `npm test` includes planner tests for both real examples, no-op equality, shared transit gains, unchanged carbon/displacement, unknown capacity, unserved stops, all-zero weights, geometry/permission gates, history replay, holes/concave shapes and versioned exports. `npm run build` checks both routes and worker bundling. Browser verification must also confirm vector/extrusion rendering; a basemap alone does not prove MapLibre's worker loaded.
 
-Before expanding analytical claims: ingest/validate building dimensions, add an audited pedestrian graph and actual destinations, obtain reviewed capacity inputs, and validate scenario-specific emissions and costs. Keep those unknowns visible until supported.
+Before expanding analytical claims: ingest/validate building dimensions, audit the pedestrian graph and add actual destinations, obtain reviewed capacity inputs, and validate scenario-specific emissions and costs. Keep those unknowns visible until supported.
 
 ## Existing building context
 
@@ -80,3 +80,19 @@ Each housing option can store a manual placement: east/north metre offsets from 
 Only nearby building geometries intersecting the selected parcel's bounding box are passed to the calculation worker. A hidden context layer still participates in overlap checks. If the data cannot load, unknown overlap evidence is not treated as an empty site: ranking is withheld. A mapped overlap requires review of redevelopment/demolition; there is no removal tool or assumption that demolition is permitted. No overlap is not proof of vacancy.
 
 The extract currently contains 6,624 footprints: 2,328 in Hazelwood and 4,296 in Lawrenceville. 2,235 heights use story-based estimates and 4,389 use placeholders. The additional uncompressed geometry payload is approximately 3.5 MB for both examples. These are extract counts, not verified dwelling counts or a performance guarantee.
+
+## Connected walking, connections and parks (planner-screen-1.2)
+
+The studio now uses the same OSM walking graph for both baseline and proposal. The older straight-line evaluator remains only as a compatibility path for explicit non-network callers. The UI never substitutes straight-line travel when routing fails. Initial ground-node connectors from the parcel centre and selected stop may each be up to 100 m; they are assumed access links, not verified entrances or safe crossings. Graph links use shared OSM node IDs, walking permissions, conservatively excluded barriers and foot-specific one-way tags. Stairs use an assumed 40 m/min; other walking links use 80 m/min. Slopes, wheelchair suitability, crossing safety and time-dependent access are not calibrated.
+
+`pipeline/build_network.py` reproducibly prepares a buffered extract around the two study areas. `walking-network.sources.json` retains query, snapshot, hashes, license, coverage and assumptions. The graph has 53,089 nodes, 127,136 directed edges and 42 closed-way parks with mapped walking access; 17 other candidate park ways lack valid polygons or access. Relation-only parks are omitted. OSM park geometry is a mapped inventory, not confirmation of current opening or public entrance access. Graph and displayed network are © OpenStreetMap contributors, ODbL 1.0; see https://www.openstreetmap.org/copyright.
+
+The **Infra** tool supports hypothetical pedestrian paths (3 m width), streets with sidewalks (12 m width; walking effects only), and 20 × 20 m park zones. Connections snap within 35 m to existing ground nodes, have two endpoint junctions and must be 2–500 m long. Crossings create no intermediate junctions. Parks use an assumed connector to a node within 50 m. Existing-building intersections are rejected by the editor; river crossings, ownership, grades, road safety, engineering and cost remain unverified. These are scenario assumptions, not approved projects. Up to 12 connections and 12 parks are supported per local scenario. Cancel leaves no edit; remove/undo/redo recalculate outputs.
+
+Infrastructure corridors and park zones reserve land in the **proposal** only, and participate in housing containment/overlap checks without modifying official parcels. Both housing alternatives retain their requested dimensions. The network calculates routed walking to the selected scheduled stop and the nearest mapped/proposed park. The selected stop still has an aggregate frequency assumption, not a timetable, route or transfer model. Adding a park does not add bus service.
+
+Access combines transit preference `clamp(100 × (1 − (walk + wait)/30))` and park preference `clamp(100 × (1 − park walk/15))` with the user's **park share of access priority**. The default share is 0%, so park access is initially a displayed metric and land reservation, not an automatic scoring bonus. Missing required metrics stay unknown; a disconnected park adds no access. Shared improvements may leave housing rankings unchanged. No edit changes observed household need, CHAS, rents, displacement, mapped hazards or carbon through invented causal coefficients.
+
+The graph is initialized once in the calculation worker. Subsequent evaluations pass small scenario edits and selected-site data; stale revisions are ignored. The reference implementation and tests cover path shortening, disconnected edits, geometric crossings without junctions, unknown routes, no-op parity, reversible edits, land reservations and both real examples. Independent field/transport validation, schedules and regional multimodal routing remain future work.
+
+Edits persist when selecting another parcel in the same study area, so subsequent housing comparisons use the same infrastructure assumptions. Switching study areas starts a new local scenario. Invalid infrastructure references or missing network data with active edits withhold proposal ranking instead of silently ignoring reservations.

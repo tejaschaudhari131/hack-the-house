@@ -1,6 +1,6 @@
 import { BUILDINGS } from './buildings.js'
 
-export const MODEL_VERSION = 'planner-screen-1.1'
+export const MODEL_VERSION = 'planner-screen-1.2'
 export const EXAMPLES = [
   { id: 'hazelwood', label: 'Hazelwood', pin: '0056F00338000000', caption: 'City inventory · Hazelwood Ave' },
   { id: 'lawrenceville', label: 'Lawrenceville', pin: '0049N00010000000', caption: 'City inventory · 3480 Butler St' },
@@ -18,7 +18,7 @@ export const PLANNER_FACTORS = [
   { id: 'affordability', label: 'Affordability', short: 'Affordability', source: 'Proposed rent/utilities + target household income', kind: 'Assumption' },
   { id: 'displacement', label: 'Displacement risk', short: 'Displacement', source: 'ACS 2020–2024 + HUD CHAS 2018–2022', kind: 'Screen' },
   { id: 'capacity', label: 'Infrastructure capacity', short: 'Capacity', source: 'Assumed spare transit boardings + added service', kind: 'Conditional' },
-  { id: 'access', label: 'Access to opportunity', short: 'Access', source: 'PRT stop records + straight-line walk/wait model', kind: 'Proxy' },
+  { id: 'access', label: 'Access to opportunity', short: 'Access', source: 'OSM walking graph / mapped parks + PRT stop departures', kind: 'Proxy' },
   { id: 'carbon', label: 'Marginal carbon emissions', short: 'Carbon', source: 'Existing RECS / embodied-tier / transit proxy', kind: 'Proxy' },
 ]
 export const INITIAL_WEIGHTS = { demand: 20, physical: 15, affordability: 20, displacement: 10, capacity: 10, access: 15, carbon: 10 }
@@ -35,6 +35,7 @@ export function initialScenario(pin, props = {}, stopId = '') {
     targetIncome: Math.round(props.median_income || 40000),
     additionalDepartures: 0, serviceHours: 15, availablePlacesPerDeparture: 20,
     spareBoardings: null, boardingsPerHome: 2,
+    connections: [], parks: [], parkAccessShare: 0,
     weights: { ...INITIAL_WEIGHTS },
   }
 }
@@ -59,5 +60,5 @@ export function scenarioReducer(state, action) {
 }
 
 export function scenarioExport(scenario, summary) {
-  return { schemaVersion: 1, modelVersion: MODEL_VERSION, dataVersion: summary?.pulled_at || null, exportedAt: new Date().toISOString(), scenario, limitations: ['Dimensions and rents are user assumptions.', 'This model does not evaluate utilities, destinations, engineering, route schedules or marginal tonnes of CO2.'] }
+  return { schemaVersion: 2, modelVersion: MODEL_VERSION, dataVersion: summary?.pulled_at || null, exportedAt: new Date().toISOString(), scenario, limitations: ['Dimensions, access connectors and infrastructure buildability are user/model assumptions.', 'This model does not evaluate utilities, engineering, route schedules, travel to jobs or marginal tonnes of CO2.'] }
 }
