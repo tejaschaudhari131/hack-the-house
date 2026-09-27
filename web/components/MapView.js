@@ -7,7 +7,7 @@ import "leaflet/dist/leaflet.css"
 
 import { TYPE_COLORS } from "../lib/colors.js"
 import { featurePoint } from "../lib/geo.js"
-import { rankTypes } from "../lib/rank.js"
+import { HOUSING_TYPES, composite } from "../lib/rank.js"
 import { resolveZoning } from "../lib/zoning.js"
 
 function boundsFor(collection, group) {
@@ -57,32 +57,52 @@ function FitToMatches({ parcels, highlight }) {
   return null
 }
 
-function styleFor(feature, { zoning, weights, whatIf, selectedPin, highlight }) {
+/** #1 type for one parcel, with the same zoning grouping as the ranked list. Cheaper than a full rankTypes() per repaint. */
+function topType(props, weights, whatIf, allowedFor) {
+  const allowed = whatIf ? null : allowedFor(props.zoning_code)
+  let best = null
+  let bestScore = -1
+  let bestGroup = 2
+  for (const id of HOUSING_TYPES) {
+    const score = composite(props.scores?.[id], weights)
+    if (score === null) continue
+    const group = allowed ? (allowed.has(id) ? 0 : 1) : 0
+    if (group < bestGroup || (group === bestGroup && score > bestScore)) {
+      best = id
+      bestScore = score
+      bestGroup = group
+    }
+  }
+  return best
+}
+
+function styleFor(feature, { weights, whatIf, selectedPin, highlight, allowedFor }) {
   const props = feature.properties
   const selected = props.pin === selectedPin
   if (highlight) {
     const matchType = highlight.get(props.pin)
     if (!matchType) {
-      return { color: "#7b8794", weight: 0.5, fillColor: "#9aa5b1", fillOpacity: 0.3 }
+      return { key: "h:none", style: { color: "#7b8794", weight: 0.5, fillColor: "#9aa5b1", fillOpacity: 0.3 } }
     }
     return {
-      color: selected ? "#111111" : "#1f2933",
-      weight: selected ? 3 : 1.2,
-      fillColor: TYPE_COLORS[matchType] || "#98a2b3",
-      fillOpacity: 0.9,
+      key: `h:${matchType}:${selected}`,
+      style: {
+        color: selected ? "#111111" : "#1f2933",
+        weight: selected ? 3 : 1.2,
+        fillColor: TYPE_COLORS[matchType] || "#98a2b3",
+        fillOpacity: 0.9,
+      },
     }
   }
-  const zoningInfo = resolveZoning(props.zoning_code, zoning)
-  const ranked = rankTypes(props.scores, weights, {
-    allowed: zoningInfo.allowed,
-    whatIf,
-  })
-  const top = ranked.find((row) => row.composite !== null) || ranked[0]
+  const top = topType(props, weights, whatIf, allowedFor)
   return {
-    color: selected ? "#111111" : TYPE_COLORS[top?.id] || "#667085",
-    weight: selected ? 3 : 1,
-    fillColor: TYPE_COLORS[top?.id] || "#98a2b3",
-    fillOpacity: selected ? 0.85 : 0.62,
+    key: `${top}:${selected}`,
+    style: {
+      color: selected ? "#111111" : TYPE_COLORS[top] || "#667085",
+      weight: selected ? 3 : 1,
+      fillColor: TYPE_COLORS[top] || "#98a2b3",
+      fillOpacity: selected ? 0.85 : 0.62,
+    },
   }
 }
 
@@ -99,6 +119,7 @@ export default function MapView({
   lihtc = null,
 }) {
   const geoRef = useRef(null)
+  const initialKeys = useRef(new WeakMap())
 
   useEffect(() => {
     requestAnimationFrame(() => performance.mark("htm:map-drawn"))
@@ -114,16 +135,27 @@ export default function MapView({
     }
     return points
   }, [parcels, highlight])
+  const allowedFor = useMemo(() => {
+    const cache = new Map()
+    return (code) => {
+      if (!cache.has(code)) cache.set(code, resolveZoning(code, zoning).allowed || null)
+      return cache.get(code)
+    }
+  }, [zoning])
   const styleDeps = useMemo(
-    () => ({ zoning, weights, whatIf, selectedPin, highlight }),
-    [zoning, weights, whatIf, selectedPin, highlight],
+    () => ({ weights, whatIf, selectedPin, highlight, allowedFor }),
+    [weights, whatIf, selectedPin, highlight, allowedFor],
   )
 
   useEffect(() => {
     const layer = geoRef.current
     if (!layer) return
     layer.eachLayer((child) => {
-      if (child.feature) child.setStyle(styleFor(child.feature, styleDeps))
+      if (!child.feature) return
+      const next = styleFor(child.feature, styleDeps)
+      if (child._htmKey === next.key) return
+      child._htmKey = next.key
+      child.setStyle(next.style)
     })
   }, [styleDeps])
 
@@ -148,9 +180,14 @@ export default function MapView({
       <GeoJSON
         ref={geoRef}
         data={parcels}
-        style={(feature) => styleFor(feature, styleDeps)}
+        style={(feature) => {
+          const next = styleFor(feature, styleDeps)
+          initialKeys.current.set(feature, next.key)
+          return next.style
+        }}
         onEachFeature={(feature, layer) => {
           const label = feature.properties.address || feature.properties.pin
+          layer._htmKey = initialKeys.current.get(feature)
           layer.bindTooltip(label)
           layer.on("click", () => onSelect(feature.properties.pin))
         }}
