@@ -105,6 +105,22 @@ test("template keeps the CHAS share separate from ACS rent burden", () => {
   assert.match(text, /ACS 2024/)
 })
 
+test("template does not call a higher-scoring type 'next' without saying the use table set the order", () => {
+  const text = explainTemplate({
+    parcel: { pin: "1", address: "460 Example Ave", neighborhood: "Hazelwood", confidence_notes: [] },
+    ranked: [
+      { id: "single_family", label: "Single-family", composite: 69, allowed: true },
+      { id: "large_apartment", label: "Large apartment (20+ units)", composite: 73.6, allowed: false },
+    ],
+    weights: { demand: 25, transit: 25, equity: 25, climate: 25 },
+    whatIf: false,
+    zoning: { status: "use_table", code: "R1D-L", allowed: ["single_family"] },
+    countyMedianIncome: 78548,
+  })
+  assert.match(text, /among the types §911\.02 permits by right, Single-family ranks first at 69/)
+  assert.match(text, /does not permit it by right/)
+})
+
 test("template cites the use table and a unit-count split", () => {
   const text = explainTemplate({
     parcel: {

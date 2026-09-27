@@ -330,7 +330,10 @@ export function explainCompareTemplate(context) {
     const scores = side.scores
     const where = side.place.address || "the parcel"
     const total = scores?.weighted_total ?? "n/a"
-    return `Building ${side.building}, ${side.housing_type} at ${where} (${side.place.neighborhood}): weighted total ${total}; demand ${scores?.demand ?? "n/a"}, transit ${scores?.transit ?? "n/a"}, equity ${scores?.equity ?? "n/a"}, climate risk ${scores?.climate_risk ?? "n/a"}. Zoning reading: ${zoning.reading}. ${zoning.detail}`
+    const reading = zoning.detail.startsWith(zoning.reading)
+      ? zoning.detail
+      : `${zoning.reading.replace(/\.$/, "")}. ${zoning.detail}`
+    return `Building ${side.building}, ${side.housing_type} at ${where} (${side.place.neighborhood}): weighted total ${total}; demand ${scores?.demand ?? "n/a"}, transit ${scores?.transit ?? "n/a"}, equity ${scores?.equity ?? "n/a"}, climate risk ${scores?.climate_risk ?? "n/a"}. Zoning reading: ${reading}`
   }
   const w = facts.weights
   return [

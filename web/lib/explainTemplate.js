@@ -85,9 +85,15 @@ export function explainTemplate({ parcel, ranked, weights, whatIf, zoning, count
   const gap = second ? biggestGap(top, second) : null
   const weightText = `demand ${weights.demand}, transit ${weights.transit}, equity ${weights.equity}, climate ${weights.climate}`
 
+  const at = (row) => (row.composite === null || row.composite === undefined ? "" : ` at ${row.composite}`)
+  const splitByZoning = !whatIf && top.allowed === true && second?.allowed === false
+  const rankText = splitByZoning
+    ? `among the types §911.02 permits by right, ${top.label} ranks first${at(top)}. ${second.label} is listed next${at(second)} even if it scores higher, because the use table does not permit it by right`
+    : `${top.label} ranks first${at(top)} and ${second ? `${second.label} is next${at(second)}` : "there is no second type"}`
+
   const paragraphs = []
   paragraphs.push(
-    `${place} in ${parcel.neighborhood} is a screening aid, not legal, zoning, or financial advice. With your weights (${weightText}), ${top.label} ranks first${top.composite === null ? "" : ` at ${top.composite}`} and ${second ? `${second.label} is next${second.composite === null ? "" : ` at ${second.composite}`}` : "there is no second type"}. A consequential decision should go to City Planning / the Zoning Administrator or a qualified professional.`,
+    `${place} in ${parcel.neighborhood} is a screening aid, not legal, zoning, or financial advice. With your weights (${weightText}), ${rankText}. A consequential decision should go to City Planning / the Zoning Administrator or a qualified professional.`,
   )
   paragraphs.push(
     measured.length
