@@ -378,3 +378,27 @@
 .draft-preview-status { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 10px; font-size: 11px; }
 .draft-preview-status i { width: 8px; height: 8px; border-radius: 50%; }
 .draft-preview-status small { flex-basis: 100%; color: #637463; font-size: 10px; }
+
+/* Compact map keys stay below the draft without covering it when expanded. */
+.map-overlays { position: absolute; left: 88px; bottom: 30px; width: min(520px, calc(100% - 106px)); display: flex; flex-direction: column; align-items: flex-start; gap: 12px; max-height: calc(100% - 95px); overflow-y: auto; scrollbar-width: thin; pointer-events: none; }
+.map-overlays > * { pointer-events: auto; flex-shrink: 0; }
+.map-overlays .massing-tray { position: static; width: min(355px, 100%); }
+.map-overlays .canvas-legend { position: static; display: block; width: 100%; max-width: 100%; padding: 0; border: 1px solid #d4dfd2; background: #fafcf8f5; backdrop-filter: blur(12px); border-radius: 9px; font-size: 11px; }
+.canvas-legend > summary { list-style: none; cursor: pointer; padding: 9px 11px; }
+.canvas-legend > summary::-webkit-details-marker { display: none; }
+.canvas-legend .legend-heading { justify-content: space-between; font-weight: 650; margin-bottom: 7px; }
+.canvas-legend .legend-expand, .canvas-legend .legend-collapse { font-size: 10px; font-weight: 400; }
+.canvas-legend .legend-collapse, .canvas-legend[open] .legend-expand { display: none; }
+.canvas-legend[open] .legend-collapse { display: flex; }
+.canvas-legend .legend-chips { display: flex; flex-wrap: wrap; gap: 7px 12px; font-size: 10px; }
+.canvas-legend .legend-chips > span { white-space: nowrap; }
+.canvas-legend i { flex-shrink: 0; }
+.legend-details { border-top: 1px solid #dce5d8; padding: 12px; }
+.legend-full-labels { display: grid; grid-template-columns: 1fr 1fr; gap: 9px 12px; margin: 12px 0; }
+.legend-markers { display: flex; flex-wrap: wrap; gap: 9px 12px; padding-top: 10px; border-top: 1px solid #dce5d8; }
+.legend-details p { font-size: 11px; line-height: 1.5; margin: 12px 0 5px; }
+.canvas-legend .legend-details small { font-size: 10px; }
+@media (max-width: 760px) {
+  .map-overlays { left: 82px; width: calc(100% - 98px); bottom: 33px; }
+  .legend-full-labels { grid-template-columns: 1fr; }
+}
