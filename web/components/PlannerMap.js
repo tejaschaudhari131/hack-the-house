@@ -6,13 +6,13 @@ import 'maplibre-gl/dist/maplibre-gl.css'
 import { geometryCenter, rectangleAt } from '../lib/plannerGeometry.js'
 import { configureMapWorkers } from '../lib/maplibreSetup.js'
 import { haversineMeters } from '../lib/geo.js'
-import { simulatedColor, PLACEMENT_COLORS } from '../lib/buildingUses.js'
+import { simulatedColor } from '../lib/buildingUses.js'
 import { buildingHeightDescription, buildingHeightSource } from '../lib/buildingHeights.js'
 
 const empty = () => ({ type: 'FeatureCollection', features: [] })
 const fc = features => ({ type: 'FeatureCollection', features })
 
-export default function PlannerMap({ parcels, neighborhoods, stops, existingBuildings, showExisting, selected, option, stop, proposed, additionalDepartures, view3d, onSelect, onStop, tool, placing, onPlace, onHover, placedBuildings = [], network, networkResult, reservations, connections, drawing, draftNode, onDraw, discoveryPins = [] }) {
+export default function PlannerMap({ parcels, neighborhoods, stops, existingBuildings, showExisting, selected, buildingPreview, stop, proposed, additionalDepartures, view3d, onSelect, onStop, tool, placing, onPlace, onHover, placedBuildings = [], network, networkResult, reservations, connections, drawing, draftNode, onDraw, discoveryPins = [] }) {
   const container = useRef(null), mapRef = useRef(null), callbacks = useRef({ onSelect, onStop, tool, placing, onPlace })
   const [ready, setReady] = useState(false), [error, setError] = useState(null)
   const lastPin = useRef(null)
@@ -63,8 +63,8 @@ export default function PlannerMap({ parcels, neighborhoods, stops, existingBuil
       map.addLayer({ id: 'service-zone', type: 'fill-extrusion', source: 'service', filter: ['==', ['geometry-type'], 'Polygon'], paint: { 'fill-extrusion-height': 1.5, 'fill-extrusion-color': ['get', 'color'], 'fill-extrusion-opacity': .95 } })
       map.addLayer({ id: 'placed-buildings-fill', type: 'fill-extrusion', source: 'placed-buildings', paint: { 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-color': ['get', 'color'], 'fill-extrusion-opacity': .96 } })
       map.addLayer({ id: 'placed-buildings-outline', type: 'line', source: 'placed-buildings', paint: { 'line-color': ['case', ['get', 'valid'], '#fff', '#dc2626'], 'line-width': 2, 'line-dasharray': [2, 1] } })
-      map.addLayer({ id: 'building-fill', type: 'fill-extrusion', source: 'building', paint: { 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-color': ['get', 'color'], 'fill-extrusion-opacity': .88 } })
-      map.addLayer({ id: 'building-outline', type: 'line', source: 'building', paint: { 'line-color': '#243e33', 'line-width': 1.5 } })
+      map.addLayer({ id: 'building-fill', type: 'fill-extrusion', source: 'building', paint: { 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-color': ['get', 'color'], 'fill-extrusion-opacity': .6 } })
+      map.addLayer({ id: 'building-outline', type: 'line', source: 'building', paint: { 'line-color': ['get', 'color'], 'line-width': 2.5, 'line-dasharray': [2, 1] } })
       let hoverFrame = null
       map.on('mousemove', event => {
         if (!callbacks.current.placing || hoverFrame) return
@@ -149,9 +149,9 @@ export default function PlannerMap({ parcels, neighborhoods, stops, existingBuil
 
   useEffect(() => {
     if (!ready || !mapRef.current) return
-    const building = tool !== 'sites' && option?.massing.geometry && (placing || (option.massing.fits && option.massing.collisions === 0)) ? [{ type: 'Feature', geometry: option.massing.geometry, properties: { height: option.height, color: placing ? (option.eligible ? PLACEMENT_COLORS.valid : PLACEMENT_COLORS.invalid) : '#0891b2' } }] : []
+    const building = tool !== 'sites' && buildingPreview ? [buildingPreview] : []
     mapRef.current.getSource('building').setData(fc(building))
-  }, [ready, option, placing, tool])
+  }, [ready, buildingPreview, tool])
 
   useEffect(() => {
     if (!ready) return

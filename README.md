@@ -9,6 +9,7 @@ Explore housing and infrastructure decisions on a 3D map of Pittsburgh.
 - Shows existing buildings, recorded uses and estimated heights.
 - Lets you place several proposed buildings across selected parcels.
 - Lets you cycle one housing draft and compare selected housing types side by side.
+- Previews the draft automatically, with green/red placement status, before adding it to the plan.
 - Tests walking connections, streets with sidewalks, parks and added service at existing bus stops.
 - Shows factor scores, tradeoffs, adjustable priorities and the assumptions behind them.
 - Keeps exact income, rent, utilities and building dimensions under **Assumptions → Advanced options**.
@@ -60,7 +61,7 @@ Most simulation work happens in each visitor's browser. The full parcel download
 
 ## Next with the team
 
-Policy review remains deferred for planning boundaries, existing/proposed labels, and how to explain hidden or ineligible previews. Housing comparison now uses one draft plus selected types, without A/B slots.
+Policy review remains deferred for planning boundaries, existing/proposed labels, and how to explain ineligible proposals. Housing comparison now uses one draft plus selected types, without A/B slots.
 
 ## Project guide
 
