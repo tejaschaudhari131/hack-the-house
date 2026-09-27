@@ -117,13 +117,21 @@ export default function App() {
     ? rankTypes(selected.scores, weights, { allowed: zoningInfo?.allowed || null, whatIf })
     : null
 
-  const matches = useMemo(() => {
-    const needle = query.trim().toLowerCase()
+  const allMatches = useMemo(() => {
+    const needle = query.trim().toLowerCase().replace(/\s+/g, " ")
     if (!needle || !parcels) return []
-    return parcels.features
-      .filter((feature) => (feature.properties.address || "").toLowerCase().includes(needle))
-      .slice(0, 8)
+    const hits = []
+    for (const feature of parcels.features) {
+      const address = (feature.properties.address || "").toLowerCase()
+      const at = address.indexOf(needle)
+      if (at === -1) continue
+      hits.push({ feature, address, rank: at === 0 ? 0 : address[at - 1] === " " ? 1 : 2 })
+    }
+    hits.sort((a, b) => a.rank - b.rank || a.address.localeCompare(b.address, "en", { numeric: true }))
+    return hits.map((hit) => hit.feature)
   }, [parcels, query])
+  const matches = allMatches.slice(0, 8)
+  const matchTotal = allMatches.length
 
   const { explanation, explaining, run: runExplanation } = useExplanation(
     `${selectedPin}|${whatIf}|${JSON.stringify(weights)}`,
@@ -250,6 +258,7 @@ export default function App() {
             query={query}
             onQuery={setQuery}
             matches={matches}
+            matchTotal={matchTotal}
             onSelectPin={dropOn}
             zoning={zoning}
             stops={stops}
@@ -276,6 +285,7 @@ export default function App() {
           query={query}
           onQuery={setQuery}
           matches={matches}
+          matchTotal={matchTotal}
           onSelectPin={setSelectedPin}
           selected={selected}
           ranked={ranked}

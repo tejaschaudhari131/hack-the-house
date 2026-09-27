@@ -62,6 +62,7 @@ export default function ParcelPanel({
   query,
   onQuery,
   matches,
+  matchTotal = 0,
   onSelectPin,
   selected,
   ranked,
@@ -208,6 +209,12 @@ export default function ParcelPanel({
           />
         </label>
         {query.trim() && matches.length === 0 ? <p className="hint">No address match in the MVP area.</p> : null}
+        {matchTotal > matches.length ? (
+          <p className="hint">
+            Showing {matches.length} of {matchTotal.toLocaleString()} matches. Add a house number to narrow it, for example
+            &quot;4200 butler&quot;.
+          </p>
+        ) : null}
         <ul className="matches">
           {matches.map((feature) => (
             <li key={feature.properties.pin}>

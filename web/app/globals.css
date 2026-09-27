@@ -8,7 +8,8 @@ body {
   background: #f4f1ea;
 }
 
-.page { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+.page { display: flex; flex-direction: column; height: 100vh; overflow: hidden; overflow: clip; }
+#comparison:focus { outline: none; }
 .screening-line { font-size: 13px; background: #fff7ed; border-left: 3px solid #fdba74; padding: 4px 8px; }
 
 .banner {
