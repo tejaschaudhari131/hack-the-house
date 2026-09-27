@@ -57,9 +57,15 @@ function inputRows(inputs) {
     [`Median household income (${inputs.equity.census_geography})`, inputs.equity.median_household_income ? `$${fmt(inputs.equity.median_household_income)} (county $${fmt(inputs.equity.county_median_income)})` : "missing", inputs.equity.sources[0]],
     ["Renters paying 30%+ of income (ACS, all renters)", pctText(inputs.equity.acs_renters_paying_30pct_or_more_percent), inputs.equity.sources[0]],
     ["Low-income renters paying over 30% (CHAS, tract)", pctText(inputs.equity.chas_low_income_renters_paying_over_30pct_percent), inputs.equity.sources[1]],
-    ["FEMA Special Flood Hazard Area overlap", pctText(inputs.flood.fema_special_flood_hazard_area_overlap_percent), inputs.flood.source],
-    ["25%+ slope overlap (landslide-risk proxy)", pctText(inputs.steep_slope.overlap_percent), inputs.steep_slope.source],
-    ["Undermined-area overlap (preliminary screen)", pctText(inputs.undermined.overlap_percent), inputs.undermined.source],
+    [
+      "Mapped hazard overlaps (screens, not surveys)",
+      `FEMA flood zone ${pctText(inputs.flood.fema_special_flood_hazard_area_overlap_percent)}; 25%+ slope ${pctText(inputs.steep_slope.overlap_percent)}; undermined ${pctText(inputs.undermined.overlap_percent)}`,
+      {
+        name: [inputs.flood.source, inputs.steep_slope.source, inputs.undermined.source].map((source) => source?.name).join("; "),
+        vintage: "as published on the pull date",
+        pulled: inputs.flood.source?.pulled,
+      },
+    ],
   ]
 }
 
