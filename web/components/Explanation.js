@@ -2,6 +2,12 @@
 
 export const AI_LABEL = "AI-generated summary of the scores above; check sources"
 
+const PROVIDERS = { gateway: "Vercel AI Gateway", "openai-compatible": "an OpenAI-compatible API" }
+
+export function providerLabel(provider) {
+  return PROVIDERS[provider] || "an AI provider"
+}
+
 const SECTION = /^(What the data shows|What depends on your weights|Zoning \(§911\.02\)|Limits and next step):\s*/
 
 function Paragraph({ text }) {
@@ -24,7 +30,7 @@ export default function Explanation({ explanation }) {
         <span className={`badge ${ai ? "ai" : "template"}`}>{ai ? AI_LABEL : "Template explanation (no AI)"}</span>
         <span className="hint">
           {ai
-            ? `${explanation.model} via Vercel AI Gateway${explanation.cached ? " · cached answer" : ""}. It sees only the scores, weights, zoning reading, and sourced inputs on this screen.`
+            ? `${explanation.model} via ${providerLabel(explanation.provider)}${explanation.cached ? " · cached answer" : ""}. It sees only the scores, weights, zoning reading, and sourced inputs on this screen.`
             : "Written by fixed rules from the same numbers. No language model was used."}
         </span>
       </p>

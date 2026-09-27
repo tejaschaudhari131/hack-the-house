@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 
-import { AI_LABEL } from "./Explanation.js"
+import { AI_LABEL, providerLabel } from "./Explanation.js"
 import { buildParcelContext } from "../lib/explainFacts.js"
 import { explainTemplate } from "../lib/explainTemplate.js"
 import { loadFlags } from "../lib/flags.js"
@@ -256,7 +256,7 @@ export default function ParcelReport({ feature, weights, whatIf, zoning, summary
         <h2>{ai ? AI_LABEL : "Template explanation (no AI)"}</h2>
         <p className="report-small">
           {ai
-            ? `Written by ${explanation.model} via Vercel AI Gateway from the numbers above only. A model can misstate a number; the tables above are authoritative.`
+            ? `Written by ${explanation.model} via ${providerLabel(explanation.provider)} from the numbers above only. A model can misstate a number; the tables above are authoritative.`
             : "Written by fixed rules from the same numbers. No language model was used. Paragraphs that repeat the tables above are left out."}
         </p>
         {summaryText

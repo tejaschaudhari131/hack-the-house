@@ -7,6 +7,7 @@ function readMeta(response) {
   return {
     source: response.headers.get("x-explain-source") === "ai" ? "ai" : "template",
     model: response.headers.get("x-explain-model"),
+    provider: response.headers.get("x-explain-provider"),
     cached: response.headers.get("x-explain-cache") === "hit",
     notice: notice ? decodeURIComponent(notice) : null,
   }
