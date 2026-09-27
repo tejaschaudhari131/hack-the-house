@@ -11,8 +11,30 @@ cd web && npm ci && npm test && npm run build
 
 - **Coverage:** all 90 Pittsburgh neighborhoods; 142,865 mapped records (142,571 identified parcels plus 294 anonymous/shared-ground polygons with internal map IDs). No neighborhood omitted. 140,983 records match assessment evidence. Unknown parcel-ID-based property flags stay unknown.
 - **Buildings/network:** 116,502 recorded outlines; 371,689 walking nodes, 845,872 directed edges, 311 mapped parks with walking access. 94 park ways lacked a valid polygon or mapped access; relation-only parks remain out of scope. Recorded outlines and estimated heights are not a verified current dwelling inventory.
-- **Automated checks:** 49 Python tests pass. **29 web test files pass**. They cover original study regressions plus all 90 canonical-to-browser parcel round trips, unique IDs, lookup, hashes, chunk failures/aborts, graph remapping and cache behavior. Build succeeds in **44.11 seconds**, including data preparation. Routing tests cover curved/same-edge routes, disconnected crossings, foot direction, bridge snapping exclusions, fractional new junctions, immutable baselines and no score/land effect from saving existing routes. Preview verification is recorded below after deployment.
+- **Automated checks:** 49 Python tests pass. **29 web test files pass**. They cover original study regressions plus all 90 canonical-to-browser parcel round trips, unique IDs, lookup, hashes, chunk failures/aborts, graph remapping and cache behavior. Build succeeds in **44.11 seconds**, including data preparation. Routing tests cover curved/same-edge routes, disconnected crossings, foot direction, bridge snapping exclusions, fractional new junctions, immutable baselines and no score/land effect from saving existing routes.
 - **Transport:** no citywide parcel/building/graph download on entry. Hashed parcel/building parts target 12 MiB, with one buffered routing region per active site. The manifest is **49,619 bytes** (10,193 gzip). The largest individual file is a regional graph at **15,460,400 bytes**. Static public assets total **828,121,643 bytes**; the explanation function trace totals **34,895,542 bytes**, below the ordinary 250 MB function limit. This is CDN storage, not a per-visit download. Each file is below 50 MB. Canonical compressed sources total about 46.5 MB; the original study files are test fixtures outside the public directory. Map assets are excluded from the explanation function, which reads only requested compressed neighborhoods.
+
+### Local browser checks and preview handoff
+
+Checked the production build locally in the desktop browser, using the same default parcel in both views. Every row below loaded scores, zoning and public-source evidence. Studio successfully added one single-family building at each site and compared it with all other templates. Explorer successfully placed its A/B comparison options. No browser console errors were captured in either view.
+
+| Neighborhood | Parcel PIN | Studio single-family score | Explorer A / B scores |
+| --- | --- | --- | --- |
+| Squirrel Hill North | `0085L00096000000` | 80.3 | Single-family 69.7 / large apartment 75.4 |
+| East Liberty | `0083F00297000000` | 71.5 | Townhouse/duplex 69.3 / single-family 65.4 |
+| Carrick | `0060A00150000000` | 62.8 | Single-family 63.8 / small apartment 68.6 |
+| Middle Hill | `0010G00045000000` | 75.5 | Townhouse/duplex 66.7 / small apartment 65.9 |
+| Brookline | `0062S00279000000` | 73.7 | Single-family 59.8 / townhouse/duplex 63.1 |
+
+These are separate models, not expected cross-view score parity. Studio retains one draft plus type comparisons, as requested; it has no A/B slots. Middle Hill also produced eligible Studio duplex/triplex scores of 77.6/75.7. Unsupported or conflicting alternatives had no Studio score. Squirrel Hill North's selected parcel lacked a mapped walking connection: access/capacity stayed excluded (5/7 factors), not zero. Explorer is preserved as a reference: its original comparison still displays scores alongside zoning exclusions or special-approval labels.
+
+Neighborhood switching and direct PIN links were exercised. Public-source drawers showed the actual PRT stop, routes and service date for each Explorer parcel. The local `/api/explain` endpoint returned HTTP 200 for all five PINs using the compressed neighborhood sources; the inspected response identified the deterministic template fallback.
+
+The infrastructure UI snapped two Hazelwood points (`-79.943814, 40.411423` → `-79.944191, 40.410018`) and saved a **225 m / 2.8 minute** route. Its underlying network route has ten vertices. Saving it left the displayed stop/park access unchanged, as expected for existing infrastructure. Automated tests additionally cover new connections into edge interiors; visual road crossings alone do not create junctions.
+
+Vercel successfully deployed feature commit `c3540f0` at the [branch preview](https://hack-the-house-git-playhouse-citywide-tej-fff0.vercel.app). The preview requires the team's login, so these browser checks were **local, not preview checks**. The owner has assigned manual preview testing to a teammate. [PR #7](https://github.com/tejaschaudhari131/hack-the-house/pull/7) is prepared for review and must remain unmerged until the team decides to merge.
+
+For the teammate: open each PIN above on `/` and `/explore`, check sources and zoning, add a building in Studio, compare types (A/B in Explorer), and try **Infra → Route between two points**. Confirm camera panning and neighborhood switching on the actual deployed site. No screenshots were generated.
 
 ### Original-study parity and explicit source corrections
 

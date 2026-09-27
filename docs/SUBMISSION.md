@@ -50,6 +50,8 @@ https://github.com/tejaschaudhari131/hack-the-house
 
 https://hack-the-house.vercel.app
 
+Citywide release preview (PR #7, not merged): https://hack-the-house-git-playhouse-citywide-tej-fff0.vercel.app. Vercel deployment succeeded; the team will perform the protected-preview walkthrough. Local five-neighborhood checks are recorded in [VALIDATION.md](VALIDATION.md).
+
 ## Data sources
 
 Allegheny County parcel boundaries and property assessments (WPRDC/County GIS, pulled 2026-09-26/27); Pittsburgh zoning districts (WPRDC) and Pittsburgh Zoning Code §911.02 use table (ecode360); ACS 2024 5-year B19013, B25064, B25070, B25003, and 2015–2019 B25064 (Census Bureau summary files); HUD CHAS 2018–2022 Table 8 (tract); Census 2024 cartographic block groups and the 2020–2010 tract relationship file; Pittsburgh Regional Transit GTFS (weekday 2026-09-25); FEMA National Flood Hazard Layer; Pittsburgh steep slopes (25%+) and undermined areas (WPRDC); City-owned properties, City tax delinquency, condemned and dead-end properties (WPRDC); HUD LIHTC properties and 2026 Qualified Census Tracts; EIA RECS 2020 Table CE1.2; Zuluaga & Saxe 2025 and Rankin et al. 2024 (embodied carbon, direction only); OpenStreetMap basemap. Full table with URLs, vintages, and caveats: README "Data Sources" and `docs/DATA_NOTES.md`.

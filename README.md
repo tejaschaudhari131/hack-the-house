@@ -64,7 +64,7 @@ For a new Vercel project: import this repository, select **Next.js**, set the ro
 
 Studio works without AI credentials. Explorer has a template explanation fallback; set `AI_EXPLANATIONS=off` for a template-only demo. See [web setup](web/README.md) for optional model configuration. Vercel Hobby is intended for personal, non-commercial use; check [plan eligibility](https://vercel.com/docs/plans/hobby) before using it for paid work.
 
-Most simulation work happens in each visitor's browser. Studio loads generated neighborhood files instead of the full parcel/building download. `npm run dev` and `npm run build` prepare these automatically; the original files remain available to Explorer. The shared walking graph stays loaded so routes can cross neighborhood boundaries. A 30-user load test has not been run.
+Most simulation work happens in each visitor's browser. Both views load generated neighborhood files instead of the full city download. `npm run dev` and `npm run build` prepare these automatically. Studio loads a buffered regional walking graph for the selected site so nearby routes can cross neighborhood boundaries. A 30-user load test has not been run.
 
 ## Next with the team
 
