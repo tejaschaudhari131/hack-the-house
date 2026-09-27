@@ -5,6 +5,7 @@ import unittest
 from pathlib import Path
 
 from score import (
+    chas_low_income_renter_cost_burden,
     climate_risk,
     composite,
     lot_fit,
@@ -131,6 +132,85 @@ class ScoreTests(unittest.TestCase):
         self.assertEqual(result["factors"]["steep_slope_role"], "landslide_risk_proxy")
         self.assertGreater(result["scores"]["single_family"]["climate_risk"], 0)
         self.assertTrue(any("undermined" in note.lower() for note in result["confidence_notes"]))
+
+    def test_chas_share_is_low_income_renters_over_30_percent(self):
+        # Three renter bands at or below 80% HAMFI.
+        # Computed households: (100-10) + (40-0) + (60-0) = 190
+        # Cost burden >30%: (20+30) + (10+5) + (0+15) = 80
+        row = {
+            "T8_est69": 100,
+            "T8_est79": 10,
+            "T8_est73": 20,
+            "T8_est76": 30,
+            "T8_est82": 40,
+            "T8_est92": 0,
+            "T8_est86": 10,
+            "T8_est89": 5,
+            "T8_est95": 60,
+            "T8_est105": 0,
+            "T8_est99": 0,
+            "T8_est102": 15,
+        }
+        got = chas_low_income_renter_cost_burden(row)
+        self.assertEqual(got["chas_low_income_renter_households"], 190)
+        self.assertEqual(got["chas_cost_burdened_low_income_renters"], 80)
+        self.assertEqual(got["chas_rent_burden_share"], round(80 / 190, 3))
+
+    def test_chas_share_is_missing_when_a_cell_is_suppressed(self):
+        row = {
+            "T8_est69": 100,
+            "T8_est79": 10,
+            "T8_est73": "",
+            "T8_est76": 30,
+            "T8_est82": 40,
+            "T8_est92": 0,
+            "T8_est86": 10,
+            "T8_est89": 5,
+            "T8_est95": 60,
+            "T8_est105": 0,
+            "T8_est99": 0,
+            "T8_est102": 15,
+        }
+        self.assertIsNone(chas_low_income_renter_cost_burden(row))
+        row["T8_est73"] = -1
+        self.assertIsNone(chas_low_income_renter_cost_burden(row))
+
+    def test_chas_raises_equity_and_a_missing_tract_does_not_zero_it(self):
+        parcel = {
+            "lot_sqft": 5000,
+            "trips_within_400m": 40,
+            "nearest_stop_m": 200,
+            "median_income": 70000,
+            "rent_burden_share": 0.2,
+            "assessment_joined": True,
+            "transit_available": True,
+            "flood_available": True,
+            "steep_slope_available": True,
+            "undermined_available": True,
+            "sfha_overlap": 0,
+            "flood_02_overlap": 0,
+            "steep_slope_overlap": 0,
+            "undermined_overlap": 0,
+        }
+        neighborhood = {"price_per_sqft": 180, "turnover_per_100": 10, "valid_sales": 25}
+        without = score_parcel(parcel, neighborhood, 76000)
+        with_chas = score_parcel({**parcel, "chas_rent_burden_share": 0.85}, neighborhood, 76000)
+        missing = score_parcel({**parcel, "chas_rent_burden_share": None}, neighborhood, 76000)
+        self.assertGreater(with_chas["factors"]["need"], without["factors"]["need"])
+        self.assertEqual(with_chas["factors"]["need_chas"], 0.85)
+        self.assertGreater(
+            with_chas["scores"]["small_apartment"]["equity"],
+            without["scores"]["small_apartment"]["equity"],
+        )
+        self.assertEqual(missing["factors"]["need"], without["factors"]["need"])
+        self.assertIsNotNone(missing["scores"]["small_apartment"]["equity"])
+        self.assertIsNone(missing["factors"]["need_chas"])
+        self.assertTrue(any("CHAS" in note for note in missing["confidence_notes"]))
+        self.assertFalse(any("CHAS" in note for note in without["confidence_notes"]))
+        equity = next(row for row in model_card()["dimensions"] if row["id"] == "equity")
+        measured = " ".join(equity["measured"])
+        self.assertIn("ACS 2024", measured)
+        self.assertIn("HUD CHAS 2018-2022", measured)
 
 
 if __name__ == "__main__":

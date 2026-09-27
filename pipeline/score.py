@@ -157,20 +157,89 @@ def transit_score(trips_within_400m, nearest_stop_m, transit_available):
     return clamp100(score), round(walk, 3), round(freq, 3)
 
 
-def need_and_displacement(median_income, county_median_income, rent_burden_share, heat):
+# HUD CHAS 2018-2022 Table 8, from CHAS-data-dictionary-18-22.xlsx.
+# Renter occupied, three income bands at or below 80% of HAMFI.
+# Each tuple is (band total, cost burden not computed, >30% to <=50%, >50%).
+CHAS_LOW_INCOME_RENTER_BANDS = (
+    ("T8_est69", "T8_est79", "T8_est73", "T8_est76"),
+    ("T8_est82", "T8_est92", "T8_est86", "T8_est89"),
+    ("T8_est95", "T8_est105", "T8_est99", "T8_est102"),
+)
+
+
+def _chas_count(value):
+    if value is None:
+        return None
+    text = str(value).strip()
+    if text == "" or text.lower() in {"na", "n/a", "null", "."}:
+        return None
+    try:
+        number = float(text)
+    except ValueError:
+        return None
+    # A suppressed or unusable cell is missing. It is not a zero.
+    if number < 0:
+        return None
+    return number
+
+
+def chas_low_income_renter_cost_burden(row):
+    """Share of low-income renter households that are cost-burdened.
+
+    Universe: renter-occupied households at or below 80% of HAMFI
+    (<=30%, >30–50%, and >50–80%), Table 8 of the 2018-2022 CHAS.
+    Cost-burdened means housing cost greater than 30% of income
+    (the >30–50% subtotal plus the >50% subtotal).
+    Households whose cost burden was not computed are left out of both sides.
+    Returns None when any required cell is missing or the denominator is 0.
+    """
+    burdened = 0.0
+    computed = 0.0
+    for total_key, missing_key, mid_key, severe_key in CHAS_LOW_INCOME_RENTER_BANDS:
+        total = _chas_count(row.get(total_key))
+        not_computed = _chas_count(row.get(missing_key))
+        mid = _chas_count(row.get(mid_key))
+        severe = _chas_count(row.get(severe_key))
+        if None in (total, not_computed, mid, severe):
+            return None
+        band_computed = total - not_computed
+        if band_computed < 0:
+            return None
+        computed += band_computed
+        burdened += mid + severe
+    if computed <= 0:
+        return None
+    share = clamp(burdened / computed)
+    return {
+        "chas_rent_burden_share": round(share, 3),
+        "chas_low_income_renter_households": int(round(computed)),
+        "chas_cost_burdened_low_income_renters": int(round(burdened)),
+    }
+
+
+def need_and_displacement(
+    median_income,
+    county_median_income,
+    rent_burden_share,
+    heat,
+    chas_rent_burden_share=None,
+):
     need_income = None
     if median_income is not None and county_median_income:
         ratio = float(median_income) / float(county_median_income)
         need_income = clamp((1 - ratio) / NORMATIVE["income_need_span"])
     need_rent = None if rent_burden_share is None else clamp(float(rent_burden_share))
+    need_chas = None if chas_rent_burden_share is None else clamp(float(chas_rent_burden_share))
     parts = []
     if need_income is not None:
         parts.append(need_income)
     if need_rent is not None:
         parts.append(need_rent)
+    if need_chas is not None:
+        parts.append(need_chas)
     need = sum(parts) / len(parts) if parts else None
     displacement = heat
-    return need, displacement, need_income, need_rent
+    return need, displacement, need_income, need_rent, need_chas
 
 
 def equity_score(housing_type, need, displacement):
@@ -281,6 +350,11 @@ def confidence_for(parcel, neighborhood, census_note_extra=None):
     if parcel.get("rent_burden_share") is None:
         score -= 0.15
         notes.append("Census rent-burden data is missing here.")
+    if "chas_rent_burden_share" in parcel and parcel.get("chas_rent_burden_share") is None:
+        score -= 0.05
+        notes.append(
+            "HUD CHAS cost burden is missing for this tract, so that measured input is left out of equity."
+        )
     if parcel.get("census_geography") == "tract":
         score -= 0.05
         notes.append("Income and rent fell back to the census tract because the block group value was missing.")
@@ -320,11 +394,12 @@ def confidence_for(parcel, neighborhood, census_note_extra=None):
 
 def score_parcel(parcel, neighborhood, county_median_income):
     heat, price_score, turnover_score = market_heat(neighborhood)
-    need, displacement, need_income, need_rent = need_and_displacement(
+    need, displacement, need_income, need_rent, need_chas = need_and_displacement(
         parcel.get("median_income"),
         county_median_income,
         parcel.get("rent_burden_share"),
         heat if heat is not None else None,
+        parcel.get("chas_rent_burden_share"),
     )
     # Displacement uses market heat. If heat is missing, equity cannot separate
     # production from displacement, so equity is withheld.
@@ -372,6 +447,7 @@ def score_parcel(parcel, neighborhood, county_median_income):
         "need": None if need is None else round(need, 3),
         "need_income": None if need_income is None else round(need_income, 3),
         "need_rent": None if need_rent is None else round(need_rent, 3),
+        "need_chas": None if need_chas is None else round(need_chas, 3),
         "displacement": None if displacement is None else round(displacement, 3),
         "lot_fit": fits,
         "transit_walk": walk,
@@ -489,12 +565,14 @@ def model_card():
                 "label": "Equity",
                 "higher_means": "Stronger case that this type serves lower-income households here, after a displacement penalty",
                 "measured": [
-                    "Block-group median household income compared with the county median",
-                    "Share of renters paying 30 percent or more of income in rent (ACS B25070, not HUD CHAS)",
+                    "Block-group median household income compared with the county median (ACS 2024 5-year B19013)",
+                    "Share of renters paying 30 percent or more of income in rent (ACS 2024 5-year B25070, all renters with a computed ratio)",
+                    "Share of renter households at or below 80 percent of HAMFI that pay more than 30 percent of income (HUD CHAS 2018-2022 Table 8, census tract). This is a different universe and an older vintage than the ACS share.",
                     "The same sale prices and turnover used in demand, read here as displacement pressure",
                 ],
                 "normative": [
                     "Treating income below the county median as need",
+                    "Equal weight, among whichever of the income gap, the ACS rent-burden share, and the CHAS low-income renter cost-burden share are present. A missing measure is dropped, not treated as zero.",
                     "Treating hotter sales as displacement pressure",
                     "Type factors that give larger buildings more production value and more displacement exposure",
                 ],
