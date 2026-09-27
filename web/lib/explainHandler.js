@@ -8,7 +8,7 @@ import { buildCompareContext, buildParcelContext, explainCompareTemplate } from 
 import { PROMPT_VERSION, SYSTEM_PROMPT, buildComparePrompt, buildParcelPrompt } from "./explainPrompt.js"
 import { explainTemplate } from "./explainTemplate.js"
 import { clientIp, createRateLimiter, createTtlCache, hashKey } from "./guardrails.js"
-import { HOUSING_TYPES } from "./rank.js"
+import { DEFAULT_WEIGHTS, HOUSING_TYPES } from "./rank.js"
 
 export const DEFAULT_MODEL = "anthropic/claude-haiku-4.5"
 
@@ -24,7 +24,7 @@ export const LIMITS = {
 }
 
 const PIN_PATTERN = /^[0-9A-Z]{6,24}$/
-const WEIGHT_KEYS = ["demand", "transit", "equity", "climate"]
+const WEIGHT_KEYS = Object.keys(DEFAULT_WEIGHTS)
 
 export function aiConfig(env = process.env) {
   const model = (env.AI_MODEL || "").trim() || DEFAULT_MODEL
@@ -61,7 +61,7 @@ function parseDrop(raw) {
 
 export function parseExplainRequest(body) {
   const weights = parseWeights(body?.weights)
-  if (!weights) return { error: "weights must have demand, transit, equity, and climate between 0 and 100." }
+  if (!weights) return { error: `weights must have ${WEIGHT_KEYS.join(", ")}, each between 0 and 100.` }
   if (body?.kind === "compare") {
     const a = parseDrop(body.a)
     const b = parseDrop(body.b)

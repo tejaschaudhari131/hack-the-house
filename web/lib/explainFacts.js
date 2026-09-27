@@ -151,10 +151,7 @@ const VALUE_JUDGMENTS = [
 
 function weightFacts(weights) {
   return {
-    demand: weights.demand,
-    transit: weights.transit,
-    equity: weights.equity,
-    climate: weights.climate,
+    ...weights,
     note: "Value judgments chosen by the user. The weighted total is the weighted average of demand, transit, equity, and climate suitability (100 minus climate risk). Missing scores are skipped, not treated as zero.",
   }
 }
@@ -335,12 +332,15 @@ export function explainCompareTemplate(context) {
       : `${zoning.reading.replace(/\.$/, "")}. ${zoning.detail}`
     return `Building ${side.building}, ${side.housing_type} at ${where} (${side.place.neighborhood}): weighted total ${total}; demand ${scores?.demand ?? "n/a"}, transit ${scores?.transit ?? "n/a"}, equity ${scores?.equity ?? "n/a"}, climate risk ${scores?.climate_risk ?? "n/a"}. Zoning reading: ${reading}`
   }
-  const w = facts.weights
+  const weightText = Object.entries(facts.weights)
+    .filter(([key]) => key !== "note")
+    .map(([key, value]) => `${key} ${value}`)
+    .join(", ")
   return [
     `${sentence}`,
     sideText(facts.scenario_a),
     sideText(facts.scenario_b),
-    `Value judgments, not measurements: your weights (demand ${w.demand}, transit ${w.transit}, equity ${w.equity}, climate ${w.climate}), the lot-fit curves, the equity type factors, and the flood/slope/undermined blend. Home counts are display defaults and do not change the scores.`,
+    `Value judgments, not measurements: your weights (${weightText}), the lot-fit curves, the equity type factors, and the flood/slope/undermined blend. Home counts are display defaults and do not change the scores.`,
     "This is a screening comparison, not legal, zoning, or financial advice. A consequential decision should go to City Planning / the Zoning Administrator or a qualified professional.",
   ].join("\n\n")
 }
