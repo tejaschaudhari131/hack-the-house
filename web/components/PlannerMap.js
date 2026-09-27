@@ -16,6 +16,7 @@ export default function PlannerMap({ parcels, neighborhoods, stops, existingBuil
   const lastPin = useRef(null)
   const marker = useRef(null)
   const popup = useRef(null)
+  const networkDisplayed = useRef(false)
   callbacks.current = { onSelect, onStop, tool, placing, onPlace, drawing, onDraw }
 
   useEffect(() => {
@@ -41,7 +42,7 @@ export default function PlannerMap({ parcels, neighborhoods, stops, existingBuil
       map.addSource('stops', { type: 'geojson', data: stops || empty() })
       map.addSource('existing-buildings', { type: 'geojson', data: empty(), promoteId: 'id', attribution: '<a href="https://mapservices.pasda.psu.edu/server/rest/services/pasda/AlleghenyCounty/MapServer/11">Allegheny County / PASDA buildings</a>' })
       for (const id of ['building', 'selected', 'service', 'network-nodes', 'parks', 'reservations', 'connections', 'draft-node']) map.addSource(id, { type: 'geojson', data: empty() })
-      map.addSource('walking-network', { type: 'geojson', data: '/data/walking-network.geojson', attribution: '<a href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors · ODbL</a>' })
+      map.addSource('walking-network', { type: 'geojson', data: empty(), attribution: '<a href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors · ODbL</a>' })
       map.addLayer({ id: 'district-line', type: 'line', source: 'districts', paint: { 'line-color': '#78978c', 'line-width': 2, 'line-dasharray': [3, 3] } })
       map.addLayer({ id: 'parcel-fill', type: 'fill', source: 'parcels', paint: { 'fill-color': ['case', ['get', 'vacant'], '#81b99c', '#e6e9e3'], 'fill-opacity': .28 } })
       map.addLayer({ id: 'parcel-line', type: 'line', source: 'parcels', minzoom: 14, paint: { 'line-color': '#788f84', 'line-width': .6, 'line-opacity': .55 } })
@@ -81,13 +82,13 @@ export default function PlannerMap({ parcels, neighborhoods, stops, existingBuil
         const hit = map.queryRenderedFeatures(event.point, { layers: ['parcel-fill'] })[0]
         if (hit) callbacks.current.onSelect(hit.properties.pin)
       })
-      map.on('mouseenter', 'parcel-fill', () => { map.getCanvas().style.cursor = callbacks.current.placing ? 'crosshair' : 'pointer' })
-      map.on('mouseleave', 'parcel-fill', () => { map.getCanvas().style.cursor = callbacks.current.placing ? 'crosshair' : '' })
+      map.on('mouseenter', 'parcel-fill', () => { map.getCanvas().style.cursor = callbacks.current.placing || callbacks.current.drawing ? 'crosshair' : 'pointer' })
+      map.on('mouseleave', 'parcel-fill', () => { map.getCanvas().style.cursor = callbacks.current.placing || callbacks.current.drawing ? 'crosshair' : '' })
       setReady(true)
     })
     const observer = new ResizeObserver(() => map.resize())
     observer.observe(container.current)
-    return () => { observer.disconnect(); marker.current?.remove(); marker.current = null; popup.current?.remove(); map.remove(); mapRef.current = null }
+    return () => { observer.disconnect(); marker.current?.remove(); marker.current = null; popup.current?.remove(); map.remove(); mapRef.current = null; networkDisplayed.current = false }
   }, [parcels, neighborhoods, stops])
 
   useEffect(() => { if (ready) mapRef.current.getSource('existing-buildings').setData(existingBuildings || empty()) }, [ready, existingBuildings])
@@ -101,6 +102,7 @@ export default function PlannerMap({ parcels, neighborhoods, stops, existingBuil
   useEffect(() => {
     if (!ready) return
     const map = mapRef.current, visible = tool === 'network', point = selected && geometryCenter(selected.geometry)
+    if (visible && !networkDisplayed.current) { map.getSource('walking-network').setData('/data/walking-network.geojson'); networkDisplayed.current = true }
     map.setLayoutProperty('network-line', 'visibility', visible ? 'visible' : 'none')
     map.getSource('network-nodes').setData(visible && network && point ? fc(network.nodes.flatMap((coordinates, id) => network.ground[id] && haversineMeters(...point, ...coordinates) < 600 ? [{ type: 'Feature', properties: { node: id }, geometry: { type: 'Point', coordinates } }] : [])) : empty())
     map.getSource('parks').setData(visible && network ? fc(network.parks.map(p => ({ type: 'Feature', properties: { name: p.name }, geometry: p.geometry }))) : empty())

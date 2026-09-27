@@ -89,13 +89,13 @@ export default function Planner() {
   const [data, setData] = useState(null), [error, setError] = useState(null), [attempt, setAttempt] = useState(0)
   useEffect(() => {
     const controller = new AbortController()
-    const names = ['parcels.geojson', 'neighborhoods.geojson', 'stops.geojson', 'zoning.json', 'summary.json']
+    const names = ['planner-parcels.geojson', 'neighborhoods.geojson', 'stops.geojson', 'zoning.json', 'summary.json', 'planner-parcels.sources.json']
     setError(null)
     Promise.all(names.map(async name => {
       const response = await fetch(`/data/${name}`, { signal: controller.signal })
       if (!response.ok) throw new Error(`${name}: ${response.status}`)
       return response.json()
-    })).then(([parcels, neighborhoods, stops, zoning, summary]) => setData({ parcels, neighborhoods, stops, zoning, summary }))
+    })).then(([parcels, neighborhoods, stops, zoning, summary, parcelManifest]) => setData({ parcels, neighborhoods, stops, zoning, summary, parcelManifest }))
       .catch(error => { if (error.name !== 'AbortError') setError(error.message) })
     return () => controller.abort()
   }, [attempt])
@@ -205,7 +205,7 @@ function Studio({ data }) {
     set(key, [...scenario[key], operation]); setProposed(true); cancelDrawing(); setNotice('Hypothetical infrastructure added. Access and reserved land are recalculated; buildability remains unverified.')
   }
   function download() {
-    const payload = { ...scenarioExport(scenario, summary), results: result, networkContext: networkData?.manifest.sha256 || null, buildingContext: context ? { sha256: context.manifest.sha256, retrievedAt: context.manifest.retrieved_at } : null, sources: { parcels: '/data/parcels.geojson', zoning: '/data/zoning.json', stops: '/data/stops.geojson', buildings: '/data/existing-buildings.sources.json', network: '/data/walking-network.sources.json' } }
+    const payload = { ...scenarioExport(scenario, summary), results: result, parcelContext: data.parcelManifest, networkContext: networkData?.manifest.sha256 || null, buildingContext: context ? { sha256: context.manifest.sha256, retrievedAt: context.manifest.retrieved_at } : null, sources: { parcels: '/data/planner-parcels.sources.json', zoning: '/data/zoning.json', stops: '/data/stops.geojson', buildings: '/data/existing-buildings.sources.json', network: '/data/walking-network.sources.json' } }
     const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }))
     const link = document.createElement('a'); link.href = url; link.download = `housing-scenario-${scenario.pin}.json`; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000)
     setNotice('Scenario exported with model version, assumptions and comparison results.')

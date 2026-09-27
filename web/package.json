@@ -3,12 +3,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "predev": "node scripts/prepare-maplibre.mjs",
+    "predev": "node scripts/prepare-maplibre.mjs && node scripts/prepare-planner-data.mjs",
     "dev": "next dev",
-    "prebuild": "node scripts/prepare-maplibre.mjs",
+    "prebuild": "node scripts/prepare-maplibre.mjs && node scripts/prepare-planner-data.mjs",
     "build": "next build",
     "start": "next start",
-    "test": "node --test lib/*.test.js"
+    "test": "node --test lib/*.test.js",
+    "benchmark:planner": "node scripts/benchmark-planner.mjs"
   },
   "dependencies": {
     "ai": "^7.0.116",

@@ -10,7 +10,7 @@ npm ci
 npm run dev
 ```
 
-`npm run build` and `npm run dev` first publish MapLibre 6's worker and sibling shared module from the locked dependency into `public/vendor/maplibre/`. These generated assets are ignored by Git; the dependency license is copied alongside them. Serving both modules from the application fixes the worker-relative URL issue with the Next.js bundle. Run `npm run build` before `npm start`.
+`npm run build` and `npm run dev` generate the compact planner dataset and first publish MapLibre 6's worker and sibling shared module from the locked dependency into `public/vendor/maplibre/`. These generated assets are ignored by Git; the dependency license is copied alongside them. Serving both modules from the application fixes the worker-relative URL issue with the Next.js bundle. Run `npm run build` before `npm start`.
 
 ## First demo
 
@@ -51,7 +51,7 @@ Massing dimensions and heights are **proposal assumptions**. County building foo
 - `plannerModel.js`: pure baseline/proposal evaluator, shared evidence coverage and deterministic explanations.
 - `planner.worker.js`: asynchronous evaluator; stale revisions are discarded by the client. A JavaScript fallback retains controls if worker creation is unavailable.
 
-The complete baseline still downloads as committed GeoJSON. This release does not claim citywide performance. The map uses only geometry and a few attributes, and calculations transfer only the selected parcel/stop/scenario. Future geometry tiling, indexed detail loading, network analysis, and a Rust/WASM computation kernel can be added without putting simulation logic into map components.
+The studio downloads a generated compact parcel view; the explorer retains the complete committed GeoJSON. This release does not claim citywide performance. The map uses only geometry and a few attributes, and calculations transfer only the selected parcel/stop/scenario. Future geometry tiling, indexed detail loading, network analysis, and a Rust/WASM computation kernel can be added without putting simulation logic into map components.
 
 The original AI endpoint reconstructs baseline facts. The new studio deliberately uses deterministic scenario explanations instead of sending modified proposals to a baseline-only endpoint.
 
@@ -96,3 +96,11 @@ Access combines transit preference `clamp(100 × (1 − (walk + wait)/30))` and 
 The graph is initialized once in the calculation worker. Subsequent evaluations pass small scenario edits and selected-site data; stale revisions are ignored. The reference implementation and tests cover path shortening, disconnected edits, geometric crossings without junctions, unknown routes, no-op parity, reversible edits, land reservations and both real examples. Independent field/transport validation, schedules and regional multimodal routing remain future work.
 
 Edits persist when selecting another parcel in the same study area, so subsequent housing comparisons use the same infrastructure assumptions. Switching study areas starts a new local scenario. Invalid infrastructure references or missing network data with active edits withhold proposal ranking instead of silently ignoring reservations.
+
+## Lean data delivery and repeatable performance checks
+
+`web/scripts/prepare-planner-data.mjs` projects the full parcel dataset onto the studio's required fields during `predev`/`prebuild`. All 8,645 parcel IDs, exact coordinates, scoring inputs and displayed evidence are retained. It reduces the uncompressed parcel download from 27,849,611 to 10,203,790 bytes (63.4%). Generated files are ignored; no additional download or dependency is needed. Its manifest records both hashes and field lists; scenario exports include that manifest. The explorer keeps the full source. Tests check every retained input and geometry plus evaluation parity for both examples with/without service edits.
+
+The separate 2.9 MB network display geometry now loads on the first visit to Infra. The calculation graph still loads independently for routed comparisons, initializes once per worker, and is not copied on each edit. Baseline map geometry is not resent during scenario edits.
+
+Run `npm run benchmark:planner` to measure JSON parsing, graph preparation and full evaluations reproducibly. A local run on 2026-09-27 (Node v26.8.1; AMD Ryzen 7 PRO 8840U; 20 measured runs after three warmups) found median full/compact parsing of 107/52 ms and evaluation p95 of 55 ms (Hazelwood) and 64 ms (Lawrenceville). These are CPU observations, not browser FPS or download promises; browser rendering, worker transfer, thermal state and other devices are outside this measurement. Repeat after significant model/data changes. Citywide delivery still requires tiled geometry and regional graph/data partitioning; Rust is not justified by this bounded CPU measurement alone.

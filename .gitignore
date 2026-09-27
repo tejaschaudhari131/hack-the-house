@@ -20,6 +20,8 @@ web/node_modules/
 web/.next/
 web/out/
 web/public/vendor/maplibre/
+web/public/data/planner-parcels.geojson
+web/public/data/planner-parcels.sources.json
 next-env.d.ts
 
 # OS / editor
