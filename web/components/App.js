@@ -8,6 +8,7 @@ import Onboarding, { hasOnboarded } from "./Onboarding.js"
 import FindSitesPanel from "./FindSitesPanel.js"
 import ParcelPanel from "./ParcelPanel.js"
 import ParcelReport from "./ParcelReport.js"
+import BriefPanel from "./BriefPanel.js"
 import DecisionBrief from "./DecisionBrief.js"
 import GuideBanner from "./GuideBanner.js"
 import ScenarioShare from "./ScenarioShare.js"
@@ -30,6 +31,12 @@ const DropMap = dynamic(() => import("./DropMap.js"), {
   loading: () => <div className="map-loading">Loading 3D map…</div>,
 })
 
+const STEPS = [
+  { mode: "sites", label: "Find sites" },
+  { mode: "drop", label: "Compare options" },
+  { mode: "brief", label: "Get the brief" },
+]
+
 export default function App() {
   const [parcels, setParcels] = useState(null)
   const [neighborhoods, setNeighborhoods] = useState(null)
@@ -42,7 +49,7 @@ export default function App() {
   const [whatIf, setWhatIf] = useState(false)
   const [focus, setFocus] = useState(null)
   const [query, setQuery] = useState("")
-  const [mode, setMode] = useState("inspect")
+  const [mode, setMode] = useState("sites")
   const [stops, setStops] = useState(null)
   const [activeType, setActiveType] = useState("townhouse_duplex")
   const [activeSlot, setActiveSlot] = useState("A")
@@ -127,7 +134,10 @@ export default function App() {
   useEffect(() => {
     if (!parcels) return
     const pin = new URLSearchParams(window.location.search).get("pin")
-    if (pin && byPin.has(pin)) setSelectedPin(pin)
+    if (pin && byPin.has(pin)) {
+      setSelectedPin(pin)
+      setMode("inspect")
+    }
   }, [parcels, byPin])
 
   const [linkChecked, setLinkChecked] = useState(false)
@@ -246,6 +256,7 @@ export default function App() {
       setGuide({ ...guide, step: 2 })
     } else if (guide.step === 2) {
       setGuide({ ...guide, step: 3 })
+      setMode("brief")
     }
   }
 
@@ -301,6 +312,23 @@ export default function App() {
   const shareUrl = typeof window === "undefined" ? "" : `${window.location.origin}/explore?s=${encodeState(scenarioState)}`
   const shareControls = <ScenarioShare shareUrl={shareUrl} state={scenarioState} onLoadState={(raw) => applyState(raw, "scenario file")} />
 
+  function goStep(next) {
+    if (guide && ((next === "sites" && guide.step !== 1) || (next === "drop" && guide.step !== 2) || (next === "brief" && guide.step !== 3))) setGuide(null)
+    setMode(next)
+  }
+
+  const hasComparison = drops.length === 2
+  const nextStep =
+    mode === "sites"
+      ? { text: "Step 1 of 3 · Find sites. Pick a question or filters, choose a lot, then compare two options on it.", action: startGuide, actionLabel: "Or start the guided example" }
+      : mode === "drop"
+        ? hasComparison
+          ? { text: "Step 2 of 3 · Compare options. Try a different priority, then get the brief.", action: () => goStep("brief"), actionLabel: "Next: get the brief →" }
+          : { text: "Step 2 of 3 · Compare options. Place two building options on a lot to compare them.", action: () => goStep("sites"), actionLabel: "Find a lot first" }
+        : mode === "brief"
+          ? { text: "Step 3 of 3 · Get the brief. Print it or save it as a PDF.", action: compareState ? printBrief : null, actionLabel: "Print or save as PDF" }
+          : { text: "Browsing the parcel map. Click any lot to see how the four housing types rank.", action: () => goStep("sites"), actionLabel: "Back to step 1: find sites" }
+
   const guideBanner = guide ? (
     <GuideBanner guide={guide} onNext={guideNext} onExit={() => setGuide(null)} onPrint={printBrief} />
   ) : null
@@ -314,36 +342,54 @@ export default function App() {
         <div className="banner-main">
           <h1 className="banner-title">Playhouse</h1>
           <p className="banner-sub">
-            Compare housing options for real Pittsburgh sites: {summary?.parcel_count ? summary.parcel_count.toLocaleString() : "…"}{" "}
-            parcels in Hazelwood and Lawrenceville, scored on six factors with the zoning use table shown separately. For
-            CDC staff and planners building a shortlist.
+            Find a lot, compare two housing options on it, and get a one-page brief.{" "}
+            {summary?.parcel_count ? summary.parcel_count.toLocaleString() : "…"} lots in Hazelwood and Lawrenceville,
+            Pittsburgh.
           </p>
         </div>
-        <span className="mode-switch" role="group" aria-label="Mode">
-          <button type="button" className={mode === "inspect" ? "on" : ""} aria-pressed={mode === "inspect"} onClick={() => setMode("inspect")}>
-            Click a parcel
-          </button>
-          <button type="button" className={mode === "drop" ? "on" : ""} aria-pressed={mode === "drop"} onClick={() => setMode("drop")}>
-            Drop a building
-          </button>
-          <button type="button" className={mode === "sites" ? "on" : ""} aria-pressed={mode === "sites"} onClick={() => setMode("sites")}>
-            Find sites
-          </button>
-        </span>
         <span className="banner-help">
           <a href="/" style={{ color: "white", alignSelf: "center", fontSize: 13 }}>Planning studio ↗</a>
           <button type="button" className="primary" onClick={startGuide} disabled={!parcels}>
-            Try a real example
+            Start guided example
           </button>
           <button type="button" onClick={() => setOnboardingOpen(true)}>
             How it works
           </button>
         </span>
+        <nav className="steps" aria-label="Steps">
+          <ol>
+            {STEPS.map((step, index) => (
+              <li key={step.mode}>
+                <button
+                  type="button"
+                  className={mode === step.mode ? "on" : ""}
+                  aria-current={mode === step.mode ? "step" : undefined}
+                  onClick={() => goStep(step.mode)}
+                >
+                  <span className="step-num" aria-hidden="true">
+                    {index + 1}
+                  </span>
+                  {step.label}
+                </button>
+              </li>
+            ))}
+          </ol>
+          <button type="button" className={`text-button browse${mode === "inspect" ? " on" : ""}`} aria-pressed={mode === "inspect"} onClick={() => setMode("inspect")}>
+            Browse the parcel map
+          </button>
+        </nav>
         <p className="banner-note">
-          <strong>Screening aid only.</strong> Not legal, zoning, financial, or permitting advice. Confirm real decisions
-          with City Planning / the Zoning Administrator or a qualified professional.
+          <strong>Screening aid only.</strong> Not a permit or legal advice; confirm real decisions with City Planning.
         </p>
       </header>
+      <div className="next-bar" role="status">
+        <span>{nextStep.text}</span>
+        {nextStep.action ? (
+          <button type="button" className="text-button" onClick={nextStep.action}>
+            {nextStep.actionLabel}
+          </button>
+        ) : null}
+      </div>
       {stateNotice ? (
         <div className={`state-notice ${stateNotice.kind}`} role={stateNotice.kind === "error" ? "alert" : "status"}>
           {stateNotice.lines.map((line) => (
@@ -355,7 +401,7 @@ export default function App() {
         </div>
       ) : null}
       <Onboarding open={onboardingOpen} onClose={() => setOnboardingOpen(false)} onExample={startGuide} />
-      <div className={mode === "drop" ? "app drop-mode" : mode === "sites" ? "app sites-mode" : "app"}>
+      <div className={mode === "drop" || mode === "brief" ? "app drop-mode" : mode === "sites" ? "app sites-mode" : "app"}>
         <div className="map-wrap" role="region" aria-label="Parcel map. Keyboard users can pick a parcel with Address search in the panel.">
           {error ? (
             <p className="map-loading" role="alert">
@@ -365,8 +411,8 @@ export default function App() {
           ) : null}
           {!error && !parcels ? (
             <div className="map-loading" role="status">
-              <span className="spinner" aria-hidden="true" /> Loading about 8,600 parcels with their scores. This can
-              take a few seconds on a slow connection.
+              <span className="spinner" aria-hidden="true" /> Loading 8,645 lots and their scores… This can take a few
+              seconds on a slow connection.
             </div>
           ) : null}
           {parcels && neighborhoods && (mode === "inspect" || mode === "sites") ? (
@@ -384,7 +430,7 @@ export default function App() {
               lihtc={mode === "sites" ? lihtc : null}
             />
           ) : null}
-          {parcels && neighborhoods && mode === "drop" ? (
+          {parcels && neighborhoods && (mode === "drop" || mode === "brief") ? (
             <DropMap
               parcels={parcels}
               neighborhoods={neighborhoods}
@@ -395,12 +441,12 @@ export default function App() {
             />
           ) : null}
           <ul className="legend" aria-label="Map legend">
-            {mode === "inspect" ? <li className="legend-note">Color: #1 type under your weights</li> : null}
+            {mode === "inspect" ? <li className="legend-note">Each lot is colored by the housing type that scores highest there</li> : null}
             <li><i style={{ background: "#1d4e89" }} /> Single-family</li>
             <li><i style={{ background: "#0f766e" }} /> Townhouse / duplex</li>
             <li><i style={{ background: "#c2410c" }} /> Small apartment</li>
             <li><i style={{ background: "#9f1239" }} /> Large apartment</li>
-            {mode === "drop" ? (
+            {mode === "drop" || mode === "brief" ? (
               <>
                 <li><i style={{ background: "#1d4ed8" }} /> 800 m straight-line ring</li>
                 <li><i style={{ background: "#111827" }} /> Stop inside the ring</li>
@@ -435,9 +481,28 @@ export default function App() {
             activeExample={siteExample}
             onExample={setSiteExample}
             onCompareSite={(pin, siteType) => compareOnParcel(pin, siteType, true)}
+            onStartGuide={startGuide}
             onAntiDisplacement={openAntiDisplacement}
             guide={guideBanner}
             share={shareControls}
+          />
+        ) : mode === "brief" ? (
+          <BriefPanel
+            compare={compareState}
+            guide={guideBanner}
+            share={shareControls}
+            onPrint={printBrief}
+            onBack={() => setMode("drop")}
+            briefProps={{
+              weights,
+              featureA: compareState ? byPin.get(compareState.result.a.pin) : null,
+              featureB: compareState ? byPin.get(compareState.result.b.pin) : null,
+              zoning,
+              summary,
+              model,
+              shortlist,
+              shareUrl,
+            }}
           />
         ) : mode === "drop" ? (
           <DropPanel
@@ -465,6 +530,7 @@ export default function App() {
             sources={sources}
             model={model}
             onPrintBrief={printBrief}
+            onGoBrief={() => goStep("brief")}
             share={shareControls}
             guide={guideBanner}
           />
@@ -511,7 +577,7 @@ export default function App() {
           shareUrl={shareUrl}
         />
       ) : null}
-      {mode === "drop" && compareState ? (
+      {(mode === "drop" || mode === "brief") && compareState ? (
         <DecisionBrief
           compare={compareState}
           weights={weights}
