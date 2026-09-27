@@ -19,7 +19,8 @@ export const SCORE_TAGS = {
     choice: "Walk and frequency anchors, and the transit weight. Transit is a property of the place.",
   },
   equity: {
-    measured: "Block-group income and the share of renters paying 30% or more of income.",
+    measured:
+      "Block-group income, ACS rent burden (all renters), and the CHAS 2018–2022 share of low-income renters paying more than 30% of income.",
     choice: "Type factors and the equity weight.",
   },
   climate_risk: {

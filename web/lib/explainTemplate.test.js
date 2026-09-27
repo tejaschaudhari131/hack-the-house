@@ -64,4 +64,43 @@ test("template names measured facts and value judgments", () => {
   assert.match(text, /landslide-risk proxy/)
   assert.match(text, /undermined area/)
   assert.match(text, /100 Example St/)
+  assert.match(text, /ACS 2024/)
+})
+
+test("template keeps the CHAS share separate from ACS rent burden", () => {
+  const text = explainTemplate({
+    parcel: {
+      pin: "1",
+      address: "100 Example St",
+      neighborhood: "Hazelwood",
+      rent_burden_share: 0.46,
+      chas_rent_burden_share: 0.72,
+      chas_tract_geoid: "42003562300",
+      chas_vintage: "2018-2022",
+      steep_slope_overlap: 0,
+      undermined_overlap: 0,
+      confidence: 0.8,
+      confidence_label: "high",
+      confidence_notes: [],
+    },
+    ranked: [
+      {
+        id: "small_apartment",
+        label: "Small apartment (3–19 units)",
+        composite: 61,
+        demand: 70,
+        transit: 40,
+        equity: 55,
+        climate_suitability: 80,
+      },
+    ],
+    weights: { demand: 25, transit: 25, equity: 25, climate: 25 },
+    whatIf: false,
+    zoning: { status: "use_table_unread", code: "R1D-L", allowed: null, note: "TODO" },
+    countyMedianIncome: 76000,
+  })
+  assert.match(text, /HUD CHAS 2018/)
+  assert.match(text, /42003562300/)
+  assert.match(text, /80% of HAMFI/)
+  assert.match(text, /ACS 2024/)
 })

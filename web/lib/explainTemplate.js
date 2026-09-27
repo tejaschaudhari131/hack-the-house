@@ -24,7 +24,12 @@ function listMeasured(parcel, countyMedian) {
   if (countyMedian) bits.push(`the Allegheny County median is ${money(countyMedian)}`)
   if (parcel.rent_burden_share !== null && parcel.rent_burden_share !== undefined) {
     bits.push(
-      `${num(parcel.rent_burden_share * 100, 0)}% of renters with a computed ratio pay 30% or more of income in rent`,
+      `ACS 2024: ${num(parcel.rent_burden_share * 100, 0)}% of renters with a computed ratio pay 30% or more of income in rent`,
+    )
+  }
+  if (parcel.chas_rent_burden_share !== null && parcel.chas_rent_burden_share !== undefined) {
+    bits.push(
+      `HUD CHAS 2018–2022${parcel.chas_tract_geoid ? `, census tract ${parcel.chas_tract_geoid}` : ""}: ${num(parcel.chas_rent_burden_share * 100, 0)}% of renter households at or below 80% of HAMFI with a computed cost burden pay more than 30% of income. That table is several years older than the ACS figure and counts only lower-income renters`,
     )
   }
   if (parcel.trips_within_400m !== null && parcel.trips_within_400m !== undefined) {

@@ -114,8 +114,9 @@ export default function ParcelPanel({
             file, not the separate sales dataset.
           </li>
           <li>
-            Equity uses ACS income and rent burden. HUD CHAS tract cost burden by income is the next input and is
-            not in this build. ACS figures have margins of error.
+            Equity keeps two rent measures. ACS 2024 is the share of all renters paying 30% or more of income.
+            HUD CHAS 2018–2022 is the share of renter households at or below 80% of HAMFI paying more than 30%.
+            CHAS lags the ACS by several years, and a tract is larger than a block group. ACS figures have margins of error.
           </li>
           <li>The zoning map is not the zoning code. Overlays, exceptions, and review rules are not in the stub.</li>
           <li>No infrastructure capacity, school seats, subsidies, or loan terms.</li>
@@ -321,7 +322,7 @@ export default function ParcelPanel({
                   <ZoningBadge row={row} whatIf={whatIf} zoningInfo={zoningInfo} />
                   <Bar label="Demand" value={row.demand} hint="Sales, turnover, and a lot-fit rule" />
                   <Bar label="Transit" value={row.transit} hint="Measured for the place; same for every type" />
-                  <Bar label="Equity" value={row.equity} hint="Income, rent burden, plus a normative type rule" />
+                  <Bar label="Equity" value={row.equity} hint="ACS income and rent burden, plus CHAS low-income renter cost burden, then a normative type rule" />
                   <Bar
                     label="Climate risk"
                     value={row.climate_risk}
