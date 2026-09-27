@@ -125,7 +125,7 @@ export function describeComparison(result) {
     const favorHi = result.winner === "A" ? result.favorA : result.favorB
     const favorLo = result.winner === "A" ? result.favorB : result.favorA
     lines.push(
-      `${hi.slot}, ${place(hi)}, scores ${hi.composite} and ${lo.slot}, ${place(lo)}, scores ${lo.composite}: a gap of ${round1(Math.abs(result.gap))} points${result.close ? ", which is close under the current weights" : ""}.`,
+      `${hi.slot}, ${place(hi)}, scores ${hi.composite} and ${lo.slot}, ${place(lo)}, scores ${lo.composite}: a gap of ${round1(Math.abs(result.gap)).toFixed(1)} points${result.close ? ", which is close under the current weights" : ""}.`,
     )
     if (favorHi.length) {
       lines.push(
