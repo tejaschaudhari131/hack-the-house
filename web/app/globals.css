@@ -8,7 +8,8 @@ body {
   background: #f4f1ea;
 }
 
-.page { display: flex; flex-direction: column; height: 100vh; }
+.page { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+.screening-line { font-size: 13px; background: #fff7ed; border-left: 3px solid #fdba74; padding: 4px 8px; }
 
 .banner {
   background: #3f2a1d;
@@ -258,7 +259,7 @@ dialog.onboarding::backdrop { background: rgba(31, 41, 51, 0.55); }
 .print-report { display: none; }
 
 @media (max-width: 900px) {
-  .page { height: auto; }
+  .page { height: auto; overflow: visible; }
   .app, .app.drop-mode { grid-template-columns: 1fr; height: auto; }
   .map-wrap { height: 60vh; }
   .panel { border-left: 0; border-top: 1px solid #ddd4c6; overflow: visible; }

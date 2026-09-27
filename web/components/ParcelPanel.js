@@ -79,9 +79,15 @@ export default function ParcelPanel({
   )
 
   useEffect(() => {
-    if (!selected?.pin || !headingRef.current) return
-    headingRef.current.focus({ preventScroll: true })
-    headingRef.current.scrollIntoView({ block: "start", behavior: "smooth" })
+    const heading = headingRef.current
+    if (!selected?.pin || !heading) return
+    heading.focus({ preventScroll: true })
+    const panel = heading.closest(".panel")
+    if (panel && panel.scrollHeight > panel.clientHeight && getComputedStyle(panel).overflowY !== "visible") {
+      panel.scrollTo({ top: panel.scrollTop + heading.getBoundingClientRect().top - panel.getBoundingClientRect().top - 8, behavior: "smooth" })
+    } else {
+      heading.scrollIntoView({ block: "start", behavior: "smooth" })
+    }
   }, [selected?.pin])
   const [flags, setFlags] = useState({})
   const [flagNote, setFlagNote] = useState("")
@@ -235,59 +241,10 @@ export default function ParcelPanel({
           <h2 ref={headingRef} tabIndex={-1} className="parcel-heading">
             {selected.address || selected.pin}
           </h2>
-          <div className="review-box">
-            <p>
-              <strong>Screening aid only.</strong> This result is not a determination of what may be built. A
-              consequential decision should go to City Planning / the Zoning Administrator, or to a qualified
-              professional.
-            </p>
-            <p>
-              <a href={ZONING_PAGE_URL} target="_blank" rel="noreferrer">
-                City Planning zoning page
-              </a>
-              {" · "}
-              <a href={CODE_URL} target="_blank" rel="noreferrer">
-                Zoning code
-              </a>
-              {" · "}
-              <a href={MAP_URL} target="_blank" rel="noreferrer">
-                Zoning map
-              </a>
-              . The zoning page lists 412-255-2621 at the City-County Building, 414 Grant Street.
-            </p>
-            {flags[selected.pin] ? (
-              <p className="warning">
-                Flagged in this browser on {flags[selected.pin].flaggedAt.slice(0, 10)}
-                {flags[selected.pin].note ? `: ${flags[selected.pin].note}` : ""}. The flag is not sent to the City.
-                <button
-                  type="button"
-                  className="text-button"
-                  onClick={() => setFlags(clearFlag(selected.pin))}
-                >
-                  Remove flag
-                </button>
-              </p>
-            ) : (
-              <form
-                className="flag-form"
-                onSubmit={(event) => {
-                  event.preventDefault()
-                  setFlags(saveFlag(selected.pin, { address: selected.address, note: flagNote }))
-                }}
-              >
-                <label>
-                  Flag this result as wrong
-                  <input
-                    value={flagNote}
-                    onChange={(event) => setFlagNote(event.target.value)}
-                    placeholder="What looks wrong? Optional."
-                  />
-                </label>
-                <button type="submit">Save flag on this browser</button>
-                <p className="hint">The flag stays in this browser. It is not sent to City Planning.</p>
-              </form>
-            )}
-          </div>
+          <p className="screening-line">
+            <strong>Screening aid only.</strong> Not a determination of what may be built. Confirm with City Planning
+            (links below).
+          </p>
           <p>
             {selected.neighborhood}
             {selected.land_use ? ` · ${selected.land_use}` : ""}
@@ -388,6 +345,61 @@ export default function ParcelPanel({
             </button>
           </div>
           <Explanation explanation={explanation} />
+
+          <h3>Check it with the City, or flag it</h3>
+          <div className="review-box">
+            <p>
+              <strong>Screening aid only.</strong> This result is not a determination of what may be built. A
+              consequential decision should go to City Planning / the Zoning Administrator, or to a qualified
+              professional.
+            </p>
+            <p>
+              <a href={ZONING_PAGE_URL} target="_blank" rel="noreferrer">
+                City Planning zoning page
+              </a>
+              {" · "}
+              <a href={CODE_URL} target="_blank" rel="noreferrer">
+                Zoning code
+              </a>
+              {" · "}
+              <a href={MAP_URL} target="_blank" rel="noreferrer">
+                Zoning map
+              </a>
+              . The zoning page lists 412-255-2621 at the City-County Building, 414 Grant Street.
+            </p>
+            {flags[selected.pin] ? (
+              <p className="warning">
+                Flagged in this browser on {flags[selected.pin].flaggedAt.slice(0, 10)}
+                {flags[selected.pin].note ? `: ${flags[selected.pin].note}` : ""}. The flag is not sent to the City.
+                <button
+                  type="button"
+                  className="text-button"
+                  onClick={() => setFlags(clearFlag(selected.pin))}
+                >
+                  Remove flag
+                </button>
+              </p>
+            ) : (
+              <form
+                className="flag-form"
+                onSubmit={(event) => {
+                  event.preventDefault()
+                  setFlags(saveFlag(selected.pin, { address: selected.address, note: flagNote }))
+                }}
+              >
+                <label>
+                  Flag this result as wrong
+                  <input
+                    value={flagNote}
+                    onChange={(event) => setFlagNote(event.target.value)}
+                    placeholder="What looks wrong? Optional."
+                  />
+                </label>
+                <button type="submit">Save flag on this browser</button>
+                <p className="hint">The flag stays in this browser. It is not sent to City Planning.</p>
+              </form>
+            )}
+          </div>
         </section>
       )}
 

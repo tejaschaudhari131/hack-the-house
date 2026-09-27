@@ -345,6 +345,8 @@ export default function DropPanel({
           Address search
           <input value={query} onChange={(event) => onQuery(event.target.value)} placeholder="Try a street name" />
         </label>
+        {query.trim() && matches.length === 0 ? <p className="hint">No address match in the MVP area.</p> : null}
+        {matches.length ? <p className="hint">Choosing an address drops {TYPE_LABELS[activeType]} as Building {activeSlot}.</p> : null}
         <ul className="matches">
           {matches.map((feature) => (
             <li key={feature.properties.pin}>
