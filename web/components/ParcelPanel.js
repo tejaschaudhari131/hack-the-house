@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 
 import SiteFacts from "./SiteFacts.js"
 import SourcesList from "./SourcesList.js"
@@ -82,6 +82,13 @@ export default function ParcelPanel({
   useEffect(() => {
     setFlagNote("")
   }, [selected?.pin])
+
+  const selectedRef = useRef(null)
+  useEffect(() => {
+    const node = selectedRef.current
+    const panel = node?.closest(".panel")
+    if (onBackToSites && selected?.pin && panel) panel.scrollTop = node.offsetTop - panel.offsetTop
+  }, [onBackToSites, selected?.pin])
   const groups = useMemo(() => {
     if (!ranked) return []
     const blocks = []
@@ -229,7 +236,7 @@ export default function ParcelPanel({
           </ul>
         </section>
       ) : (
-        <section>
+        <section ref={selectedRef}>
           {onBackToSites ? (
             <button type="button" className="text-button" onClick={onBackToSites}>
               ← Back to Find Sites results
