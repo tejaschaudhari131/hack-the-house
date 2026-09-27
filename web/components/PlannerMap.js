@@ -55,7 +55,7 @@ export default function PlannerMap({ parcels, neighborhoods, stops, existingBuil
       map.addLayer({ id: 'reservation-fill', type: 'fill', source: 'reservations', paint: { 'fill-color': ['case', ['==', ['get', 'kind'], 'park'], '#70aa53', '#bd8d55'], 'fill-opacity': .6 } })
       map.addLayer({ id: 'connection-line', type: 'line', source: 'connections', paint: { 'line-color': '#a16736', 'line-width': 4 } })
       map.addLayer({ id: 'draft-point', type: 'circle', source: 'draft-node', paint: { 'circle-color': '#f3b45b', 'circle-radius': 7, 'circle-stroke-color': '#fff', 'circle-stroke-width': 2 } })
-      map.addLayer({ id: 'existing-buildings-fill', type: 'fill-extrusion', source: 'existing-buildings', minzoom: 14, paint: { 'fill-extrusion-height': ['get', 'height_m'], 'fill-extrusion-color': ['match', ['get', 'height_method'], ['stories_estimate', 'osm_height', 'osm_levels'], '#aab4af', '#c1c5bd'], 'fill-extrusion-opacity': .8 } })
+      map.addLayer({ id: 'existing-buildings-fill', type: 'fill-extrusion', source: 'existing-buildings', minzoom: 14, paint: { 'fill-extrusion-height': ['get', 'height_m'], 'fill-extrusion-color': ['coalesce', ['get', 'use_color'], '#cbd5e1'], 'fill-extrusion-opacity': .8 } })
       map.addLayer({ id: 'service-link', type: 'line', source: 'service', filter: ['==', ['geometry-type'], 'LineString'], paint: { 'line-color': '#386da3', 'line-width': 3 } })
       map.addLayer({ id: 'stops-points', type: 'circle', source: 'stops', minzoom: 14, paint: { 'circle-radius': 4, 'circle-color': '#fff', 'circle-stroke-color': '#587693', 'circle-stroke-width': 1.5 } })
       map.addLayer({ id: 'service-zone', type: 'fill-extrusion', source: 'service', filter: ['==', ['geometry-type'], 'Polygon'], paint: { 'fill-extrusion-height': 1.5, 'fill-extrusion-color': ['get', 'color'], 'fill-extrusion-opacity': .95 } })
@@ -71,9 +71,9 @@ export default function PlannerMap({ parcels, neighborhoods, stops, existingBuil
           const p = buildingHit.properties
           const content = document.createElement('div')
           content.className = 'building-popup'
-          const title = document.createElement('strong'); title.textContent = 'Recorded building footprint'
+          const title = document.createElement('strong'); title.textContent = p.use_label || 'Use unknown'
           const detail = document.createElement('p'); detail.textContent = buildingHeightDescription(p)
-          const note = document.createElement('small'); note.textContent = 'County footprint · approximate relative massing · occupancy unverified'
+          const note = document.createElement('small'); note.textContent = `${p.recorded_land_use || 'Unknown use'} · ${p.use_evidence || 'Occupancy unverified.'}`
           content.append(title, detail, note)
           const source = buildingHeightSource(p)
           if (source) {
