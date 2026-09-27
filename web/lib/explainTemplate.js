@@ -61,18 +61,26 @@ function listMeasured(parcel, countyMedian) {
   return bits
 }
 
+function lowerIsBetter(value) {
+  return value === null || value === undefined ? null : Math.round((100 - Number(value)) * 10) / 10
+}
+
 function biggestGap(top, second) {
   const fields = [
-    ["demand", "demand"],
-    ["transit", "transit access"],
-    ["equity", "equity"],
-    ["climate_suitability", "lower climate hazard"],
+    ["demand", "demand", (row) => row.demand],
+    ["transit", "transit access", (row) => row.transit],
+    ["equity", "equity", (row) => row.equity],
+    ["climate", "lower climate hazard", (row) => row.climate_suitability],
+    ["displacement", "lower displacement risk (screening signal)", (row) => lowerIsBetter(row.displacement_risk_screen ?? row.displacement_risk)],
+    ["carbon", "lower carbon (estimate)", (row) => lowerIsBetter(row.marginal_carbon_index_estimate ?? row.carbon_index)],
   ]
   let best = null
-  for (const [key, label] of fields) {
-    if (top[key] === null || top[key] === undefined || second[key] === null || second[key] === undefined) continue
-    const gap = top[key] - second[key]
-    if (!best || gap > best.gap) best = { label, gap, top: top[key], second: second[key] }
+  for (const [, label, get] of fields) {
+    const high = get(top)
+    const low = get(second)
+    if (high === null || high === undefined || low === null || low === undefined) continue
+    const gap = high - low
+    if (!best || gap > best.gap) best = { label, gap, top: high, second: low }
   }
   return best
 }
@@ -112,7 +120,7 @@ export function explainTemplate({ parcel, ranked, weights, whatIf, zoning, count
     )
   }
   paragraphs.push(
-    "Value judgments, not measurements: the weights themselves; the lot-fit curves that prefer townhouses on small lots and larger buildings on big lots; the equity rule that gives bigger buildings more weight where incomes are lower and a larger penalty where sales are hot; the 50/30/20 blend of flood, steep-slope proxy, and undermined area; and a small climate penalty that rises with building size. Steep slope is not a landslide map. Confidence (" +
+    "Value judgments, not measurements: the weights themselves; the lot-fit curves that prefer townhouses on small lots and larger buildings on big lots; the equity rule that gives bigger buildings more weight where incomes are lower and a larger penalty where sales are hot; the 50/30/20 blend of flood, steep-slope proxy, and undermined area; a small climate penalty that rises with building size; the displacement screen's anchors (a tract-level screening signal, the same for every type, not a prediction); and the carbon estimate's embodied-carbon tier (a relative index, not tonnes). Steep slope is not a landslide map. Confidence (" +
       `${parcel.confidence_label || "unknown"}, ${parcel.confidence ?? "n/a"}) is only about thin data. It does not say the value judgments are right.`,
   )
   if (parcel.confidence_notes?.length) {

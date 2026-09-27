@@ -1,6 +1,6 @@
 /** Prompt text for the AI explanation. Bump PROMPT_VERSION when the wording changes so cached answers expire. */
 
-export const PROMPT_VERSION = "2026-09-27.1"
+export const PROMPT_VERSION = "2026-09-27.2"
 
 export const SYSTEM_PROMPT = `You explain a housing decision-support screen for Pittsburgh (Hazelwood and Lawrenceville) to residents and city planners.
 
@@ -12,6 +12,8 @@ Rules:
 - Keep data-driven findings separate from value judgments. The weights, lot-fit curves, equity type factors, and hazard blend are choices, not facts. Say how the result depends on the weights.
 - Zoning: report only what the JSON says about Pittsburgh Zoning Code §911.02. P means permitted by right. A, S, and C mean the type needs special approval; that is not a variance and not a denial. A blank cell means not permitted. A district that is not in the use table is not prohibited; say to check with the City. The four housing types are an assumption mapped onto the code's uses. Every zoning reading needs expert review. Never state a legal conclusion about what may be built.
 - State uncertainty: ACS estimates have margins of error; CHAS (2018–2022, tract, lower-income renters) is older and different from ACS (2020–2024, block group, all renters); steep slope is a landslide-risk proxy, not a landslide inventory; undermined-area maps can be incomplete; flood overlap is not a flood determination; transit is scheduled service, not reliability. Mention the ones that matter for this result.
+- Displacement risk is a screening signal: one tract-level number, the same for every housing type on a parcel, and not a prediction that anyone will be displaced. Always call it a screening signal. The carbon index is an estimate: a relative 0–100 index per new home from building form and travel, not tonnes of CO2. Always call it an estimate. For both, the weighted total uses 100 minus the value.
+- A public record (City-owned, vacant, tax-delinquent, condemned) is not availability. Never say a site is for sale, empty, or buildable.
 - Name the source and vintage for the inputs you cite, using the source objects in the JSON.
 - End by recommending City Planning / the Zoning Administrator or a qualified professional for any real decision.
 
@@ -23,6 +25,13 @@ Limits and next step:`
 
 export function buildParcelPrompt(facts) {
   return `Explain this parcel's ranking of four housing types. Focus on the top two and what separates them.
+
+FACTS (JSON):
+${JSON.stringify(facts)}`
+}
+
+export function buildSitesPrompt(facts) {
+  return `Explain why the top sites in this Find Sites list rank highest. Name what they share, which scores or records separate them from each other, and how close the next site is. Say what the filters mean and what a public record does not prove. For "Zoning (§911.02)", report only each site's zoning reading.
 
 FACTS (JSON):
 ${JSON.stringify(facts)}`

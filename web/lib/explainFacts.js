@@ -50,6 +50,11 @@ export function sourceList(sources, summary, zoningRules) {
     rent2019: cite(sources, "ACS 2015-2019 5-year table B25064 (median gross rent)", "ACS 2015–2019 vs 2020–2024 median gross rent, census tract"),
     recs: cite(sources, "EIA Residential Energy Consumption Survey 2020, Table CE1.2", "RECS 2020, Northeast census region, existing homes"),
     embodied: cite(sources, "Embodied carbon by residential building form", "Published studies; direction only, as a coarse tier"),
+    cityOwned: cite(sources, "City-Owned Properties", "City inventory as published on the pull date"),
+    taxDelinquent: cite(sources, "City of Pittsburgh Property Tax Delinquency", "City delinquency list as published on the pull date"),
+    condemned: cite(sources, "Condemned and Dead-End Properties", "City list as published on the pull date"),
+    lihtc: cite(sources, "HUD Low-Income Housing Tax Credit (LIHTC) properties", "HUD LIHTC database as published on the pull date"),
+    qct: cite(sources, "HUD Qualified Census Tracts 2026", "2026 designations"),
     zoningCode: {
       name: USE_TABLE,
       vintage: "Saved copy of the use table read for this build",
@@ -156,22 +161,24 @@ function placeInputs(props, summary, sources) {
   }
 }
 
-const VALUE_JUDGMENTS = [
-  "The four weights, set by the person using the tool.",
+export const VALUE_JUDGMENTS = [
+  "The weights, set by the person using the tool.",
+  "The displacement screen's anchors and its 50/50 vulnerability and rent-pressure blend. It is the same for every type on a parcel.",
+  "The carbon estimate's embodied-carbon tier (1.0 single-family, 0.6 multi-unit) and its 60/40 building and travel split.",
   "Lot-fit curves that prefer townhouses on small lots and larger buildings on big lots (part of demand).",
   "Equity type factors: larger buildings get more production value where incomes are lower and more displacement exposure where sales are hot.",
   "The 50/30/20 blend of flood, steep-slope proxy, and undermined area, and a small climate penalty that rises with building size.",
   "Fixed score anchors (for example $80–$350 per square foot). A high score is high on that anchor, not a citywide percentile.",
 ]
 
-function weightFacts(weights) {
+export function weightFacts(weights) {
   return {
     ...weights,
     note: "Value judgments chosen by the user. The weighted total is the weighted average of demand, transit, equity, and 100 minus each of climate risk, displacement risk, and the carbon index, for whichever of those weights exist. Missing scores are skipped, not treated as zero.",
   }
 }
 
-function scoreRow(row) {
+export function scoreRow(row) {
   return {
     type: row.id,
     label: row.label,
@@ -347,7 +354,7 @@ export function explainCompareTemplate(context) {
     const reading = zoning.detail.startsWith(zoning.reading)
       ? zoning.detail
       : `${zoning.reading.replace(/\.$/, "")}. ${zoning.detail}`
-    return `Building ${side.building}, ${side.housing_type} at ${where} (${side.place.neighborhood}): weighted total ${total}; demand ${scores?.demand ?? "n/a"}, transit ${scores?.transit ?? "n/a"}, equity ${scores?.equity ?? "n/a"}, climate risk ${scores?.climate_risk ?? "n/a"}. Zoning reading: ${reading}`
+    return `Building ${side.building}, ${side.housing_type} at ${where} (${side.place.neighborhood}): weighted total ${total}; demand ${scores?.demand ?? "n/a"}, transit ${scores?.transit ?? "n/a"}, equity ${scores?.equity ?? "n/a"}, climate risk ${scores?.climate_risk ?? "n/a"}, displacement risk (screening signal) ${scores?.displacement_risk_screen ?? "n/a"}, carbon (estimate) ${scores?.marginal_carbon_index_estimate ?? "n/a"}. Zoning reading: ${reading}`
   }
   const weightText = Object.entries(facts.weights)
     .filter(([key]) => key !== "note")
