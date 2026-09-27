@@ -2,6 +2,9 @@
   "name": "hack-the-house",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "predev": "node scripts/prepare-maplibre.mjs",
     "dev": "next dev",
@@ -10,6 +13,9 @@
     "start": "next start",
     "test": "node --test lib/*.test.js",
     "benchmark:planner": "node scripts/benchmark-planner.mjs"
+  },
+  "overrides": {
+    "postcss": "8.5.23"
   },
   "dependencies": {
     "@ai-sdk/openai-compatible": "^3.0.57",
