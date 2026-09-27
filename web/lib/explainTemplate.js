@@ -116,7 +116,7 @@ export function explainTemplate({ parcel, ranked, weights, whatIf, zoning, count
     const allowed = [...(zoning.allowed || [])].map((id) => TYPE_LABELS[id] || id)
     const notes = Object.values(zoning.use_notes || zoning.district?.use_notes || {})
     paragraphs.push(
-      `§911.02 for ${zoning.code} permits by right, or only for some unit counts: ${allowed.length ? allowed.join(", ") : "none of the four"}. Other types need special approval or are blank in the table. ${notes.join(" ")} The mapping from code uses to these four types is an assumption. This is not a determination of what may be built.`,
+      `§911.02 for ${zoning.code} permits by right, or only for some unit counts: ${allowed.length ? allowed.join(", ") : "none of the four"}. Other types need special approval or are blank in the table.${notes.length ? ` ${notes.join(" ")}` : ""} The mapping from code uses to these four types is an assumption. This is not a determination of what may be built.`,
     )
   } else if (zoning?.note) {
     paragraphs.push(zoning.note)

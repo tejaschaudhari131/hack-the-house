@@ -9,8 +9,12 @@ export const CLOSE_GAP = 1
 
 const EPSILON = 1e-9
 
-/** Contribution differences smaller than the displayed precision (0.1 point) are not named as drivers. */
-const DRIVER_MIN = 0.05
+/** Points are shown to one decimal with ties to even (Python round). A difference that rounds to 0.0 is negligible. */
+export const ROUNDING_NOTE = "Points are rounded to one decimal, ties to even (the pipeline's rule); a difference that rounds to 0.0 is listed as negligible."
+
+function negligible(value) {
+  return round1(Math.abs(value)) === 0
+}
 
 /** One scenario: a building (type + unit count) on one parcel. */
 export function buildScenario(slot, buildingId, props, zoningRules) {
@@ -78,7 +82,7 @@ export function compareScenarios(a, b, weights) {
   const shownGap = ranked ? round1(ra.composite - rb.composite) : null
   let winner = null
   if (ranked) winner = Math.abs(gap) < EPSILON || shownGap === 0 ? "tie" : gap > 0 ? "A" : "B"
-  const drivers = factors.filter((row) => row.weight > 0 && !row.coverageDiffers && Math.abs(row.difference) >= DRIVER_MIN)
+  const drivers = factors.filter((row) => row.weight > 0 && !row.coverageDiffers && !negligible(row.difference))
   const sameCoverage = ra.availableIds.join() === rb.availableIds.join()
   const permitted = (scenario) => scenario.permission.category === "permitted" || scenario.permission.category === "partial"
   return {
@@ -104,7 +108,7 @@ export function compareScenarios(a, b, weights) {
 }
 
 function points(value) {
-  return `${value > 0 ? "+" : ""}${round1(value)}`
+  return `${value > 0 ? "+" : ""}${round1(value).toFixed(1)}`
 }
 
 /** Plain sentences from the comparison object. No claims beyond what was computed. */
@@ -121,7 +125,7 @@ export function describeComparison(result) {
     const favorHi = result.winner === "A" ? result.favorA : result.favorB
     const favorLo = result.winner === "A" ? result.favorB : result.favorA
     lines.push(
-      `${hi.slot}, ${place(hi)}, scores ${hi.composite} and ${lo.slot}, ${place(lo)}, scores ${lo.composite}: a gap of ${round1(Math.abs(result.gap))} points${result.close ? ", which is close under the current weights" : ""}.`,
+      `${hi.slot}, ${place(hi)}, scores ${hi.composite} and ${lo.slot}, ${place(lo)}, scores ${lo.composite}: a gap of ${round1(Math.abs(result.gap)).toFixed(1)} points${result.close ? ", which is close under the current weights" : ""}.`,
     )
     if (favorHi.length) {
       lines.push(
@@ -140,10 +144,19 @@ export function describeComparison(result) {
       )
     }
   }
-  if (result.heldConstant.length) {
-    const names = result.factors.filter((row) => result.heldConstant.includes(row.id)).map((row) => row.label)
-    lines.push(`Held constant (same value for both): ${names.join(", ")}.`)
+  const weighted = result.factors.filter((row) => row.weight > 0)
+  const held = weighted.filter((row) => row.heldConstant)
+  const small = weighted.filter((row) => !row.heldConstant && !row.coverageDiffers && negligible(row.difference))
+  const uneven = weighted.filter((row) => row.coverageDiffers)
+  if (held.length) lines.push(`Held constant (same value for both): ${held.map((row) => row.label).join(", ")}.`)
+  if (small.length) {
+    lines.push(
+      `Negligible (rounds to 0.0 points): ${small
+        .map((row) => `${row.label} (${row.difference >= 0 ? "+" : "−"}${Math.abs(row.difference).toFixed(2)} for ${row.difference >= 0 ? "A" : "B"})`)
+        .join(", ")}.`,
+    )
   }
+  if (uneven.length) lines.push(`Not comparable (missing for one scenario): ${uneven.map((row) => row.label).join(", ")}.`)
   if (result.coverageWarning) lines.push(result.coverageWarning)
   lines.push(
     `Permission is separate from the score: ${a.slot} is "${a.permission.label}"; ${b.slot} is "${b.permission.label}".${

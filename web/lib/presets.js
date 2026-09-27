@@ -5,39 +5,39 @@ import { DEFAULT_WEIGHTS } from "./rank.js"
  */
 export const PRESETS = [
   {
-    id: "resident",
-    label: "Resident",
-    blurb: "Lower hazard and neighborhood stability count most; market demand counts least.",
-    weights: { demand: 10, transit: 25, equity: 30, climate: 35, displacement: 30, carbon: 10 },
-  },
-  {
-    id: "cdc",
-    label: "CDC / affordability-first",
-    blurb: "Equity counts most, then transit. Demand counts little.",
-    weights: { demand: 10, transit: 25, equity: 50, climate: 15, displacement: 35, carbon: 10 },
-  },
-  {
-    id: "planner",
-    label: "Planner / balanced",
-    blurb: "The app's default: equal weight on the four core scores.",
+    id: "balanced",
+    label: "Balanced",
+    blurb: "The app's default relative weights.",
     weights: { demand: 25, transit: 25, equity: 25, climate: 25, displacement: 15, carbon: 15 },
   },
   {
-    id: "developer",
-    label: "Developer / demand-first",
-    blurb: "Market demand counts most. This is not a pro forma.",
-    weights: { demand: 55, transit: 20, equity: 10, climate: 15, displacement: 5, carbon: 5 },
+    id: "transit",
+    label: "Transit emphasis",
+    blurb: "Transit access counts twice as much as the other core factors.",
+    weights: { demand: 20, transit: 50, equity: 20, climate: 20, displacement: 15, carbon: 15 },
   },
   {
-    id: "climate",
-    label: "Climate-first",
-    blurb: "Lower mapped hazard counts most, then transit.",
-    weights: { demand: 10, transit: 25, equity: 15, climate: 50, displacement: 10, carbon: 30 },
+    id: "housing_need",
+    label: "Housing-need emphasis",
+    blurb: "Equity (measured need plus the team's type multipliers) counts most; market activity counts least.",
+    weights: { demand: 10, transit: 25, equity: 50, climate: 20, displacement: 15, carbon: 10 },
+  },
+  {
+    id: "lower_hazard",
+    label: "Lower-hazard emphasis",
+    blurb: "Lower mapped climate hazard counts most.",
+    weights: { demand: 15, transit: 20, equity: 20, climate: 50, displacement: 15, carbon: 15 },
+  },
+  {
+    id: "lower_carbon",
+    label: "Lower-carbon emphasis",
+    blurb: "A lower carbon-related proxy counts most.",
+    weights: { demand: 15, transit: 20, equity: 20, climate: 20, displacement: 15, carbon: 50 },
   },
 ]
 
 export const PRESET_NOTE =
-  "Presets are value judgments about what should matter, not data. They only move the sliders. The scores underneath do not change."
+  "These priorities are team-authored illustrations, not measured stakeholder preferences. They only move the sliders; the scores underneath do not change."
 
 export function weightKeys() {
   return Object.keys(DEFAULT_WEIGHTS)

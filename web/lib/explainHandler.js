@@ -2,6 +2,7 @@
  * sends parcel ids, housing types, weights, and the what-if toggle.
  */
 
+import { createOpenAICompatible } from "@ai-sdk/openai-compatible"
 import { streamText } from "ai"
 
 import { buildCompareContext, buildParcelContext, explainCompareTemplate } from "./explainFacts.js"
@@ -9,9 +10,9 @@ import { PROMPT_VERSION, SYSTEM_PROMPT, buildComparePrompt, buildParcelPrompt, b
 import { explainTemplate } from "./explainTemplate.js"
 import { clientIp, createRateLimiter, createTtlCache, hashKey } from "./guardrails.js"
 import { buildSitesContext, explainSitesTemplate } from "./explainSites.js"
-import { BUILDING_IDS } from "./buildings.js"
 import { DEFAULT_WEIGHTS } from "./rank.js"
-import { DEFAULT_SITE_FILTERS, SORT_OPTIONS, TYPE_OPTIONS, findSites } from "./sites.js"
+import { findSites } from "./sites.js"
+import { WEIGHT_KEYS, parseDrop, parsePin, parseSiteFilters, parseSort, parseWeights } from "./validate.js"
 
 export const DEFAULT_MODEL = "anthropic/claude-haiku-4.5"
 
@@ -26,72 +27,56 @@ export const LIMITS = {
   cacheTtlMs: 6 * 60 * 60 * 1000,
 }
 
-const PIN_PATTERN = /^[0-9A-Z]{6,24}$/
-const WEIGHT_KEYS = Object.keys(DEFAULT_WEIGHTS)
+
+export const DEFAULT_LLM_MODEL = "gpt-4o-mini"
+
+export const PROVIDER_LABELS = { gateway: "Vercel AI Gateway", "openai-compatible": "OpenAI-compatible API", custom: "test model" }
+
+/**
+ * Providers to try, in order. With AI_GATEWAY_API_KEY: the gateway, then LLM_* if set. Without it: LLM_* first
+ * (when LLM_API_KEY and LLM_BASE_URL are set), then the gateway through Vercel OIDC when running on Vercel.
+ */
+export function providerPlan(env = process.env) {
+  if (["off", "0", "false"].includes(String(env.AI_EXPLANATIONS || "").trim().toLowerCase())) {
+    return { providers: [], reason: "AI explanations are turned off (AI_EXPLANATIONS=off)." }
+  }
+  const gateway = { id: "gateway", model: (env.AI_MODEL || "").trim() || DEFAULT_MODEL }
+  const llm = env.LLM_API_KEY && env.LLM_BASE_URL ? { id: "openai-compatible", model: (env.LLM_MODEL || "").trim() || DEFAULT_LLM_MODEL } : null
+  const oidc = Boolean(env.VERCEL_OIDC_TOKEN || env.VERCEL)
+  const ordered = env.AI_GATEWAY_API_KEY ? [gateway, llm] : llm ? [llm, oidc ? gateway : null] : [oidc ? gateway : null]
+  const providers = ordered.filter(Boolean)
+  return {
+    providers,
+    reason: providers.length ? null : "No AI Gateway credentials and no LLM_API_KEY / LLM_BASE_URL are configured.",
+  }
+}
 
 export function aiConfig(env = process.env) {
-  const model = (env.AI_MODEL || "").trim() || DEFAULT_MODEL
-  if (["off", "0", "false"].includes(String(env.AI_EXPLANATIONS || "").trim().toLowerCase())) {
-    return { model, enabled: false, reason: "AI explanations are turned off (AI_EXPLANATIONS=off)." }
+  const plan = providerPlan(env)
+  return { model: plan.providers[0]?.model || DEFAULT_MODEL, enabled: plan.providers.length > 0, reason: plan.reason, providers: plan.providers }
+}
+
+function createModel(provider, env) {
+  if (provider.id === "gateway") return provider.model
+  const client = createOpenAICompatible({ name: "llm", baseURL: String(env.LLM_BASE_URL).replace(/\/+$/, ""), apiKey: env.LLM_API_KEY })
+  return client.chatModel(provider.model)
+}
+
+function redact(text, env) {
+  let out = String(text ?? "").slice(0, 400)
+  for (const secret of [env.LLM_API_KEY, env.AI_GATEWAY_API_KEY, env.VERCEL_OIDC_TOKEN]) {
+    if (secret && secret.length > 6) out = out.split(secret).join("[redacted]")
   }
-  // On Vercel the gateway reads the OIDC token from the request, so VERCEL=1 is enough to try.
-  if (env.AI_GATEWAY_API_KEY || env.VERCEL_OIDC_TOKEN || env.VERCEL) {
-    return { model, enabled: true, reason: null }
-  }
-  return { model, enabled: false, reason: "No AI Gateway credentials are configured." }
+  return out.replace(/\b(sk|pk|key|bearer)[-_ ]?[A-Za-z0-9._-]{12,}/gi, "[redacted]")
 }
 
-function parseWeights(raw) {
-  if (!raw || typeof raw !== "object") return null
-  const weights = {}
-  for (const key of WEIGHT_KEYS) {
-    const value = Number(raw[key])
-    if (!Number.isFinite(value) || value < 0 || value > 100) return null
-    weights[key] = Math.round(value)
-  }
-  return weights
-}
-
-function parsePin(raw) {
-  return typeof raw === "string" && PIN_PATTERN.test(raw) ? raw : null
-}
-
-function parseDrop(raw) {
-  const pin = parsePin(raw?.pin)
-  const typeId = BUILDING_IDS.includes(raw?.typeId) ? raw.typeId : null
-  return pin && typeId ? { pin, typeId } : null
-}
-
-const FILTER_CHOICES = {
-  combine: ["all", "any"],
-  typeId: TYPE_OPTIONS.map((option) => option.id),
-  permission: ["any", "by_right", "by_right_or_special"],
-  flood: ["any", "none", "no_sfha"],
-  displacement: ["any", "high", "not_high"],
-  area: ["", "Hazelwood", "Lawrenceville"],
-}
-
-/** Accepts only the Find Sites filter keys, with their default types and known choices. */
-export function parseSiteFilters(raw) {
-  if (!raw || typeof raw !== "object") return null
-  const filters = {}
-  for (const [key, fallback] of Object.entries(DEFAULT_SITE_FILTERS)) {
-    const value = raw[key] === undefined ? fallback : raw[key]
-    if (FILTER_CHOICES[key]) {
-      if (!FILTER_CHOICES[key].includes(value)) return null
-      filters[key] = value
-    } else if (typeof fallback === "boolean") {
-      if (typeof value !== "boolean") return null
-      filters[key] = value
-    } else if (value === null || value === "") {
-      filters[key] = null
-    } else {
-      const number = Number(value)
-      if (!Number.isFinite(number) || number < 0 || number > 10_000_000) return null
-      filters[key] = number
-    }
-  }
-  return filters
+/** Server log for Vercel: provider, model, status, and a redacted message. No request body, IP, or credentials. */
+export function logProviderError(provider, error, env = process.env, stage = "start") {
+  const status = error?.statusCode ?? error?.cause?.statusCode ?? null
+  console.error(
+    "[explain] provider error",
+    JSON.stringify({ stage, provider: provider.id, model: provider.model, status, name: error?.name || "Error", message: redact(error?.message, env) }),
+  )
 }
 
 export function parseExplainRequest(body) {
@@ -100,7 +85,7 @@ export function parseExplainRequest(body) {
   if (body?.kind === "sites") {
     const filters = parseSiteFilters(body.filters)
     if (!filters) return { error: "filters must use the Find Sites filter keys and choices." }
-    const sort = SORT_OPTIONS.some((option) => option.id === body.sort) ? body.sort : "score"
+    const sort = parseSort(body.sort)
     return { kind: "sites", weights, filters, sort }
   }
   if (body?.kind === "compare") {
@@ -114,7 +99,7 @@ export function parseExplainRequest(body) {
   return { kind: "parcel", weights, pin, whatIf: body?.whatIf === true }
 }
 
-function textResponse(body, { source, model = null, notice = null, cache = "none", status = 200 }) {
+function textResponse(body, { source, model = null, provider = null, notice = null, cache = "none", status = 200 }) {
   const headers = {
     "Content-Type": "text/plain; charset=utf-8",
     "Cache-Control": "no-store",
@@ -122,6 +107,7 @@ function textResponse(body, { source, model = null, notice = null, cache = "none
     "X-Explain-Cache": cache,
   }
   if (model) headers["X-Explain-Model"] = model
+  if (provider) headers["X-Explain-Provider"] = provider
   if (notice) headers["X-Explain-Notice"] = encodeURIComponent(notice)
   return new Response(body, { status, headers })
 }
@@ -130,22 +116,22 @@ function jsonError(message, status) {
   return Response.json({ error: message }, { status, headers: { "Cache-Control": "no-store" } })
 }
 
-function describeError(error) {
+function describeError(error, label = "the AI Gateway") {
   const status = error?.statusCode ?? error?.cause?.statusCode
   const name = error?.name || "Error"
   if (name === "AbortError" || name === "TimeoutError" || /abort|timeout/i.test(String(error?.message))) {
-    return "the model did not answer within the time limit"
+    return `${label} did not answer within the time limit`
   }
   if (status === 401 || status === 403 || /auth|api key|oidc/i.test(String(error?.message))) {
-    return "the AI Gateway rejected the credentials"
+    return `${label} rejected the credentials`
   }
-  if (status === 402) return "the AI Gateway budget is used up"
-  if (status === 429) return "the AI Gateway rate limit was reached"
-  return status ? `the AI Gateway returned HTTP ${status}` : "the model request failed"
+  if (status === 402) return `${label} budget is used up`
+  if (status === 429) return `${label} rate limit was reached`
+  return status ? `${label} returned HTTP ${status}` : `the ${label} request failed`
 }
 
 /** Starts the model stream and waits for the first text so early failures can fall back cleanly. */
-async function startModelStream({ model, prompt, signal, fallbackText, onComplete }) {
+async function startModelStream({ model, prompt, signal, fallbackText, onComplete, onStreamError = () => {} }) {
   const result = streamText({
     model,
     instructions: SYSTEM_PROMPT,
@@ -156,7 +142,7 @@ async function startModelStream({ model, prompt, signal, fallbackText, onComplet
     timeout: { totalMs: LIMITS.totalTimeoutMs, firstChunkMs: LIMITS.firstChunkTimeoutMs },
     abortSignal: signal,
     providerOptions: { gateway: { tags: ["feature:explain"] } },
-    onError: () => {},
+    onError: ({ error }) => onStreamError(error),
   })
   const parts = result.fullStream[Symbol.asyncIterator]()
   let first = ""
@@ -225,7 +211,13 @@ async function startModelStream({ model, prompt, signal, fallbackText, onComplet
  * @param {object} [deps.env]
  * @param {import('ai').LanguageModel} [deps.model] Overrides the gateway model string (tests).
  */
-export function createExplainHandler({ loadData, env = process.env, model: modelOverride } = {}) {
+/**
+ * @param {object} deps
+ * @param {object} [deps.env]
+ * @param {import('ai').LanguageModel} [deps.model] A single test model (replaces the plan).
+ * @param {Record<string, import('ai').LanguageModel>} [deps.models] Test models by provider id ("gateway", "openai-compatible").
+ */
+export function createExplainHandler({ loadData, env = process.env, model: modelOverride, models = null } = {}) {
   const perIp = createRateLimiter({ limit: LIMITS.perIpPerMinute, windowMs: 60_000 })
   const perInstance = createRateLimiter({ limit: LIMITS.perInstancePerMinute, windowMs: 60_000 })
   const cache = createTtlCache({ max: LIMITS.cacheMax, ttlMs: LIMITS.cacheTtlMs })
@@ -298,15 +290,17 @@ export function createExplainHandler({ loadData, env = process.env, model: model
       prompt = buildParcelPrompt(context.facts)
     }
 
-    const config = modelOverride ? { model: modelOverride, enabled: true, reason: null } : aiConfig(env)
-    const modelName = typeof config.model === "string" ? config.model : config.model?.modelId || "custom"
-    if (!config.enabled) {
-      return textResponse(templateText, { source: "template", notice: `${config.reason} This is the template explanation.` })
+    const plan = modelOverride
+      ? { providers: [{ id: "custom", model: modelOverride.modelId || "custom" }], reason: null }
+      : providerPlan(env)
+    if (!plan.providers.length) {
+      return textResponse(templateText, { source: "template", notice: `${plan.reason} This is the template explanation.` })
     }
-
-    const key = hashKey({ v: PROMPT_VERSION, model: modelName, system: SYSTEM_PROMPT, prompt })
-    const cached = cache.get(key)
-    if (cached) return textResponse(cached, { source: "ai", model: modelName, cache: "hit" })
+    const keyFor = (provider) => hashKey({ v: PROMPT_VERSION, provider: provider.id, model: provider.model, system: SYSTEM_PROMPT, prompt })
+    for (const provider of plan.providers) {
+      const cached = cache.get(keyFor(provider))
+      if (cached) return textResponse(cached, { source: "ai", model: provider.model, provider: provider.id, cache: "hit" })
+    }
 
     const ip = clientIp(request.headers)
     if (!perIp(ip).ok || !perInstance("all").ok) {
@@ -317,20 +311,33 @@ export function createExplainHandler({ loadData, env = process.env, model: model
       })
     }
 
-    try {
-      const stream = await startModelStream({
-        model: config.model,
-        prompt,
-        signal: request.signal,
-        fallbackText: templateText,
-        onComplete: (text) => cache.set(key, text),
-      })
-      return textResponse(stream, { source: "ai", model: modelName, cache: "miss" })
-    } catch (error) {
-      return textResponse(templateText, {
-        source: "template",
-        notice: `The AI summary is unavailable because ${describeError(error)}. This is the template explanation.`,
-      })
+    const failures = []
+    for (const provider of plan.providers) {
+      const label = PROVIDER_LABELS[provider.id] || provider.id
+      let logged = false
+      try {
+        const model = modelOverride || models?.[provider.id] || createModel(provider, env)
+        const stream = await startModelStream({
+          model,
+          prompt,
+          signal: request.signal,
+          fallbackText: templateText,
+          onComplete: (text) => cache.set(keyFor(provider), text),
+          onStreamError: (error) => {
+            logged = true
+            logProviderError(provider, error, env, "stream")
+          },
+        })
+        return textResponse(stream, { source: "ai", model: provider.model, provider: provider.id, cache: "miss" })
+      } catch (error) {
+        if (!logged) logProviderError(provider, error, env, "start")
+        failures.push(describeError(error, label))
+        if (request.signal?.aborted) break
+      }
     }
+    return textResponse(templateText, {
+      source: "template",
+      notice: `The AI summary is unavailable because ${failures.join("; then ")}. This is the template explanation.`,
+    })
   }
 }

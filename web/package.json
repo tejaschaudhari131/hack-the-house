@@ -12,6 +12,7 @@
     "benchmark:planner": "node scripts/benchmark-planner.mjs"
   },
   "dependencies": {
+    "@ai-sdk/openai-compatible": "^3.0.57",
     "ai": "^7.0.116",
     "leaflet": "^1.9.4",
     "maplibre-gl": "^6.11.2",

@@ -12,17 +12,16 @@ const scores = {
   large_apartment: { demand: 30, transit: 60, equity: 62, climate_risk: 25 },
 }
 
-test("presets cover the five profiles, fill every weight key, and say they are value judgments", () => {
-  assert.deepEqual(PRESETS.map((preset) => preset.id), ["resident", "cdc", "planner", "developer", "climate"])
+test("the five illustrative priorities fill every weight key and are labeled as not measured preferences", () => {
+  assert.deepEqual(PRESETS.map((preset) => preset.id), ["balanced", "transit", "housing_need", "lower_hazard", "lower_carbon"])
   for (const preset of PRESETS) {
     const weights = presetWeights(preset)
     assert.deepEqual(Object.keys(weights), Object.keys(DEFAULT_WEIGHTS))
     for (const value of Object.values(weights)) assert.ok(value >= 0 && value <= 100)
   }
-  assert.equal(matchPreset(DEFAULT_WEIGHTS)?.id, "planner")
+  assert.equal(matchPreset(DEFAULT_WEIGHTS)?.id, "balanced")
   assert.equal(matchPreset({ ...DEFAULT_WEIGHTS, demand: 26 }), null)
-  assert.match(PRESET_NOTE, /value judgments/)
-  assert.match(PRESET_NOTE, /not data/)
+  assert.match(PRESET_NOTE, /not measured stakeholder preferences/)
 })
 
 test("robustness counts presets that keep #1 and finds the nearest single-slider flip", () => {
@@ -72,4 +71,31 @@ test("presets and robustness move the displacement and carbon weights too", () =
   const carbonDown = analysis.flips.find((flip) => flip.key === "carbon" && flip.direction === "down")
   assert.ok(carbonDown, "lowering the carbon weight should hand #1 to single-family")
   assert.equal(carbonDown.to.id, "single_family")
+})
+
+test("one-factor sweep: solved crossings make the unrounded scores equal; shared factors cannot reorder", async () => {
+  const { sweepPair, solveCrossings, SWEEP } = await import("./robustness.js")
+  const { breakdown } = await import("./factors.js")
+  const a = { label: "Triplex (3 units)", scores: { demand: 47.2, transit: 97.5, equity: 55, climate_risk: 2.5, displacement_risk: 30.3, carbon_index: 35.9 } }
+  const b = { label: "Townhouse / duplex", scores: { demand: 57.6, transit: 97.5, equity: 48.5, climate_risk: 2.3, displacement_risk: 30.3, carbon_index: 40.2 } }
+  const rows = sweepPair(a, b, DEFAULT_WEIGHTS)
+  const equity = rows.find((row) => row.id === "equity")
+  assert.equal(equity.solved.length, 1)
+  const at = equity.solved[0]
+  const weights = { ...DEFAULT_WEIGHTS, equity: at }
+  assert.ok(Math.abs(breakdown(a.scores, weights).exact - breakdown(b.scores, weights).exact) < 1e-9)
+  assert.ok(Math.abs(equity.sampled.at - at) <= SWEEP.step + 1e-9)
+  assert.match(equity.text, /solved exactly/)
+  for (const id of ["transit", "displacement"]) {
+    const row = rows.find((item) => item.id === id)
+    assert.equal(row.same, true)
+    assert.equal(row.solved.length, 0)
+    assert.match(row.text, /cannot reorder/)
+  }
+  const thin = { scores: { ...b.scores, equity: null } }
+  const roots = solveCrossings(a.scores, thin.scores, DEFAULT_WEIGHTS, "demand")
+  for (const w of roots) {
+    const ww = { ...DEFAULT_WEIGHTS, demand: w }
+    assert.ok(Math.abs(breakdown(a.scores, ww).exact - breakdown(thin.scores, ww).exact) < 1e-9)
+  }
 })

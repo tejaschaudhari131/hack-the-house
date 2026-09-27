@@ -98,3 +98,17 @@ test("the guided example is resolved from data and keeps three-unit semantics", 
   assert.equal(a.permission.useRow, "Three-Unit")
   assert.equal(a.permission.category, "permitted")
 })
+
+test("every weighted factor is listed as favoring A, favoring B, held constant, or negligible, with one rounding rule", async () => {
+  const { round1 } = await import("./factors.js")
+  const a = { ...buildScenario("A", "triplex", props, rules), scores: { demand: 47.2, transit: 97.5, equity: 55, climate_risk: 2.5, displacement_risk: 30.3, carbon_index: 35.9 } }
+  const b = { ...buildScenario("B", "townhouse_duplex", props, rules), scores: { demand: 57.6, transit: 97.5, equity: 48.5, climate_risk: 2.3, displacement_risk: 30.3, carbon_index: 40.2 } }
+  const result = compareScenarios(a, b, DEFAULT_WEIGHTS)
+  const text = describeComparison(result)
+  for (const row of result.factors.filter((item) => item.weight > 0)) assert.ok(text.includes(row.label), `${row.label} missing from: ${text}`)
+  assert.match(text, /Negligible \(rounds to 0\.0 points\): Climate hazard \(−0\.04 for B\)/)
+  const equity = result.factors.find((row) => row.id === "equity")
+  assert.ok(text.includes(`Equity (+${round1(Math.abs(equity.difference)).toFixed(1)})`))
+  assert.match(text, /Market activity & lot fit \(\+2\.0\)/)
+  assert.equal(round1(1.25), 1.2)
+})
