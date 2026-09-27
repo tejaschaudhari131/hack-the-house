@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useRef } from "react"
-import { GeoJSON, MapContainer, TileLayer, useMap } from "react-leaflet"
+import { CircleMarker, GeoJSON, MapContainer, TileLayer, Tooltip, useMap } from "react-leaflet"
 import L from "leaflet"
 import "leaflet/dist/leaflet.css"
 
@@ -27,15 +27,27 @@ function FitTo({ collection, focus }) {
   return null
 }
 
-function styleFor(feature, { zoning, weights, whatIf, selectedPin }) {
+function styleFor(feature, { zoning, weights, whatIf, selectedPin, highlight }) {
   const props = feature.properties
+  const selected = props.pin === selectedPin
+  if (highlight) {
+    const matchType = highlight.get(props.pin)
+    if (!matchType) {
+      return { color: "#9aa5b1", weight: 0.4, fillColor: "#cbd2d9", fillOpacity: 0.15 }
+    }
+    return {
+      color: selected ? "#111111" : "#1f2933",
+      weight: selected ? 3 : 1.2,
+      fillColor: TYPE_COLORS[matchType] || "#98a2b3",
+      fillOpacity: 0.9,
+    }
+  }
   const zoningInfo = resolveZoning(props.zoning_code, zoning)
   const ranked = rankTypes(props.scores, weights, {
     allowed: zoningInfo.allowed,
     whatIf,
   })
   const top = ranked.find((row) => row.composite !== null) || ranked[0]
-  const selected = props.pin === selectedPin
   return {
     color: selected ? "#111111" : TYPE_COLORS[top?.id] || "#667085",
     weight: selected ? 3 : 1,
@@ -44,11 +56,22 @@ function styleFor(feature, { zoning, weights, whatIf, selectedPin }) {
   }
 }
 
-export default function MapView({ parcels, neighborhoods, zoning, weights, whatIf, selectedPin, focus, onSelect }) {
+export default function MapView({
+  parcels,
+  neighborhoods,
+  zoning,
+  weights,
+  whatIf,
+  selectedPin,
+  focus,
+  onSelect,
+  highlight = null,
+  lihtc = null,
+}) {
   const geoRef = useRef(null)
   const styleDeps = useMemo(
-    () => ({ zoning, weights, whatIf, selectedPin }),
-    [zoning, weights, whatIf, selectedPin],
+    () => ({ zoning, weights, whatIf, selectedPin, highlight }),
+    [zoning, weights, whatIf, selectedPin, highlight],
   )
 
   useEffect(() => {
@@ -86,6 +109,25 @@ export default function MapView({ parcels, neighborhoods, zoning, weights, whatI
           layer.on("click", () => onSelect(feature.properties.pin))
         }}
       />
+      {(lihtc?.features || []).map((feature) => {
+        const [lon, lat] = feature.geometry.coordinates
+        const props = feature.properties
+        return (
+          <CircleMarker
+            key={props.hud_id || `${lon},${lat}`}
+            center={[lat, lon]}
+            radius={5}
+            pathOptions={{ color: "#4c1d95", weight: 2, fillColor: "#ede9fe", fillOpacity: 0.95 }}
+            interactive
+          >
+            <Tooltip>
+              LIHTC: {props.project || "unnamed project"}
+              {props.li_units ? ` · ${props.li_units} low-income units` : ""}
+              {props.year_placed_in_service ? ` · placed in service ${props.year_placed_in_service}` : ""}
+            </Tooltip>
+          </CircleMarker>
+        )
+      })}
     </MapContainer>
   )
 }
