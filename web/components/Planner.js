@@ -8,6 +8,7 @@ import { slimParcels, geometryBounds, boundsOverlap, placementAt, geometriesOver
 import { nearestNode, validateConnection, validatePark, connectionGeometry, prepareNetwork } from '../lib/networkModel.js'
 import InfrastructurePanel from './InfrastructurePanel.js'
 import RecommendationAudit from './RecommendationAudit.js'
+import HousingShortlist from './HousingShortlist.js'
 import { evaluatePlanner, nearbyStops, preferredStop, round } from '../lib/plannerModel.js'
 import { EXAMPLES, MODEL_VERSION, PLANNER_FACTORS, MASSING_DEFAULTS, initialScenario, historyFor, scenarioReducer, scenarioExport } from '../lib/plannerState.js'
 
@@ -165,7 +166,7 @@ function Studio({ data }) {
     const bounds = geometryBounds(selected.geometry)
     return buildingIndex.filter(b => boundsOverlap(bounds, b.bounds)).map(b => b.feature)
   }, [buildingIndex, selected])
-  const input = useMemo(() => ({ feature: selected, zoning, scenario, stop, existingBuildings: nearbyBuildings }), [selected, zoning, scenario, stop, nearbyBuildings])
+  const input = useMemo(() => ({ feature: selected, zoning, scenario, stop, existingBuildings: nearbyBuildings, shortlistSlot: slot }), [selected, zoning, scenario, stop, nearbyBuildings, slot])
   const evaluation = useEvaluation(input, network)
   const result = evaluation.pin === scenario.pin ? evaluation.result : null
   const options = result ? (proposed ? result.proposal : result.baseline) : null
@@ -186,6 +187,11 @@ function Studio({ data }) {
     else setNotice('Choose a scheduled stop within 1,200 m of this parcel.')
   }
   function changeType(typeId) { dispatch({ type: 'option', slot, value: { typeId, ...MASSING_DEFAULTS[typeId], height: BUILDINGS[typeId].heightM } }) }
+  function previewTemplate(template) {
+    if (evaluation.pending || result?.shortlist?.sourceSlot !== slot) return
+    dispatch({ type: 'option', slot, value: template }); setTool('housing'); setPlacing(false)
+    setNotice(`${BUILDINGS[template.typeId].label} loaded into option ${slot} with standard dimensions and automatic placement. Undo restores the previous option.`)
+  }
   function cycle(direction) { changeType(BUILDING_IDS[(BUILDING_IDS.indexOf(option.typeId) + direction + BUILDING_IDS.length) % BUILDING_IDS.length]) }
   function set(key, value) { dispatch({ type: 'set', key, value }) }
   function setOption(key, value) { dispatch({ type: 'option', slot, value: { [key]: value } }) }
@@ -241,6 +247,7 @@ function Studio({ data }) {
           <div className="site-heading"><span className="eyebrow">YOUR SELECTED SITE</span><h2>{props.address || 'Unnamed parcel'}</h2><p>{props.neighborhood} · {fmt(props.lot_sqft)} sq ft</p><div className="site-tags"><span>{props.land_use || 'Land use unknown'}</span><span>{props.zoning_code || 'Zoning unknown'}</span>{props.city_owned && <span>City inventory</span>}</div></div>
           <div className="option-tabs" aria-label="Housing alternative">{['A', 'B'].map(id => <button key={id} className={slot === id ? `active slot-${id}` : ''} aria-pressed={slot === id} onClick={() => setSlot(id)}><span>{id}</span><div><strong>{BUILDINGS[scenario.options[id].typeId].label}</strong><small>{BUILDINGS[scenario.options[id].typeId].units} proposed homes</small></div></button>)}</div>
           {evaluation.error && <p role="alert" className="planner-warning">Calculation failed: {evaluation.error}</p>}
+          <HousingShortlist shortlist={result?.shortlist} slot={slot} proposed={proposed} pending={evaluation.pending} showExpanded={tool === 'compare'} onUse={previewTemplate}/>
           {tool === 'housing' && <>
             <div className="section-heading"><h3>Shape the proposal</h3><span className="data-badge">Assumed</span></div><p className="section-help">These are editable massing templates, not measured buildings or an approved design.</p>
             <label className="planner-field"><span>Housing type · option {slot}</span><select value={option.typeId} onChange={e => changeType(e.target.value)}>{BUILDING_IDS.map(id => <option key={id} value={id}>{BUILDINGS[id].label}</option>)}</select></label>

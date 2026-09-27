@@ -5,6 +5,7 @@ import { resolveZoning, unitPermission } from './zoning.js'
 import { PLANNER_FACTORS } from './plannerState.js'
 import { networkAccess, infrastructureReservations, validateConnection, validatePark } from './networkModel.js'
 import { rankedWinner, recommendationAudit } from './plannerRecommendation.js'
+import { shortlistTemplates, summarizeShortlist } from './plannerShortlist.js'
 
 const clamp = value => Math.max(0, Math.min(100, value))
 const numeric = value => typeof value === 'number' && Number.isFinite(value)
@@ -69,28 +70,40 @@ function weighted(option, weights, included) {
   return denominator > 0 ? included.reduce((sum, id) => sum + option.scores[id] * weights[id], 0) / denominator : null
 }
 
-export function evaluatePlanner({ feature, zoning, scenario, stop, existingBuildings = null, networkContext = null }) {
-  const routed = scenario.accessMode === 'network'
-  const infrastructureErrors = [...(scenario.connections || []).map(c => validateConnection(networkContext?.network, c)), ...(scenario.parks || []).map(p => validatePark(networkContext?.network, p))].filter(Boolean)
-  const accessBefore = routed ? networkAccess(networkContext, feature, stop, scenario, false) : undefined
-  const accessAfter = routed ? networkAccess(infrastructureErrors.length ? null : networkContext, feature, stop, scenario, true) : undefined
-  const reservations = infrastructureReservations(networkContext?.network, scenario)
-  const massingFor = proposed => Object.fromEntries(['A', 'B'].map(slot => [slot, fitMassing(feature.geometry, scenario.options[slot].width, scenario.options[slot].depth, scenario.options[slot].placement, existingBuildings === null ? null : [...existingBuildings, ...(proposed ? reservations : [])])]))
-  const massing = massingFor(false), proposalMassing = reservations.length ? massingFor(true) : massing
+function screenOptions(options, { feature, zoning, scenario, stop, existingBuildings, reservations, infrastructureErrors, accessBefore, accessAfter }) {
   const baseline = {}, proposal = {}
-  for (const slot of ['A', 'B']) {
-    baseline[slot] = evaluateOption(scenario.options[slot], feature, zoning, scenario, stop, false, massing[slot], accessBefore)
-    proposal[slot] = evaluateOption(scenario.options[slot], feature, zoning, scenario, stop, true, proposalMassing[slot], accessAfter)
+  const ids = Object.keys(options)
+  for (const slot of ids) {
+    const option = options[slot]
+    const massing = fitMassing(feature.geometry, option.width, option.depth, option.placement, existingBuildings)
+    const proposalMassing = reservations.length ? fitMassing(feature.geometry, option.width, option.depth, option.placement, existingBuildings === null ? null : [...existingBuildings, ...reservations]) : massing
+    baseline[slot] = evaluateOption(option, feature, zoning, scenario, stop, false, massing, accessBefore)
+    proposal[slot] = evaluateOption(option, feature, zoning, scenario, stop, true, proposalMassing, accessAfter)
     if (infrastructureErrors.length) {
       proposal[slot].eligible = false
       proposal[slot].scores.physical = null
       proposal[slot].gate = 'Infrastructure validation unavailable or failed — review required'
     }
   }
-  // Shared coverage across both housing alternatives AND both infrastructure states.
-  const included = PLANNER_FACTORS.map(f => f.id).filter(id => numeric(scenario.weights[id]) && scenario.weights[id] > 0 && [baseline.A, baseline.B, proposal.A, proposal.B].every(o => numeric(o.scores[id])))
+  // One evidence denominator across every candidate AND both infrastructure states.
+  const included = PLANNER_FACTORS.map(f => f.id).filter(id => numeric(scenario.weights[id]) && scenario.weights[id] > 0 && [...Object.values(baseline), ...Object.values(proposal)].every(o => numeric(o.scores[id])))
   const excluded = PLANNER_FACTORS.map(f => f.id).filter(id => !included.includes(id))
-  for (const options of [baseline, proposal]) for (const slot of ['A', 'B']) options[slot].total = weighted(options[slot], scenario.weights, included)
+  for (const values of [baseline, proposal]) for (const slot of ids) values[slot].total = weighted(values[slot], scenario.weights, included)
+  return { baseline, proposal, included, excluded }
+}
+
+export function evaluatePlanner({ feature, zoning, scenario, stop, existingBuildings = null, networkContext = null, shortlistSlot = 'B' }) {
+  const routed = scenario.accessMode === 'network'
+  const infrastructureErrors = [...(scenario.connections || []).map(c => validateConnection(networkContext?.network, c)), ...(scenario.parks || []).map(p => validatePark(networkContext?.network, p))].filter(Boolean)
+  // Route each infrastructure state once; A/B and all five templates reuse it.
+  const accessBefore = routed ? networkAccess(networkContext, feature, stop, scenario, false) : undefined
+  const accessAfter = routed ? networkAccess(infrastructureErrors.length ? null : networkContext, feature, stop, scenario, true) : undefined
+  const reservations = infrastructureReservations(networkContext?.network, scenario)
+  const context = { feature, zoning, scenario, stop, existingBuildings, reservations, infrastructureErrors, accessBefore, accessAfter }
+  const { baseline, proposal, included, excluded } = screenOptions(scenario.options, context)
+  const sourceSlot = shortlistSlot === 'A' ? 'A' : 'B'
+  const templates = shortlistTemplates(scenario, sourceSlot)
+  const shortlist = summarizeShortlist(screenOptions(templates, context), templates, scenario, sourceSlot)
   const before = rankedWinner(baseline), after = rankedWinner(proposal)
   const changed = before !== after
   const accessDelta = baseline.A.service && proposal.A.service ? baseline.A.service.minutes - proposal.A.service.minutes : null
@@ -103,5 +116,5 @@ export function evaluatePlanner({ feature, zoning, scenario, stop, existingBuild
       : scenario.additionalDepartures === 0 ? 'No infrastructure change yet. Add departures to compare the same two housing options before and after service changes.'
       : `${scenario.additionalDepartures} proposed departures reduce modeled average walk + wait by ${round(accessDelta)} minutes. ${changed ? 'The preferred option changes under the current assumptions.' : 'The preferred housing option stays the same.'} Access gains are shared by both options. ${scenario.spareBoardings === null ? 'Spare capacity is unknown and excluded from ranking.' : 'Capacity differences use your stated spare-boardings and per-home demand assumptions.'} Demand, affordability, displacement and carbon stay unchanged.`,
   }
-  return { ...result, audit: recommendationAudit(result, scenario, feature.properties) }
+  return { ...result, audit: recommendationAudit(result, scenario, feature.properties), shortlist }
 }

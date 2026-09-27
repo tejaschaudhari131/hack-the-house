@@ -24,7 +24,7 @@ npm run dev
 6. Optionally enter hypothetical spare daily boarding capacity under Capacity assumptions. Unknown reserve stays null, not zero. Utility capacity is not supplied by this field.
 7. Undo/redo, switch baseline/proposal, or export the versioned scenario and computed results as JSON.
 
-## Model boundary: planner-screen-1.3
+## Model boundary: planner-screen-1.4
 
 This is a new, explicit screening comparison alongside the original six-factor explorer; its totals are not comparable with the explorer's totals. It is not a validated development forecast.
 
@@ -126,3 +126,15 @@ Compare now includes **Why this result?**, with an exact seven-factor ledger. Fo
 A deterministic sensitivity check varies one included priority at a time by −25%/+25%, renormalizes across the same shared coverage and reports changes in the selected winner, including ties. It runs only when both options pass the screening gates. These are bounded policy perturbations, not statistical confidence, input-error propagation, calibration or external validation. A stable result does not prove the model is correct.
 
 The audit exposes outline/use/overlap gate results for both options, mapped environmental overlaps and source caveats, plus the remaining feasibility reviews. Unknown hazard evidence stays unknown. Source maps do not establish parcel-specific environmental safety, and their overlap is not converted into an invented mitigation benefit. Field verification, engineering, reviewed service/capacity inputs and independent outcome validation are still required before claiming development feasibility or predictive recommendations.
+
+## Five-template housing shortlist (planner-screen-1.4)
+
+The **Housing shortlist** above the editing controls screens single-family, townhouse/duplex, triplex, 12-home apartment and 40-home apartment templates after every scenario edit. It is collapsible and opens when entering Compare. Each entry shows baseline/proposal scores, fixed dimensions, eligibility checks, and all seven factor values with weighted infrastructure deltas. The panel also exposes sources, effective weights and excluded evidence. Unranked templates remain inspectable. Ties within 0.1 points of the leading unrounded score remain joint leaders; they are not confidence intervals.
+
+All templates use the **active A/B slot's rent and utility assumptions per home**, the shared target income, the standard template dimensions, and automatic parcel alignment. These assumptions are shown explicitly. Custom A/B dimensions/placement are not substituted for the templates, and rents are not invented for each housing type. **Preview in A/B** loads the exact screened template into that slot, resets its dimensions/height/placement to that template, and retains the other slot and infrastructure scenario. Undo restores the prior custom option. Unit counts remain declared template assumptions, not calculated building capacity.
+
+The shortlist reuses the same option evaluator, footprint/overlap checks and use-permission gate as A/B. It uses one common set of factors available in **every template and both infrastructure states**, with the same priority weights renormalized across that set. Its evidence coverage can therefore differ from the two-option panel; totals should only be compared within the same panel. Missing building context, failed fit, mapped overlap, unknown/non-permitted use or invalid infrastructure cannot become a ranked recommendation. No usable positive weight produces no ranking. An unsuccessful placement search does not prove no design could fit.
+
+Network access is calculated once per infrastructure state and shared by A/B and the five templates inside the calculation worker. Added service can leave all type rankings unchanged; explicit capacity assumptions or infrastructure land reservations can change scores or eligibility. Household demand, rent forecasts, displacement and carbon are not given new causal relationships. Existing A/B score formulas are unchanged. Exports include the shortlist, source slot, assumptions, common coverage, eligibility results and per-factor deltas under model version 1.4.
+
+Validation covers both real examples, no-op equality, shared transit gains without forced rank changes, a synthetic capacity-driven change of leader, park reservations, invalid infrastructure, missing evidence/zoning/building context, zero weights, ties, exact preview parity and undo/export. The local Node benchmark (Ryzen 7 PRO 8840U, Node 26.8.1, 20 measured runs) reported evaluation p50/p95 of approximately 50/60 ms for Hazelwood and 60/66 ms for Lawrenceville including all five templates. This excludes download, worker transfer and browser rendering. No new dependencies or parcel-data changes are required.
