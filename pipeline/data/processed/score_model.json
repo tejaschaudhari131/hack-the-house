@@ -1,0 +1,139 @@
+{
+  "version": 1,
+  "scale": "0\u2013100",
+  "normalization": "Scores use fixed anchors documented in normative_choices, not a min-max across parcels. A 90 means 'high on that anchor,' not '90th percentile in the city.'",
+  "housing_types": [
+    {
+      "id": "single_family",
+      "label": "Single-family"
+    },
+    {
+      "id": "townhouse_duplex",
+      "label": "Townhouse / duplex"
+    },
+    {
+      "id": "small_apartment",
+      "label": "Small apartment (3\u201319 units)"
+    },
+    {
+      "id": "large_apartment",
+      "label": "Large apartment (20+ units)"
+    }
+  ],
+  "dimensions": [
+    {
+      "id": "demand",
+      "label": "Demand",
+      "higher_means": "Stronger market signal for this type on this lot",
+      "measured": [
+        "Neighborhood median sale price per square foot of living area, valid sales only",
+        "Valid sales per 100 parcels since the cutoff",
+        "Parcel lot area"
+      ],
+      "normative": [
+        "Price anchors of $80 and $350 per square foot",
+        "Turnover anchors of 5 and 30 valid sales per 100 parcels",
+        "Equal blend of market heat and lot-fit",
+        "Lot-size curves that prefer detached homes on larger lots and townhouses on small lots"
+      ]
+    },
+    {
+      "id": "transit",
+      "label": "Transit access",
+      "higher_means": "More weekday transit service within a short walk",
+      "measured": [
+        "Weekday scheduled trips at stops within 400 meters",
+        "Distance to the nearest stop"
+      ],
+      "normative": [
+        "800 meter walk anchor and a frequency cap of 250 weekday trips",
+        "55/45 blend of frequency and proximity",
+        "The same transit score for every housing type. Transit is a property of the place."
+      ]
+    },
+    {
+      "id": "equity",
+      "label": "Equity",
+      "higher_means": "Stronger case that this type serves lower-income households here, after a displacement penalty",
+      "measured": [
+        "Block-group median household income compared with the county median (ACS 2024 5-year B19013)",
+        "Share of renters paying 30 percent or more of income in rent (ACS 2024 5-year B25070, all renters with a computed ratio)",
+        "Share of renter households at or below 80 percent of HAMFI that pay more than 30 percent of income (HUD CHAS 2018-2022 Table 8, census tract). This is a different universe and an older vintage than the ACS share.",
+        "The same sale prices and turnover used in demand, read here as displacement pressure"
+      ],
+      "normative": [
+        "Treating income below the county median as need",
+        "Equal weight, among whichever of the income gap, the ACS rent-burden share, and the CHAS low-income renter cost-burden share are present. A missing measure is dropped, not treated as zero.",
+        "Treating hotter sales as displacement pressure",
+        "Type factors that give larger buildings more production value and more displacement exposure"
+      ]
+    },
+    {
+      "id": "climate_risk",
+      "label": "Climate risk",
+      "higher_means": "More hazard exposure. Ranking uses 100 minus this number so higher is a better match.",
+      "measured": [
+        "Overlap with FEMA Special Flood Hazard Area and 0.2-percent zones",
+        "Overlap with Pittsburgh steep slopes of 25 percent or greater, used as a landslide-risk proxy, not a landslide inventory",
+        "Overlap with Pittsburgh undermined areas, a preliminary mine-subsidence screen"
+      ],
+      "normative": [
+        "50/30/20 blend of flood, steep-slope proxy, and undermined area. A missing layer is dropped and the other weights are rescaled.",
+        "A floor of 70 when any Special Flood Hazard Area touches the parcel",
+        "A small exposure multiplier by housing type (more homes, slightly higher risk)"
+      ]
+    }
+  ],
+  "composite": "Weighted average of demand, transit, equity, and climate suitability (100 - climate risk). Weights are the sliders and are value judgments. Missing dimensions are skipped, not filled with zero.",
+  "confidence": "Confidence falls when assessment, census, transit, or hazard data is missing or thin. It does not say whether the value judgments are good ones.",
+  "normative_choices": {
+    "demand_market_weight": 0.5,
+    "demand_lot_fit_weight": 0.5,
+    "price_per_sqft_low": 80,
+    "price_per_sqft_high": 350,
+    "turnover_per_100_low": 5,
+    "turnover_per_100_high": 30,
+    "min_valid_sales_for_price": 8,
+    "transit_walk_weight": 0.45,
+    "transit_frequency_weight": 0.55,
+    "transit_walk_meters": 800,
+    "transit_frequency_saturation_trips": 250,
+    "income_need_span": 0.6,
+    "equity_need_weight": 0.5,
+    "equity_production_weight": 0.35,
+    "equity_displacement_weight": 0.25,
+    "climate_flood_weight": 0.5,
+    "climate_slope_weight": 0.3,
+    "climate_undermined_weight": 0.2,
+    "sfha_minimum_component": 70,
+    "flood_02_component": 40,
+    "type_factors": {
+      "single_family": {
+        "production": 0.25,
+        "displacement_exposure": 0.25,
+        "climate_exposure": 0.9
+      },
+      "townhouse_duplex": {
+        "production": 0.55,
+        "displacement_exposure": 0.4,
+        "climate_exposure": 0.95
+      },
+      "small_apartment": {
+        "production": 0.8,
+        "displacement_exposure": 0.55,
+        "climate_exposure": 1.0
+      },
+      "large_apartment": {
+        "production": 0.95,
+        "displacement_exposure": 0.85,
+        "climate_exposure": 1.08
+      }
+    }
+  },
+  "default_weights": {
+    "demand": 25,
+    "transit": 25,
+    "equity": 25,
+    "climate": 25
+  }
+}

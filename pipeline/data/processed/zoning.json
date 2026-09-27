@@ -1,0 +1,1551 @@
+{
+  "meta": {
+    "owner": "Chris",
+    "status": "use_table_read",
+    "source_field": "zon_new",
+    "source_layer": "City of Pittsburgh zoning districts (PGHWebZoning)",
+    "housing_types": [
+      "single_family",
+      "townhouse_duplex",
+      "small_apartment",
+      "large_apartment"
+    ],
+    "code_url": "https://ecode360.com/45474054",
+    "use_table_url": "https://ecode360.com/45476524#45476524",
+    "use_table_section": "\u00a7911.02",
+    "legend": "P = permitted by right, A = administrator exception, S = special exception, C = conditional use, blank = not permitted (\u00a7911.01F).",
+    "mapping_assumption": "single_family = Single-Unit Detached. townhouse_duplex = Single-Unit Attached or Two-Unit. small_apartment (3\u201319 units) = Three-Unit for 3 units and Multi-Unit for 4\u201319. large_apartment (20+ units) = Multi-Unit. Subdistrict codes use the base column (R1D-VL uses R1D, GT-A uses GT, RIV-MU uses the RIV MU column). The unlabeled second DT column is blank in the code and is not mapped to a district. Where Three-Unit and Multi-Unit differ, use_notes says so.",
+    "zoning_map_url": "https://pittsburghpa.maps.arcgis.com/apps/instant/sidebar/index.html?appid=4bb79ea64bf848b3a0560e3856efeccb",
+    "zoning_page_url": "https://www.pittsburghpa.gov/Business-Development/City-Planning/Zoning",
+    "code_access": "\u00a7911.02 was read from a saved copy of https://ecode360.com/45476524#45476524 (Chapter 911). Column alignment was checked with the startcol attributes, including the Special, DT, and RIV groups. needs_expert_review stays true.",
+    "warning": "This is decision support, not a legal determination. needs_expert_review is true on every row. Overlays, lot-width tests, and review procedure are not applied automatically."
+  },
+  "districts": {
+    "R1D-VL": {
+      "label": "Single-Unit Detached Residential, Very Low Density",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": "R1D",
+      "allowed": [
+        "single_family"
+      ],
+      "partial": [],
+      "variance_or_exception": [
+        {
+          "type": "townhouse_duplex",
+          "letter": "P/S"
+        }
+      ],
+      "use_notes": {
+        "townhouse_duplex": "Single-Unit Attached is permitted by right on lots 35 feet wide or narrower and needs a special exception on wider lots (\u00a7911.04A.69A, \u00a7922.07). Two-Unit is not permitted."
+      },
+      "use_rows": {
+        "Single-Unit Detached": "P",
+        "Single-Unit Attached": "P/S",
+        "Two-Unit": "",
+        "Three-Unit": "",
+        "Multi-Unit": ""
+      },
+      "standards": [
+        "\u00a7911.04A.69",
+        "\u00a7911.04A.69; \u00a7911.04A.69A"
+      ],
+      "use_table_read": true,
+      "not_in_use_table": false,
+      "code_section": "\u00a7911.02",
+      "notes": "Read from \u00a7911.02. Subdistricts use the base-district column. Needs expert review. Not a zoning determination."
+    },
+    "R1D-L": {
+      "label": "Single-Unit Detached Residential, Low Density",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": "R1D",
+      "allowed": [
+        "single_family"
+      ],
+      "partial": [],
+      "variance_or_exception": [
+        {
+          "type": "townhouse_duplex",
+          "letter": "P/S"
+        }
+      ],
+      "use_notes": {
+        "townhouse_duplex": "Single-Unit Attached is permitted by right on lots 35 feet wide or narrower and needs a special exception on wider lots (\u00a7911.04A.69A, \u00a7922.07). Two-Unit is not permitted."
+      },
+      "use_rows": {
+        "Single-Unit Detached": "P",
+        "Single-Unit Attached": "P/S",
+        "Two-Unit": "",
+        "Three-Unit": "",
+        "Multi-Unit": ""
+      },
+      "standards": [
+        "\u00a7911.04A.69",
+        "\u00a7911.04A.69; \u00a7911.04A.69A"
+      ],
+      "use_table_read": true,
+      "not_in_use_table": false,
+      "code_section": "\u00a7911.02",
+      "notes": "Read from \u00a7911.02. Subdistricts use the base-district column. Needs expert review. Not a zoning determination."
+    },
+    "R1D-M": {
+      "label": "Single-Unit Detached Residential, Moderate Density",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": "R1D",
+      "allowed": [
+        "single_family"
+      ],
+      "partial": [],
+      "variance_or_exception": [
+        {
+          "type": "townhouse_duplex",
+          "letter": "P/S"
+        }
+      ],
+      "use_notes": {
+        "townhouse_duplex": "Single-Unit Attached is permitted by right on lots 35 feet wide or narrower and needs a special exception on wider lots (\u00a7911.04A.69A, \u00a7922.07). Two-Unit is not permitted."
+      },
+      "use_rows": {
+        "Single-Unit Detached": "P",
+        "Single-Unit Attached": "P/S",
+        "Two-Unit": "",
+        "Three-Unit": "",
+        "Multi-Unit": ""
+      },
+      "standards": [
+        "\u00a7911.04A.69",
+        "\u00a7911.04A.69; \u00a7911.04A.69A"
+      ],
+      "use_table_read": true,
+      "not_in_use_table": false,
+      "code_section": "\u00a7911.02",
+      "notes": "Read from \u00a7911.02. Subdistricts use the base-district column. Needs expert review. Not a zoning determination."
+    },
+    "R1D-H": {
+      "label": "Single-Unit Detached Residential, High Density",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": "R1D",
+      "allowed": [
+        "single_family"
+      ],
+      "partial": [],
+      "variance_or_exception": [
+        {
+          "type": "townhouse_duplex",
+          "letter": "P/S"
+        }
+      ],
+      "use_notes": {
+        "townhouse_duplex": "Single-Unit Attached is permitted by right on lots 35 feet wide or narrower and needs a special exception on wider lots (\u00a7911.04A.69A, \u00a7922.07). Two-Unit is not permitted."
+      },
+      "use_rows": {
+        "Single-Unit Detached": "P",
+        "Single-Unit Attached": "P/S",
+        "Two-Unit": "",
+        "Three-Unit": "",
+        "Multi-Unit": ""
+      },
+      "standards": [
+        "\u00a7911.04A.69",
+        "\u00a7911.04A.69; \u00a7911.04A.69A"
+      ],
+      "use_table_read": true,
+      "not_in_use_table": false,
+      "code_section": "\u00a7911.02",
+      "notes": "Read from \u00a7911.02. Subdistricts use the base-district column. Needs expert review. Not a zoning determination."
+    },
+    "R1D-VH": {
+      "label": "Single-Unit Detached Residential, Very High Density",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": "R1D",
+      "allowed": [
+        "single_family"
+      ],
+      "partial": [],
+      "variance_or_exception": [
+        {
+          "type": "townhouse_duplex",
+          "letter": "P/S"
+        }
+      ],
+      "use_notes": {
+        "townhouse_duplex": "Single-Unit Attached is permitted by right on lots 35 feet wide or narrower and needs a special exception on wider lots (\u00a7911.04A.69A, \u00a7922.07). Two-Unit is not permitted."
+      },
+      "use_rows": {
+        "Single-Unit Detached": "P",
+        "Single-Unit Attached": "P/S",
+        "Two-Unit": "",
+        "Three-Unit": "",
+        "Multi-Unit": ""
+      },
+      "standards": [
+        "\u00a7911.04A.69",
+        "\u00a7911.04A.69; \u00a7911.04A.69A"
+      ],
+      "use_table_read": true,
+      "not_in_use_table": false,
+      "code_section": "\u00a7911.02",
+      "notes": "Read from \u00a7911.02. Subdistricts use the base-district column. Needs expert review. Not a zoning determination."
+    },
+    "R1A-M": {
+      "label": "Single-Unit Attached Residential, Moderate Density",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": "R1A",
+      "allowed": [
+        "single_family"
+      ],
+      "partial": [
+        "townhouse_duplex"
+      ],
+      "variance_or_exception": [],
+      "use_notes": {
+        "townhouse_duplex": "Single-Unit Attached is permitted by right; Two-Unit is not permitted (\u00a7911.02)."
+      },
+      "use_rows": {
+        "Single-Unit Detached": "P",
+        "Single-Unit Attached": "P",
+        "Two-Unit": "",
+        "Three-Unit": "",
+        "Multi-Unit": ""
+      },
+      "standards": [
+        "\u00a7911.04A.69",
+        "\u00a7911.04A.69; \u00a7911.04A.69A"
+      ],
+      "use_table_read": true,
+      "not_in_use_table": false,
+      "code_section": "\u00a7911.02",
+      "notes": "Read from \u00a7911.02. Subdistricts use the base-district column. Needs expert review. Not a zoning determination."
+    },
+    "R1A-H": {
+      "label": "Single-Unit Attached Residential, High Density",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": "R1A",
+      "allowed": [
+        "single_family"
+      ],
+      "partial": [
+        "townhouse_duplex"
+      ],
+      "variance_or_exception": [],
+      "use_notes": {
+        "townhouse_duplex": "Single-Unit Attached is permitted by right; Two-Unit is not permitted (\u00a7911.02)."
+      },
+      "use_rows": {
+        "Single-Unit Detached": "P",
+        "Single-Unit Attached": "P",
+        "Two-Unit": "",
+        "Three-Unit": "",
+        "Multi-Unit": ""
+      },
+      "standards": [
+        "\u00a7911.04A.69",
+        "\u00a7911.04A.69; \u00a7911.04A.69A"
+      ],
+      "use_table_read": true,
+      "not_in_use_table": false,
+      "code_section": "\u00a7911.02",
+      "notes": "Read from \u00a7911.02. Subdistricts use the base-district column. Needs expert review. Not a zoning determination."
+    },
+    "R1A-VH": {
+      "label": "Single-Unit Attached Residential, Very High Density",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": "R1A",
+      "allowed": [
+        "single_family"
+      ],
+      "partial": [
+        "townhouse_duplex"
+      ],
+      "variance_or_exception": [],
+      "use_notes": {
+        "townhouse_duplex": "Single-Unit Attached is permitted by right; Two-Unit is not permitted (\u00a7911.02)."
+      },
+      "use_rows": {
+        "Single-Unit Detached": "P",
+        "Single-Unit Attached": "P",
+        "Two-Unit": "",
+        "Three-Unit": "",
+        "Multi-Unit": ""
+      },
+      "standards": [
+        "\u00a7911.04A.69",
+        "\u00a7911.04A.69; \u00a7911.04A.69A"
+      ],
+      "use_table_read": true,
+      "not_in_use_table": false,
+      "code_section": "\u00a7911.02",
+      "notes": "Read from \u00a7911.02. Subdistricts use the base-district column. Needs expert review. Not a zoning determination."
+    },
+    "R2-L": {
+      "label": "Two-Unit Residential, Low Density",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": "R2",
+      "allowed": [
+        "single_family",
+        "townhouse_duplex"
+      ],
+      "partial": [],
+      "variance_or_exception": [],
+      "use_notes": {},
+      "use_rows": {
+        "Single-Unit Detached": "P",
+        "Single-Unit Attached": "P",
+        "Two-Unit": "P",
+        "Three-Unit": "",
+        "Multi-Unit": ""
+      },
+      "standards": [
+        "\u00a7911.04A.69",
+        "\u00a7911.04A.69; \u00a7911.04A.69A"
+      ],
+      "use_table_read": true,
+      "not_in_use_table": false,
+      "code_section": "\u00a7911.02",
+      "notes": "Read from \u00a7911.02. Subdistricts use the base-district column. Needs expert review. Not a zoning determination."
+    },
+    "R2-M": {
+      "label": "Two-Unit Residential, Moderate Density",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": "R2",
+      "allowed": [
+        "single_family",
+        "townhouse_duplex"
+      ],
+      "partial": [],
+      "variance_or_exception": [],
+      "use_notes": {},
+      "use_rows": {
+        "Single-Unit Detached": "P",
+        "Single-Unit Attached": "P",
+        "Two-Unit": "P",
+        "Three-Unit": "",
+        "Multi-Unit": ""
+      },
+      "standards": [
+        "\u00a7911.04A.69",
+        "\u00a7911.04A.69; \u00a7911.04A.69A"
+      ],
+      "use_table_read": true,
+      "not_in_use_table": false,
+      "code_section": "\u00a7911.02",
+      "notes": "Read from \u00a7911.02. Subdistricts use the base-district column. Needs expert review. Not a zoning determination."
+    },
+    "R2-H": {
+      "label": "Two-Unit Residential, High Density",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": "R2",
+      "allowed": [
+        "single_family",
+        "townhouse_duplex"
+      ],
+      "partial": [],
+      "variance_or_exception": [],
+      "use_notes": {},
+      "use_rows": {
+        "Single-Unit Detached": "P",
+        "Single-Unit Attached": "P",
+        "Two-Unit": "P",
+        "Three-Unit": "",
+        "Multi-Unit": ""
+      },
+      "standards": [
+        "\u00a7911.04A.69",
+        "\u00a7911.04A.69; \u00a7911.04A.69A"
+      ],
+      "use_table_read": true,
+      "not_in_use_table": false,
+      "code_section": "\u00a7911.02",
+      "notes": "Read from \u00a7911.02. Subdistricts use the base-district column. Needs expert review. Not a zoning determination."
+    },
+    "R2-VH": {
+      "label": "Two-Unit Residential, Very High Density",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": "R2",
+      "allowed": [
+        "single_family",
+        "townhouse_duplex"
+      ],
+      "partial": [],
+      "variance_or_exception": [],
+      "use_notes": {},
+      "use_rows": {
+        "Single-Unit Detached": "P",
+        "Single-Unit Attached": "P",
+        "Two-Unit": "P",
+        "Three-Unit": "",
+        "Multi-Unit": ""
+      },
+      "standards": [
+        "\u00a7911.04A.69",
+        "\u00a7911.04A.69; \u00a7911.04A.69A"
+      ],
+      "use_table_read": true,
+      "not_in_use_table": false,
+      "code_section": "\u00a7911.02",
+      "notes": "Read from \u00a7911.02. Subdistricts use the base-district column. Needs expert review. Not a zoning determination."
+    },
+    "R3-L": {
+      "label": "Three-Unit Residential, Low Density",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": "R3",
+      "allowed": [
+        "single_family",
+        "townhouse_duplex"
+      ],
+      "partial": [
+        "small_apartment"
+      ],
+      "variance_or_exception": [],
+      "use_notes": {
+        "small_apartment": "Triplex allowed, 4+ units not (\u00a7911.02)."
+      },
+      "use_rows": {
+        "Single-Unit Detached": "P",
+        "Single-Unit Attached": "P",
+        "Two-Unit": "P",
+        "Three-Unit": "P",
+        "Multi-Unit": ""
+      },
+      "standards": [
+        "\u00a7911.04A.69",
+        "\u00a7911.04A.69; \u00a7911.04A.69A"
+      ],
+      "use_table_read": true,
+      "not_in_use_table": false,
+      "code_section": "\u00a7911.02",
+      "notes": "Read from \u00a7911.02. Subdistricts use the base-district column. Needs expert review. Not a zoning determination."
+    },
+    "R3-M": {
+      "label": "Three-Unit Residential, Moderate Density",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": "R3",
+      "allowed": [
+        "single_family",
+        "townhouse_duplex"
+      ],
+      "partial": [
+        "small_apartment"
+      ],
+      "variance_or_exception": [],
+      "use_notes": {
+        "small_apartment": "Triplex allowed, 4+ units not (\u00a7911.02)."
+      },
+      "use_rows": {
+        "Single-Unit Detached": "P",
+        "Single-Unit Attached": "P",
+        "Two-Unit": "P",
+        "Three-Unit": "P",
+        "Multi-Unit": ""
+      },
+      "standards": [
+        "\u00a7911.04A.69",
+        "\u00a7911.04A.69; \u00a7911.04A.69A"
+      ],
+      "use_table_read": true,
+      "not_in_use_table": false,
+      "code_section": "\u00a7911.02",
+      "notes": "Read from \u00a7911.02. Subdistricts use the base-district column. Needs expert review. Not a zoning determination."
+    },
+    "RM-VL": {
+      "label": "Multi-Unit Residential, Very Low Density",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": "RM",
+      "allowed": [
+        "single_family",
+        "townhouse_duplex",
+        "small_apartment",
+        "large_apartment"
+      ],
+      "partial": [],
+      "variance_or_exception": [],
+      "use_notes": {},
+      "use_rows": {
+        "Single-Unit Detached": "P",
+        "Single-Unit Attached": "P",
+        "Two-Unit": "P",
+        "Three-Unit": "P",
+        "Multi-Unit": "P"
+      },
+      "standards": [
+        "\u00a7911.04A.69",
+        "\u00a7911.04A.69; \u00a7911.04A.69A",
+        "\u00a7911.04A.85"
+      ],
+      "use_table_read": true,
+      "not_in_use_table": false,
+      "code_section": "\u00a7911.02",
+      "notes": "Read from \u00a7911.02. Subdistricts use the base-district column. Needs expert review. Not a zoning determination."
+    },
+    "RM-M": {
+      "label": "Multi-Unit Residential, Moderate Density",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": "RM",
+      "allowed": [
+        "single_family",
+        "townhouse_duplex",
+        "small_apartment",
+        "large_apartment"
+      ],
+      "partial": [],
+      "variance_or_exception": [],
+      "use_notes": {},
+      "use_rows": {
+        "Single-Unit Detached": "P",
+        "Single-Unit Attached": "P",
+        "Two-Unit": "P",
+        "Three-Unit": "P",
+        "Multi-Unit": "P"
+      },
+      "standards": [
+        "\u00a7911.04A.69",
+        "\u00a7911.04A.69; \u00a7911.04A.69A",
+        "\u00a7911.04A.85"
+      ],
+      "use_table_read": true,
+      "not_in_use_table": false,
+      "code_section": "\u00a7911.02",
+      "notes": "Read from \u00a7911.02. Subdistricts use the base-district column. Needs expert review. Not a zoning determination."
+    },
+    "RM-H": {
+      "label": "Multi-Unit Residential, High Density",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": "RM",
+      "allowed": [
+        "single_family",
+        "townhouse_duplex",
+        "small_apartment",
+        "large_apartment"
+      ],
+      "partial": [],
+      "variance_or_exception": [],
+      "use_notes": {},
+      "use_rows": {
+        "Single-Unit Detached": "P",
+        "Single-Unit Attached": "P",
+        "Two-Unit": "P",
+        "Three-Unit": "P",
+        "Multi-Unit": "P"
+      },
+      "standards": [
+        "\u00a7911.04A.69",
+        "\u00a7911.04A.69; \u00a7911.04A.69A",
+        "\u00a7911.04A.85"
+      ],
+      "use_table_read": true,
+      "not_in_use_table": false,
+      "code_section": "\u00a7911.02",
+      "notes": "Read from \u00a7911.02. Subdistricts use the base-district column. Needs expert review. Not a zoning determination."
+    },
+    "RM-VH": {
+      "label": "Multi-Unit Residential, Very High Density",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": "RM",
+      "allowed": [
+        "single_family",
+        "townhouse_duplex",
+        "small_apartment",
+        "large_apartment"
+      ],
+      "partial": [],
+      "variance_or_exception": [],
+      "use_notes": {},
+      "use_rows": {
+        "Single-Unit Detached": "P",
+        "Single-Unit Attached": "P",
+        "Two-Unit": "P",
+        "Three-Unit": "P",
+        "Multi-Unit": "P"
+      },
+      "standards": [
+        "\u00a7911.04A.69",
+        "\u00a7911.04A.69; \u00a7911.04A.69A",
+        "\u00a7911.04A.85"
+      ],
+      "use_table_read": true,
+      "not_in_use_table": false,
+      "code_section": "\u00a7911.02",
+      "notes": "Read from \u00a7911.02. Subdistricts use the base-district column. Needs expert review. Not a zoning determination."
+    },
+    "R-MU": {
+      "label": "Residential Mixed Use",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": "R-MU",
+      "allowed": [
+        "single_family",
+        "townhouse_duplex",
+        "small_apartment",
+        "large_apartment"
+      ],
+      "partial": [],
+      "variance_or_exception": [],
+      "use_notes": {},
+      "use_rows": {
+        "Single-Unit Detached": "P",
+        "Single-Unit Attached": "P",
+        "Two-Unit": "P",
+        "Three-Unit": "P",
+        "Multi-Unit": "P"
+      },
+      "standards": [
+        "\u00a7911.04A.69",
+        "\u00a7911.04A.69; \u00a7911.04A.69A",
+        "\u00a7911.04A.85"
+      ],
+      "use_table_read": true,
+      "not_in_use_table": false,
+      "code_section": "\u00a7911.02",
+      "notes": "Read from \u00a7911.02. Subdistricts use the base-district column. Needs expert review. Not a zoning determination."
+    },
+    "LNC": {
+      "label": "Local Neighborhood Commercial",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": "LNC",
+      "allowed": [
+        "single_family",
+        "townhouse_duplex",
+        "small_apartment",
+        "large_apartment"
+      ],
+      "partial": [],
+      "variance_or_exception": [],
+      "use_notes": {},
+      "use_rows": {
+        "Single-Unit Detached": "P",
+        "Single-Unit Attached": "P",
+        "Two-Unit": "P",
+        "Three-Unit": "P",
+        "Multi-Unit": "P"
+      },
+      "standards": [
+        "\u00a7911.04A.69",
+        "\u00a7911.04A.69; \u00a7911.04A.69A",
+        "\u00a7911.04A.85"
+      ],
+      "use_table_read": true,
+      "not_in_use_table": false,
+      "code_section": "\u00a7911.02",
+      "notes": "Read from \u00a7911.02. Subdistricts use the base-district column. Needs expert review. Not a zoning determination."
+    },
+    "NDO": {
+      "label": "Neighborhood Office",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": "NDO",
+      "allowed": [
+        "single_family",
+        "townhouse_duplex",
+        "small_apartment",
+        "large_apartment"
+      ],
+      "partial": [],
+      "variance_or_exception": [],
+      "use_notes": {},
+      "use_rows": {
+        "Single-Unit Detached": "P",
+        "Single-Unit Attached": "P",
+        "Two-Unit": "P",
+        "Three-Unit": "P",
+        "Multi-Unit": "P"
+      },
+      "standards": [
+        "\u00a7911.04A.69",
+        "\u00a7911.04A.69; \u00a7911.04A.69A",
+        "\u00a7911.04A.85"
+      ],
+      "use_table_read": true,
+      "not_in_use_table": false,
+      "code_section": "\u00a7911.02",
+      "notes": "Read from \u00a7911.02. Subdistricts use the base-district column. Needs expert review. Not a zoning determination."
+    },
+    "UNC": {
+      "label": "Urban Neighborhood Commercial",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": "UNC",
+      "allowed": [
+        "single_family",
+        "townhouse_duplex",
+        "small_apartment",
+        "large_apartment"
+      ],
+      "partial": [],
+      "variance_or_exception": [],
+      "use_notes": {},
+      "use_rows": {
+        "Single-Unit Detached": "P",
+        "Single-Unit Attached": "P",
+        "Two-Unit": "P",
+        "Three-Unit": "P",
+        "Multi-Unit": "P"
+      },
+      "standards": [
+        "\u00a7911.04A.69",
+        "\u00a7911.04A.69; \u00a7911.04A.69A",
+        "\u00a7911.04A.85"
+      ],
+      "use_table_read": true,
+      "not_in_use_table": false,
+      "code_section": "\u00a7911.02",
+      "notes": "Read from \u00a7911.02. Subdistricts use the base-district column. Needs expert review. Not a zoning determination."
+    },
+    "HC": {
+      "label": "Highway Commercial",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": "HC",
+      "allowed": [],
+      "partial": [],
+      "variance_or_exception": [],
+      "use_notes": {},
+      "use_rows": {
+        "Single-Unit Detached": "",
+        "Single-Unit Attached": "",
+        "Two-Unit": "",
+        "Three-Unit": "",
+        "Multi-Unit": ""
+      },
+      "standards": [],
+      "use_table_read": true,
+      "not_in_use_table": false,
+      "code_section": "\u00a7911.02",
+      "notes": "Read from \u00a7911.02. Subdistricts use the base-district column. Needs expert review. Not a zoning determination."
+    },
+    "NDI": {
+      "label": "Neighborhood Industrial",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": "NDI",
+      "allowed": [
+        "single_family",
+        "townhouse_duplex",
+        "small_apartment",
+        "large_apartment"
+      ],
+      "partial": [],
+      "variance_or_exception": [],
+      "use_notes": {},
+      "use_rows": {
+        "Single-Unit Detached": "P",
+        "Single-Unit Attached": "P",
+        "Two-Unit": "P",
+        "Three-Unit": "P",
+        "Multi-Unit": "P"
+      },
+      "standards": [
+        "\u00a7911.04A.69",
+        "\u00a7911.04A.69; \u00a7911.04A.69A",
+        "\u00a7911.04A.85"
+      ],
+      "use_table_read": true,
+      "not_in_use_table": false,
+      "code_section": "\u00a7911.02",
+      "notes": "Read from \u00a7911.02. Subdistricts use the base-district column. Needs expert review. Not a zoning determination."
+    },
+    "UI": {
+      "label": "Urban Industrial",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": "UI",
+      "allowed": [],
+      "partial": [],
+      "variance_or_exception": [
+        {
+          "type": "small_apartment",
+          "letter": "S"
+        },
+        {
+          "type": "large_apartment",
+          "letter": "S"
+        }
+      ],
+      "use_notes": {
+        "small_apartment": "3 units not permitted; 4+ units need special approval (a special exception (S)) (\u00a7911.02, \u00a7911.04A.85.)",
+        "large_apartment": "Multi-Unit is a special exception (S) (\u00a7911.02, \u00a7911.04A.85)."
+      },
+      "use_rows": {
+        "Single-Unit Detached": "",
+        "Single-Unit Attached": "",
+        "Two-Unit": "",
+        "Three-Unit": "",
+        "Multi-Unit": "S"
+      },
+      "standards": [
+        "\u00a7911.04A.85"
+      ],
+      "use_table_read": true,
+      "not_in_use_table": false,
+      "code_section": "\u00a7911.02",
+      "notes": "Read from \u00a7911.02. Subdistricts use the base-district column. Needs expert review. Not a zoning determination."
+    },
+    "GI": {
+      "label": "General Industrial",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": "GI",
+      "allowed": [],
+      "partial": [],
+      "variance_or_exception": [],
+      "use_notes": {},
+      "use_rows": {
+        "Single-Unit Detached": "",
+        "Single-Unit Attached": "",
+        "Two-Unit": "",
+        "Three-Unit": "",
+        "Multi-Unit": ""
+      },
+      "standards": [],
+      "use_table_read": true,
+      "not_in_use_table": false,
+      "code_section": "\u00a7911.02",
+      "notes": "Read from \u00a7911.02. Subdistricts use the base-district column. Needs expert review. Not a zoning determination."
+    },
+    "P": {
+      "label": "Parks and Open Space",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": "P",
+      "allowed": [
+        "single_family"
+      ],
+      "partial": [],
+      "variance_or_exception": [],
+      "use_notes": {},
+      "use_rows": {
+        "Single-Unit Detached": "P",
+        "Single-Unit Attached": "",
+        "Two-Unit": "",
+        "Three-Unit": "",
+        "Multi-Unit": ""
+      },
+      "standards": [
+        "\u00a7911.04A.69"
+      ],
+      "use_table_read": true,
+      "not_in_use_table": false,
+      "code_section": "\u00a7911.02",
+      "notes": "Read from \u00a7911.02. Subdistricts use the base-district column. Needs expert review. Not a zoning determination."
+    },
+    "H": {
+      "label": "Hillside",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": "H",
+      "allowed": [],
+      "partial": [],
+      "variance_or_exception": [
+        {
+          "type": "single_family",
+          "letter": "A"
+        },
+        {
+          "type": "townhouse_duplex",
+          "letter": "S"
+        }
+      ],
+      "use_notes": {
+        "townhouse_duplex": "Single-Unit Attached is a special exception (S); Two-Unit is not permitted (\u00a7911.02).",
+        "single_family": "Single-Unit Detached is an administrator exception (A) (\u00a7911.02, \u00a7911.04A.69)."
+      },
+      "use_rows": {
+        "Single-Unit Detached": "A",
+        "Single-Unit Attached": "S",
+        "Two-Unit": "",
+        "Three-Unit": "",
+        "Multi-Unit": ""
+      },
+      "standards": [
+        "\u00a7911.04A.69",
+        "\u00a7911.04A.69; \u00a7911.04A.69A"
+      ],
+      "use_table_read": true,
+      "not_in_use_table": false,
+      "code_section": "\u00a7911.02",
+      "notes": "Read from \u00a7911.02. Subdistricts use the base-district column. Needs expert review. Not a zoning determination."
+    },
+    "EMI": {
+      "label": "Educational/Medical Institution",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": "EMI",
+      "allowed": [
+        "single_family"
+      ],
+      "partial": [],
+      "variance_or_exception": [
+        {
+          "type": "small_apartment",
+          "letter": "A"
+        },
+        {
+          "type": "large_apartment",
+          "letter": "A"
+        }
+      ],
+      "use_notes": {
+        "small_apartment": "3 units not permitted; 4+ units need special approval (an administrator exception (A)) (\u00a7911.02, \u00a7911.04A.85.)",
+        "large_apartment": "Multi-Unit is an administrator exception (A) (\u00a7911.02, \u00a7911.04A.85)."
+      },
+      "use_rows": {
+        "Single-Unit Detached": "P",
+        "Single-Unit Attached": "",
+        "Two-Unit": "",
+        "Three-Unit": "",
+        "Multi-Unit": "A"
+      },
+      "standards": [
+        "\u00a7911.04A.69",
+        "\u00a7911.04A.85"
+      ],
+      "use_table_read": true,
+      "not_in_use_table": false,
+      "code_section": "\u00a7911.02",
+      "notes": "Read from \u00a7911.02. Subdistricts use the base-district column. Needs expert review. Not a zoning determination."
+    },
+    "RIV-RM": {
+      "label": "Riverfront Mixed Residential",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": "RIV-RM",
+      "allowed": [
+        "townhouse_duplex",
+        "small_apartment",
+        "large_apartment"
+      ],
+      "partial": [],
+      "variance_or_exception": [],
+      "use_notes": {},
+      "use_rows": {
+        "Single-Unit Detached": "",
+        "Single-Unit Attached": "P",
+        "Two-Unit": "P",
+        "Three-Unit": "P",
+        "Multi-Unit": "P"
+      },
+      "standards": [
+        "\u00a7911.04A.69; \u00a7911.04A.69A",
+        "\u00a7911.04A.85"
+      ],
+      "use_table_read": true,
+      "not_in_use_table": false,
+      "code_section": "\u00a7911.02",
+      "notes": "Read from \u00a7911.02. Subdistricts use the base-district column. Needs expert review. Not a zoning determination."
+    },
+    "RIV-MU": {
+      "label": "Riverfront Mixed Use",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": "RIV-MU",
+      "allowed": [
+        "townhouse_duplex",
+        "small_apartment",
+        "large_apartment"
+      ],
+      "partial": [],
+      "variance_or_exception": [],
+      "use_notes": {},
+      "use_rows": {
+        "Single-Unit Detached": "",
+        "Single-Unit Attached": "P",
+        "Two-Unit": "P",
+        "Three-Unit": "P",
+        "Multi-Unit": "P"
+      },
+      "standards": [
+        "\u00a7911.04A.69; \u00a7911.04A.69A",
+        "\u00a7911.04A.85"
+      ],
+      "use_table_read": true,
+      "not_in_use_table": false,
+      "code_section": "\u00a7911.02",
+      "notes": "Read from \u00a7911.02. Subdistricts use the base-district column. Needs expert review. Not a zoning determination."
+    },
+    "RIV-NS": {
+      "label": "Riverfront North Shore",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": "RIV-NS",
+      "allowed": [
+        "large_apartment"
+      ],
+      "partial": [
+        "small_apartment"
+      ],
+      "variance_or_exception": [],
+      "use_notes": {
+        "small_apartment": "3 units not permitted, 4+ units permitted by right (\u00a7911.02)."
+      },
+      "use_rows": {
+        "Single-Unit Detached": "",
+        "Single-Unit Attached": "",
+        "Two-Unit": "",
+        "Three-Unit": "",
+        "Multi-Unit": "P"
+      },
+      "standards": [
+        "\u00a7911.04A.85"
+      ],
+      "use_table_read": true,
+      "not_in_use_table": false,
+      "code_section": "\u00a7911.02",
+      "notes": "Read from \u00a7911.02. Subdistricts use the base-district column. Needs expert review. Not a zoning determination."
+    },
+    "RIV-IMU": {
+      "label": "Riverfront Industrial Mixed Use",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": "RIV-IMU",
+      "allowed": [
+        "small_apartment",
+        "large_apartment"
+      ],
+      "partial": [
+        "townhouse_duplex"
+      ],
+      "variance_or_exception": [],
+      "use_notes": {
+        "townhouse_duplex": "Single-Unit Attached is not permitted; Two-Unit is permitted by right (\u00a7911.02)."
+      },
+      "use_rows": {
+        "Single-Unit Detached": "",
+        "Single-Unit Attached": "",
+        "Two-Unit": "P",
+        "Three-Unit": "P",
+        "Multi-Unit": "P"
+      },
+      "standards": [
+        "\u00a7911.04A.85"
+      ],
+      "use_table_read": true,
+      "not_in_use_table": false,
+      "code_section": "\u00a7911.02",
+      "notes": "Read from \u00a7911.02. Subdistricts use the base-district column. Needs expert review. Not a zoning determination."
+    },
+    "RIV-GI": {
+      "label": "Riverfront General Industrial",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": "RIV-GI",
+      "allowed": [],
+      "partial": [],
+      "variance_or_exception": [],
+      "use_notes": {},
+      "use_rows": {
+        "Single-Unit Detached": "",
+        "Single-Unit Attached": "",
+        "Two-Unit": "",
+        "Three-Unit": "",
+        "Multi-Unit": ""
+      },
+      "standards": [],
+      "use_table_read": true,
+      "not_in_use_table": false,
+      "code_section": "\u00a7911.02",
+      "notes": "Read from \u00a7911.02. Subdistricts use the base-district column. Needs expert review. Not a zoning determination."
+    },
+    "SP-1": {
+      "label": "Pittsburgh Technology Center",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": null,
+      "allowed": [],
+      "variance_or_exception": [],
+      "partial": [],
+      "use_table_read": false,
+      "not_in_use_table": true,
+      "code_section": null,
+      "notes": "Not a column in Pittsburgh Zoning Code \u00a7911.02. Check with the City. This is not a finding that the housing type is prohibited."
+    },
+    "SP-4": {
+      "label": "Station Square",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": null,
+      "allowed": [],
+      "variance_or_exception": [],
+      "partial": [],
+      "use_table_read": false,
+      "not_in_use_table": true,
+      "code_section": null,
+      "notes": "Not a column in Pittsburgh Zoning Code \u00a7911.02. Check with the City. This is not a finding that the housing type is prohibited."
+    },
+    "SP-5": {
+      "label": "SouthSide Works",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": null,
+      "allowed": [],
+      "variance_or_exception": [],
+      "partial": [],
+      "use_table_read": false,
+      "not_in_use_table": true,
+      "code_section": null,
+      "notes": "Not a column in Pittsburgh Zoning Code \u00a7911.02. Check with the City. This is not a finding that the housing type is prohibited."
+    },
+    "SP-8": {
+      "label": "Riverfront Landing",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": null,
+      "allowed": [],
+      "variance_or_exception": [],
+      "partial": [],
+      "use_table_read": false,
+      "not_in_use_table": true,
+      "code_section": null,
+      "notes": "Not a column in Pittsburgh Zoning Code \u00a7911.02. Check with the City. This is not a finding that the housing type is prohibited."
+    },
+    "SP-9": {
+      "label": "Bakery Square",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": null,
+      "allowed": [],
+      "variance_or_exception": [],
+      "partial": [],
+      "use_table_read": false,
+      "not_in_use_table": true,
+      "code_section": null,
+      "notes": "Not a column in Pittsburgh Zoning Code \u00a7911.02. Check with the City. This is not a finding that the housing type is prohibited."
+    },
+    "SP-10": {
+      "label": "Almono",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": null,
+      "allowed": [],
+      "variance_or_exception": [],
+      "partial": [],
+      "use_table_read": false,
+      "not_in_use_table": true,
+      "code_section": null,
+      "notes": "Not a column in Pittsburgh Zoning Code \u00a7911.02. Check with the City. This is not a finding that the housing type is prohibited."
+    },
+    "SP-11": {
+      "label": "Lower Hill",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": null,
+      "allowed": [],
+      "variance_or_exception": [],
+      "partial": [],
+      "use_table_read": false,
+      "not_in_use_table": true,
+      "code_section": null,
+      "notes": "Not a column in Pittsburgh Zoning Code \u00a7911.02. Check with the City. This is not a finding that the housing type is prohibited."
+    },
+    "CP": {
+      "label": "Commercial Planned Unit Development",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": null,
+      "allowed": [],
+      "variance_or_exception": [],
+      "partial": [],
+      "use_table_read": false,
+      "not_in_use_table": true,
+      "code_section": null,
+      "notes": "Not a column in Pittsburgh Zoning Code \u00a7911.02. Check with the City. This is not a finding that the housing type is prohibited."
+    },
+    "RP": {
+      "label": "Residential Planned Unit Development",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": null,
+      "allowed": [],
+      "variance_or_exception": [],
+      "partial": [],
+      "use_table_read": false,
+      "not_in_use_table": true,
+      "code_section": null,
+      "notes": "Not a column in Pittsburgh Zoning Code \u00a7911.02. Check with the City. This is not a finding that the housing type is prohibited."
+    },
+    "AP": {
+      "label": "Residential/Commercial Planned Unit Development",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": null,
+      "allowed": [],
+      "variance_or_exception": [],
+      "partial": [],
+      "use_table_read": false,
+      "not_in_use_table": true,
+      "code_section": null,
+      "notes": "Not a column in Pittsburgh Zoning Code \u00a7911.02. Check with the City. This is not a finding that the housing type is prohibited."
+    },
+    "GT-A": {
+      "label": "Golden Triangle A",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": "GT",
+      "allowed": [
+        "small_apartment",
+        "large_apartment"
+      ],
+      "partial": [
+        "townhouse_duplex"
+      ],
+      "variance_or_exception": [],
+      "use_notes": {
+        "townhouse_duplex": "Single-Unit Attached is not permitted; Two-Unit is permitted by right (\u00a7911.02)."
+      },
+      "use_rows": {
+        "Single-Unit Detached": "",
+        "Single-Unit Attached": "",
+        "Two-Unit": "P",
+        "Three-Unit": "P",
+        "Multi-Unit": "P"
+      },
+      "standards": [
+        "\u00a7911.04A.85"
+      ],
+      "use_table_read": true,
+      "not_in_use_table": false,
+      "code_section": "\u00a7911.02",
+      "notes": "Read from \u00a7911.02. Subdistricts use the base-district column. Needs expert review. Not a zoning determination."
+    },
+    "GT-B": {
+      "label": "Golden Triangle B",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": "GT",
+      "allowed": [
+        "small_apartment",
+        "large_apartment"
+      ],
+      "partial": [
+        "townhouse_duplex"
+      ],
+      "variance_or_exception": [],
+      "use_notes": {
+        "townhouse_duplex": "Single-Unit Attached is not permitted; Two-Unit is permitted by right (\u00a7911.02)."
+      },
+      "use_rows": {
+        "Single-Unit Detached": "",
+        "Single-Unit Attached": "",
+        "Two-Unit": "P",
+        "Three-Unit": "P",
+        "Multi-Unit": "P"
+      },
+      "standards": [
+        "\u00a7911.04A.85"
+      ],
+      "use_table_read": true,
+      "not_in_use_table": false,
+      "code_section": "\u00a7911.02",
+      "notes": "Read from \u00a7911.02. Subdistricts use the base-district column. Needs expert review. Not a zoning determination."
+    },
+    "GT-C": {
+      "label": "Golden Triangle C",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": "GT",
+      "allowed": [
+        "small_apartment",
+        "large_apartment"
+      ],
+      "partial": [
+        "townhouse_duplex"
+      ],
+      "variance_or_exception": [],
+      "use_notes": {
+        "townhouse_duplex": "Single-Unit Attached is not permitted; Two-Unit is permitted by right (\u00a7911.02)."
+      },
+      "use_rows": {
+        "Single-Unit Detached": "",
+        "Single-Unit Attached": "",
+        "Two-Unit": "P",
+        "Three-Unit": "P",
+        "Multi-Unit": "P"
+      },
+      "standards": [
+        "\u00a7911.04A.85"
+      ],
+      "use_table_read": true,
+      "not_in_use_table": false,
+      "code_section": "\u00a7911.02",
+      "notes": "Read from \u00a7911.02. Subdistricts use the base-district column. Needs expert review. Not a zoning determination."
+    },
+    "GT-D": {
+      "label": "Golden Triangle D",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": "GT",
+      "allowed": [
+        "small_apartment",
+        "large_apartment"
+      ],
+      "partial": [
+        "townhouse_duplex"
+      ],
+      "variance_or_exception": [],
+      "use_notes": {
+        "townhouse_duplex": "Single-Unit Attached is not permitted; Two-Unit is permitted by right (\u00a7911.02)."
+      },
+      "use_rows": {
+        "Single-Unit Detached": "",
+        "Single-Unit Attached": "",
+        "Two-Unit": "P",
+        "Three-Unit": "P",
+        "Multi-Unit": "P"
+      },
+      "standards": [
+        "\u00a7911.04A.85"
+      ],
+      "use_table_read": true,
+      "not_in_use_table": false,
+      "code_section": "\u00a7911.02",
+      "notes": "Read from \u00a7911.02. Subdistricts use the base-district column. Needs expert review. Not a zoning determination."
+    },
+    "GT-E": {
+      "label": "Golden Triangle E",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": "GT",
+      "allowed": [
+        "small_apartment",
+        "large_apartment"
+      ],
+      "partial": [
+        "townhouse_duplex"
+      ],
+      "variance_or_exception": [],
+      "use_notes": {
+        "townhouse_duplex": "Single-Unit Attached is not permitted; Two-Unit is permitted by right (\u00a7911.02)."
+      },
+      "use_rows": {
+        "Single-Unit Detached": "",
+        "Single-Unit Attached": "",
+        "Two-Unit": "P",
+        "Three-Unit": "P",
+        "Multi-Unit": "P"
+      },
+      "standards": [
+        "\u00a7911.04A.85"
+      ],
+      "use_table_read": true,
+      "not_in_use_table": false,
+      "code_section": "\u00a7911.02",
+      "notes": "Read from \u00a7911.02. Subdistricts use the base-district column. Needs expert review. Not a zoning determination."
+    },
+    "GPRA": {
+      "label": "Grandview Public Realm A",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": null,
+      "allowed": [],
+      "variance_or_exception": [],
+      "partial": [],
+      "use_table_read": false,
+      "not_in_use_table": true,
+      "code_section": null,
+      "notes": "Not a column in Pittsburgh Zoning Code \u00a7911.02. Check with the City. This is not a finding that the housing type is prohibited."
+    },
+    "GPRB": {
+      "label": "Grandview Public Realm B",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": null,
+      "allowed": [],
+      "variance_or_exception": [],
+      "partial": [],
+      "use_table_read": false,
+      "not_in_use_table": true,
+      "code_section": null,
+      "notes": "Not a column in Pittsburgh Zoning Code \u00a7911.02. Check with the City. This is not a finding that the housing type is prohibited."
+    },
+    "GPRC": {
+      "label": "Grandview Public Realm C",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": null,
+      "allowed": [],
+      "variance_or_exception": [],
+      "partial": [],
+      "use_table_read": false,
+      "not_in_use_table": true,
+      "code_section": null,
+      "notes": "Not a column in Pittsburgh Zoning Code \u00a7911.02. Check with the City. This is not a finding that the housing type is prohibited."
+    },
+    "UPR-A": {
+      "label": "Uptown Public Realm A",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": null,
+      "allowed": [],
+      "variance_or_exception": [],
+      "partial": [],
+      "use_table_read": false,
+      "not_in_use_table": true,
+      "code_section": null,
+      "notes": "Not a column in Pittsburgh Zoning Code \u00a7911.02. Check with the City. This is not a finding that the housing type is prohibited."
+    },
+    "UPR-B": {
+      "label": "Uptown Public Realm B",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": null,
+      "allowed": [],
+      "variance_or_exception": [],
+      "partial": [],
+      "use_table_read": false,
+      "not_in_use_table": true,
+      "code_section": null,
+      "notes": "Not a column in Pittsburgh Zoning Code \u00a7911.02. Check with the City. This is not a finding that the housing type is prohibited."
+    },
+    "UC-E": {
+      "label": "Urban Center Employment",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": "UC-E",
+      "allowed": [],
+      "partial": [],
+      "variance_or_exception": [
+        {
+          "type": "small_apartment",
+          "letter": "A"
+        },
+        {
+          "type": "large_apartment",
+          "letter": "A"
+        }
+      ],
+      "use_notes": {
+        "small_apartment": "3 units not permitted; 4+ units need special approval (an administrator exception (A)) (\u00a7911.02, \u00a7911.04A.85.)",
+        "large_apartment": "Multi-Unit is an administrator exception (A) (\u00a7911.02, \u00a7911.04A.85)."
+      },
+      "use_rows": {
+        "Single-Unit Detached": "",
+        "Single-Unit Attached": "",
+        "Two-Unit": "",
+        "Three-Unit": "",
+        "Multi-Unit": "A"
+      },
+      "standards": [
+        "\u00a7911.04A.85"
+      ],
+      "use_table_read": true,
+      "not_in_use_table": false,
+      "code_section": "\u00a7911.02",
+      "notes": "Read from \u00a7911.02. Subdistricts use the base-district column. Needs expert review. Not a zoning determination."
+    },
+    "UC-MU": {
+      "label": "Urban Center Mixed Use",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": "UC-MU",
+      "allowed": [
+        "townhouse_duplex",
+        "small_apartment",
+        "large_apartment"
+      ],
+      "partial": [],
+      "variance_or_exception": [],
+      "use_notes": {},
+      "use_rows": {
+        "Single-Unit Detached": "",
+        "Single-Unit Attached": "P",
+        "Two-Unit": "P",
+        "Three-Unit": "P",
+        "Multi-Unit": "P"
+      },
+      "standards": [
+        "\u00a7911.04A.69; \u00a7911.04A.69A",
+        "\u00a7911.04A.85"
+      ],
+      "use_table_read": true,
+      "not_in_use_table": false,
+      "code_section": "\u00a7911.02",
+      "notes": "Read from \u00a7911.02. Subdistricts use the base-district column. Needs expert review. Not a zoning determination."
+    },
+    "MTOBOR": {
+      "label": "Mount Oliver Borough",
+      "needs_expert_review": true,
+      "reviewed": false,
+      "code_url": "https://ecode360.com/45476524#45476524",
+      "base_column": null,
+      "allowed": [],
+      "variance_or_exception": [],
+      "partial": [],
+      "use_table_read": false,
+      "not_in_use_table": true,
+      "code_section": null,
+      "notes": "Not a column in Pittsburgh Zoning Code \u00a7911.02. Check with the City. This is not a finding that the housing type is prohibited."
+    }
+  }
+}

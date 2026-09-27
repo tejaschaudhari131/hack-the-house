@@ -1,0 +1,19 @@
+{
+  "name": "hack-the-house",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "test": "node --test lib/rank.test.js lib/explainTemplate.test.js lib/zoning.test.js lib/drop.test.js"
+  },
+  "dependencies": {
+    "leaflet": "^1.9.4",
+    "maplibre-gl": "^6.11.2",
+    "next": "^15.5.4",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "react-leaflet": "^5.0.0"
+  }
+}
