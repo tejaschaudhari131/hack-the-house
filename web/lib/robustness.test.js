@@ -56,3 +56,20 @@ test("compare robustness names which building wins and when it flips", () => {
   assert.equal(flip.to.id, "B")
   assert.match(describeRobustness(analysis), /Building A/)
 })
+
+test("presets and robustness move the displacement and carbon weights too", () => {
+  for (const preset of PRESETS) {
+    const weights = presetWeights(preset)
+    assert.ok(Number.isFinite(weights.displacement))
+    assert.ok(Number.isFinite(weights.carbon))
+  }
+  const withCarbon = {
+    single_family: { demand: 60, transit: 60, equity: 40, climate_risk: 20, displacement_risk: 50, carbon_index: 70 },
+    small_apartment: { demand: 55, transit: 60, equity: 40, climate_risk: 20, displacement_risk: 50, carbon_index: 30 },
+  }
+  const analysis = analyzeRobustness(parcelWinner(withCarbon), DEFAULT_WEIGHTS)
+  assert.equal(analysis.current.id, "small_apartment")
+  const carbonDown = analysis.flips.find((flip) => flip.key === "carbon" && flip.direction === "down")
+  assert.ok(carbonDown, "lowering the carbon weight should hand #1 to single-family")
+  assert.equal(carbonDown.to.id, "single_family")
+})

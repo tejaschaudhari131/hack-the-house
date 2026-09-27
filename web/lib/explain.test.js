@@ -8,7 +8,9 @@ import { buildCompareContext, buildParcelContext, explainCompareTemplate } from 
 import { DEFAULT_MODEL, aiConfig, createExplainHandler, parseExplainRequest } from "./explainHandler.js"
 import { SYSTEM_PROMPT, buildComparePrompt, buildParcelPrompt } from "./explainPrompt.js"
 import { createRateLimiter, createTtlCache } from "./guardrails.js"
-import { DEFAULT_WEIGHTS } from "./rank.js"
+import { DEFAULT_WEIGHTS, rankTypes } from "./rank.js"
+import { buildSitesContext, explainSitesTemplate } from "./explainSites.js"
+import { findSites } from "./sites.js"
 
 const zoning = JSON.parse(readFileSync(new URL("../public/data/zoning.json", import.meta.url)))
 const sources = JSON.parse(readFileSync(new URL("../public/data/sources.json", import.meta.url)))
@@ -55,11 +57,17 @@ function parcel(pin, overrides = {}) {
       confidence_notes: [],
       owner_name: "SHOULD NEVER APPEAR",
       factors: { price_per_sqft: 153.1, turnover_per_100: 2.06, valid_sales: 74 },
+      renter_share: 0.49,
+      rent_change_vs_county: -0.29,
+      qct_2026: false,
+      vacant_lot: true,
+      city_owned: true,
+      walk_min_frequent: 6,
       scores: {
-        single_family: { demand: 52, transit: 61.2, equity: 38, climate_risk: 22 },
-        townhouse_duplex: { demand: 58, transit: 61.2, equity: 44, climate_risk: 23 },
-        small_apartment: { demand: 40, transit: 61.2, equity: 55, climate_risk: 25 },
-        large_apartment: { demand: 30, transit: 61.2, equity: 57, climate_risk: 27 },
+        single_family: { demand: 52, transit: 61.2, equity: 38, climate_risk: 22, displacement_risk: 30.3, carbon_index: 61.3 },
+        townhouse_duplex: { demand: 58, transit: 61.2, equity: 44, climate_risk: 23, displacement_risk: 30.3, carbon_index: 40.5 },
+        small_apartment: { demand: 40, transit: 61.2, equity: 55, climate_risk: 25, displacement_risk: 30.3, carbon_index: 36.2 },
+        large_apartment: { demand: 30, transit: 61.2, equity: 57, climate_risk: 27, displacement_risk: 30.3, carbon_index: 28.3 },
       },
       ...overrides,
     },
@@ -233,4 +241,57 @@ test("guardrail helpers expire and evict", () => {
   assert.equal(cache.get("a", 1), null)
   assert.equal(cache.get("c", 1), 3)
   assert.equal(cache.get("c", 200), null)
+})
+
+test("the six-factor weights reach the server, and displacement and carbon are labeled in the facts", async () => {
+  assert.deepEqual(Object.keys(WEIGHTS).sort(), ["carbon", "climate", "demand", "displacement", "equity", "transit"])
+  const fourKeys = { demand: 25, transit: 25, equity: 25, climate: 25 }
+  assert.ok(parseExplainRequest({ pin: featureA.properties.pin, weights: fourKeys }).error)
+  const { facts } = buildParcelContext({ props: featureA.properties, weights: WEIGHTS, zoningRules: zoning, sources, summary })
+  const ui = rankTypes(featureA.properties.scores, WEIGHTS, { allowed: new Set(["single_family"]) })
+  assert.deepEqual(facts.ranking.map((row) => row.weighted_total), ui.map((row) => row.composite))
+  const top = facts.ranking[0]
+  assert.equal(top.displacement_risk_screen, 30.3)
+  assert.equal(top.marginal_carbon_index_estimate, 61.3)
+  assert.equal(facts.weights.displacement, 15)
+  assert.equal(facts.weights.carbon, 15)
+  assert.match(facts.inputs.displacement.meaning, /screening signal/)
+  assert.match(facts.inputs.displacement.meaning, /Not a prediction/)
+  assert.match(facts.inputs.carbon.meaning, /Not tonnes/)
+  assert.equal(facts.inputs.displacement.tract_renter_share_percent, 49)
+  assert.equal(facts.inputs.displacement.tract_rent_change_vs_county_points, -29)
+  assert.match(SYSTEM_PROMPT, /Always call it a screening signal/)
+  assert.match(SYSTEM_PROMPT, /not tonnes of CO2/)
+  assert.match(SYSTEM_PROMPT, /public record .* is not availability/)
+})
+
+test("Find Sites: filters are validated, and the top sites are explained from server-side rows", async () => {
+  assert.ok(parseExplainRequest({ kind: "sites", weights: WEIGHTS, filters: { flood: "sometimes" } }).error)
+  assert.ok(parseExplainRequest({ kind: "sites", weights: WEIGHTS, filters: { vacant: "yes" } }).error)
+  const ok = parseExplainRequest({ kind: "sites", weights: WEIGHTS, filters: { vacant: true, maxWalkMin: "10" }, sort: "nonsense" })
+  assert.equal(ok.kind, "sites")
+  assert.equal(ok.filters.maxWalkMin, 10)
+  assert.equal(ok.sort, "score")
+
+  const features = [featureA, featureB]
+  const rows = findSites(features, ok.filters, WEIGHTS, zoning, "score")
+  const context = buildSitesContext({ rows, filters: ok.filters, sort: "score", weights: WEIGHTS, sources, summary, zoningRules: zoning })
+  assert.equal(context.facts.matches, rows.length)
+  assert.ok(context.facts.filters_applied.includes("vacant land-use record"))
+  assert.match(context.facts.public_record_caveat, /not availability/)
+  assert.equal(context.facts.top_sites[0].scores.displacement_risk_screen, 30.3)
+  const template = explainSitesTemplate(context)
+  assert.match(template, /parcels match/)
+  assert.match(template, /displacement screen 30.3/)
+  assert.match(template, /not availability/)
+
+  const handle = createExplainHandler({ loadData: async () => ({ ...data, features }), model: mockModel(["What the data shows: ", "the top site."]) })
+  const response = await handle(post({ kind: "sites", weights: WEIGHTS, filters: { vacant: true } }, "192.0.2.44"))
+  assert.equal(response.headers.get("x-explain-source"), "ai")
+  assert.equal(await response.text(), "What the data shows: the top site.")
+  const none = await createExplainHandler({ loadData: async () => ({ ...data, features }), env: {} })(
+    post({ kind: "sites", weights: WEIGHTS, filters: { condemned: true } }, "192.0.2.45"),
+  )
+  assert.equal(none.headers.get("x-explain-source"), "template")
+  assert.match(await none.text(), /No parcels match/)
 })
