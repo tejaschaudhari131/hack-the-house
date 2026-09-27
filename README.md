@@ -13,6 +13,29 @@ This is not legal, zoning, financial, or permitting advice. It does not say what
 
 The MVP map is Hazelwood plus Lower, Central, and Upper Lawrenceville. Those are the official city neighborhoods. "Lawrenceville" in everyday speech is the three Lawrenceville neighborhoods together.
 
+## Features
+
+| | |
+| --- | --- |
+| **First-run guide and example.** A three-step intro says what the tool is and who it is for. **Try an example** loads a Lawrenceville townhouse vs a Hazelwood small apartment, both on LNC lots where §911.02 permits the type by right. **How it works** reopens the guide. | <img src="docs/screenshots/01-onboarding.png" alt="Three-step onboarding dialog" width="420"> |
+| **Click a parcel.** All four types ranked for one lot, with the §911.02 reading per type (allowed, needs special approval, not allowed, or check with the City), every score bar, and data confidence. Choosing an address flies the map to the lot. The URL keeps `?pin=` so a parcel can be shared. | <img src="docs/screenshots/04-parcel-view.png" alt="Parcel view with ranked types" width="420"> |
+| **Weight presets.** Resident, CDC / affordability-first, Planner / balanced, Developer / demand-first, and Climate-first set the sliders in one click. The screen says presets are value judgments, not data. | <img src="docs/screenshots/05-parcel-robustness.png" alt="Presets and the robustness box" width="420"> |
+| **How stable is #1?** For a parcel, and for the two-building compare, the app reruns the ranking under all five presets and under one-slider changes. It reports, for example, "Townhouse / duplex stays #1 under 5 of 5 presets. Flips to Small apartment if the demand weight falls to 2." When §911.02 leaves only one type, it says zoning, not the weights, decides #1, and shows the what-if result too. | <img src="docs/screenshots/03-compare-robustness.png" alt="Compare view: does the winner hold" width="420"> |
+| **Drop a building.** Put one type on a lot in 3D with an 800 m walk ring and nearby transit; drop a second to compare A and B side by side. | <img src="docs/screenshots/02-example-loaded.png" alt="Drop a building with the example loaded" width="420"> |
+| **Explanations.** "Explain the top two" or "Explain A vs B" streams an AI summary labeled "AI-generated summary of the scores above; check sources", or the template when no model is available, with the reason shown. | <img src="docs/screenshots/06-explanation-template.png" alt="Template explanation with its label" width="420"> |
+| **One-page report.** "Print one-page report" prints the parcel, zoning reading with the §911.02 citation, scores, weights and preset, robustness, measured inputs with sources and vintages, the summary, limitations, and the "screening aid, confirm with City Planning" note. Save as PDF for a community meeting. | <img src="docs/screenshots/07-report-page.png" alt="One-page parcel report" width="300"> |
+| **Works on a phone and with a keyboard.** The layout stacks under 900 px. There is a skip link to the results, visible focus outlines, labeled controls, live regions for streamed text, and an address search for anyone who cannot click the map. | <img src="docs/screenshots/08-mobile.png" alt="Mobile layout" width="160"> |
+
+## How to use it
+
+1. Open the app. Read the three-step guide, or click **Try an example**.
+2. **Click a parcel** on the map, or type an address (add a house number, such as `4200 butler`, to narrow the list).
+3. Read the ranked cards and the §911.02 badges. Anything marked "needs special approval" is not a variance and not a denial.
+4. Pick a viewpoint preset, or move the sliders. Watch **How stable is #1?**: if the result flips under a small change, the answer is about values, not data.
+5. **Drop a building** to compare two scenarios, then check **Does the winner hold?**
+6. Click **Explain** for a plain-language summary, or **Print one-page report** to bring it to a meeting.
+7. If a result looks wrong, flag it (the flag stays in your browser). Take real decisions to City Planning / the Zoning Administrator or a qualified professional.
+
 Why these two places: the public data actually separates them. In this pull, parcel block-group median incomes are about $40,000 in Hazelwood and about $101,000 in Lawrenceville. Median rent burden (share of renters paying 30% or more) is about 58% in Hazelwood and 34% in Lawrenceville. Median valid sale prices since 2021-09-26 are about $153 per square foot in Hazelwood and $247–$274 in the Lawrenceville neighborhoods. Lawrenceville also has more weekday transit trips within 400 meters (median about 950 versus about 420). Slopes of 25% or greater, the landslide-risk proxy, touch about 57% of Hazelwood parcels and about 15% of Lawrenceville parcels. Mapped undermined areas show up on about 13% of Hazelwood parcels and on none of these Lawrenceville parcels. Mapped FEMA flood zones are the other way around: about 6% of Lawrenceville parcels and under 1% of Hazelwood parcels. Glen Hazel is not included; it is its own neighborhood.
 
 ## How to run
@@ -44,11 +67,11 @@ Open http://localhost:3000. The default view is click a parcel. **Drop a buildin
 
 ### One-minute demo
 
-1. Open the app. Leave **Click a parcel** if you only want the original map.
-2. Choose **Drop a building**. Townhouse / duplex is already selected.
-3. Search `Butler` and click a Lawrenceville address. A block and an 800 m ring appear. Right-drag the map to tilt it.
-4. Small apartment is the next type if you click it. Search `Glenwood` and click a Hazelwood address. That fills Building B.
-5. Read the sentence **Why they rank differently**, then the two cards: homes added, the four scores, the weighted total, and whether each number is measured or a weighting choice. The zoning badge cites §911.02 and still says it needs expert review.
+1. Open the app and click **Try an example** (in the guide or the header). Building A is a townhouse / duplex at 4200 Butler St, Central Lawrenceville. Building B is a small apartment at 4820 2nd Ave, Hazelwood. Both lots are LNC, where §911.02 permits both types by right.
+2. Click **Jump to the comparison**. With balanced weights, A ranks higher. **Does the winner hold?** says A stays #1 under 3 of 5 presets: Resident and CDC pick B. That split is a values question, not a data finding.
+3. Click the **CDC / affordability-first** preset and watch B take the lead. Click **Planner / balanced** to go back.
+4. Switch to **Click a parcel**, search `4200 butler`, and open the parcel. Read the §911.02 badges and **How stable is #1?**, then click **Print one-page report**.
+5. Right-drag the 3D map to tilt it. The plain click-a-parcel map is always one click away in the header.
 
 For a plain-language explanation, click "Explain the top two" on a parcel, "Explain this parcel" on a dropped building, or "Explain A vs B" once two buildings are dropped. The text streams from a language model through the Vercel AI Gateway and is labeled **AI-generated summary of the scores above; check sources**. With no gateway credentials, or if the model errors or times out, the same button returns the deterministic template and is labeled **Template explanation (no AI)** with the reason. See [AI explanations](#ai-explanations).
 
@@ -75,6 +98,10 @@ web/               YY. Next.js map. Ranks on the client from the static GeoJSON.
   app/api/explain  AI Gateway explanation grounded in server-side facts; template fallback.
   lib/explainFacts.js, lib/explainPrompt.js, lib/explainHandler.js
                    What the model may see, what it is told, and the guardrails.
+  lib/presets.js, lib/robustness.js
+                   Viewpoint presets, and whether #1 holds across presets and one-slider changes.
+  components/ParcelReport.js, components/Onboarding.js
+                   Print-only one-page report; first-run guide and example case (lib/example.js).
 shared/rank_vector.json
                    One numeric example both the Python tests and the JS tests must match.
 ```
@@ -135,7 +162,7 @@ No paid data product. No model is required for the scores. A language model only
 ## AI Tools Used
 
 - **Explanations in the app:** `anthropic/claude-haiku-4.5` (Anthropic Claude Haiku 4.5) through the [Vercel AI Gateway](https://vercel.com/docs/ai-gateway), called with the Vercel AI SDK. Set `AI_MODEL` to use another gateway model. The model writes prose only. It does not compute scores, choose weights, or read the zoning code. If it is unavailable, `web/lib/explainTemplate.js` writes the explanation from the same numbers, and the UI says so. The demo does not depend on a model being up.
-- **Writing the code:** Cursor cloud agents helped write this repository. Grok 4.7 scaffolded the pipeline, the scoring model, and the first web app. Claude Opus 5.5 wrote the AI Gateway explanation route, the grounding and guardrails, and their tests. People on the team reviewed the scoring rules, which are in `pipeline/score.py` and `data/processed/score_model.json` so anyone can read and change them.
+- **Writing the code:** Cursor cloud agents helped write this repository. Grok 4.7 scaffolded the pipeline, the scoring model, and the first web app. Claude Opus 5.5 wrote the AI Gateway explanation route, the grounding and guardrails, the presets, the robustness check, the one-page report, the onboarding, and their tests. The five presets are value judgments that agent proposed; the team should confirm or change them in `web/lib/presets.js`. People on the team reviewed the scoring rules, which are in `pipeline/score.py` and `data/processed/score_model.json` so anyone can read and change them.
 
 ## AI explanations
 
@@ -157,6 +184,8 @@ The `x-explain-source` header is `ai` or `template`, `x-explain-model` names the
 ## Human in the loop
 
 Every parcel result is a screening aid. It is not a zoning determination, a permit, or an appraisal. The page says so on the result, and it links to the [City Planning zoning page](https://www.pittsburghpa.gov/Business-Development/City-Planning/Zoning), the [zoning code](https://ecode360.com/45474054), and the [zoning map](https://pittsburghpa.maps.arcgis.com/apps/instant/sidebar/index.html?appid=4bb79ea64bf848b3a0560e3856efeccb). The zoning page lists 412-255-2621 at the City-County Building, 414 Grant Street.
+
+The robustness check makes the value judgment visible: it shows which presets agree on #1 and how far one weight must move to flip it. The printed report carries the same screening note, the §911.02 citation, and the source vintages, and it includes a browser flag if there is one, so the paper copy is not stripped of its caveats.
 
 A person can flag a result as wrong. The flag, and an optional note, stay in that browser's local storage. They are not uploaded and they are not a filing with the City. Take a consequential question to City Planning / the Zoning Administrator or to a qualified professional.
 
