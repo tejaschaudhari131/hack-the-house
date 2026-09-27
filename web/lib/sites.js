@@ -80,7 +80,9 @@ export const EXAMPLE_QUERIES = [
   {
     id: "anti-displacement",
     label: "Vacant lots of 3,000+ sq ft in high displacement-risk tracts where a small apartment building is allowed by right or with special approval",
-    detail: "For a CDC weighing affordable homes where renters are most exposed. Set the displacement weight to 0 if you do not want it to count against these places.",
+    detail:
+      "An intervention question: it looks for high-risk tracts on purpose. Choosing it also sets the displacement weight to 0, so the ranking does not push these places down. That is a choice about the objective; it does not lower anyone's risk, and the risk values stay visible.",
+    weights: { displacement: 0 },
     filters: {
       vacant: true,
       typeId: "small_apartment",

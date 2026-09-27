@@ -1,6 +1,21 @@
+import { execSync } from "node:child_process"
+
+function commitSha() {
+  if (process.env.VERCEL_GIT_COMMIT_SHA) return process.env.VERCEL_GIT_COMMIT_SHA
+  try {
+    return execSync("git rev-parse HEAD", { stdio: ["ignore", "pipe", "ignore"] }).toString().trim()
+  } catch {
+    return ""
+  }
+}
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  env: {
+    NEXT_PUBLIC_COMMIT_SHA: commitSha().slice(0, 12),
+    NEXT_PUBLIC_BUILT_AT: new Date().toISOString(),
+  },
   outputFileTracingIncludes: {
     "/api/explain": [
       "./public/data/parcels.geojson",

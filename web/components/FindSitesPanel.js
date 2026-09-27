@@ -133,6 +133,7 @@ export default function FindSitesPanel({
               onClick={() => {
                 onExample(example.id)
                 onFilters(filtersFor(example))
+                if (example.weights) onWeights({ ...weights, ...example.weights })
                 setShown(PAGE)
               }}
             >

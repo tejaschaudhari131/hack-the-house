@@ -6,16 +6,18 @@ import Explanation from "./Explanation.js"
 import Robustness from "./Robustness.js"
 import WeightPresets from "./WeightPresets.js"
 import { analyzeRobustness, compareWinner } from "../lib/robustness.js"
-import { BUILDINGS, SCORE_TAGS, WALK_RADIUS_M } from "../lib/buildings.js"
+import ComparisonView from "./ComparisonView.js"
+import { BUILDINGS, SCORE_TAGS, WALK_RADIUS_M, scoreProxyNote } from "../lib/buildings.js"
 import { TYPE_COLORS } from "../lib/colors.js"
-import { compareDrops } from "../lib/compare.js"
+import { buildScenario, compareScenarios } from "../lib/comparison.js"
+import { FACTOR_BY_ID, breakdown, coverageText } from "../lib/factors.js"
 import { useExplanation } from "../lib/explainClient.js"
 import { buildCompareContext, buildParcelContext, explainCompareTemplate } from "../lib/explainFacts.js"
 import { explainTemplate } from "../lib/explainTemplate.js"
 import { clearFlag, loadFlags, saveFlag } from "../lib/flags.js"
 import { featurePoint, stopsWithin } from "../lib/geo.js"
-import { TYPE_LABELS, WEIGHT_LABELS, inverted, rankTypes } from "../lib/rank.js"
-import { dropZoningBadge, resolveZoning } from "../lib/zoning.js"
+import { WEIGHT_LABELS, rankTypes } from "../lib/rank.js"
+import { resolveZoning, unitPermission } from "../lib/zoning.js"
 
 const CODE_URL = "https://ecode360.com/45474054"
 const MAP_URL =
@@ -85,8 +87,10 @@ function DropCard({ drop, feature, weights, zoning, stops, summary, onClear }) {
   const spec = BUILDINGS[drop.typeId]
   const zoningInfo = resolveZoning(props.zoning_code, zoning)
   const ranked = rankTypes(props.scores, weights, { allowed: zoningInfo.allowed, whatIf: false })
-  const row = ranked.find((item) => item.id === drop.typeId)
-  const badge = dropZoningBadge(drop.typeId, zoningInfo)
+  const row = ranked.find((item) => item.id === spec.scoreType)
+  const permission = unitPermission(spec.scoreType, spec.useRow, zoningInfo, spec.units)
+  const coverage = coverageText(breakdown(props.scores?.[spec.scoreType], weights))
+  const proxy = scoreProxyNote(drop.typeId)
   const point = featurePoint(feature.geometry)
   const transit = point ? stopsWithin(stops, point[0], point[1], WALK_RADIUS_M) : null
   const flagId = `drop:${drop.pin}:${drop.typeId}`
@@ -101,7 +105,7 @@ function DropCard({ drop, feature, weights, zoning, stops, summary, onClear }) {
     <article className="drop-card" style={{ borderColor: TYPE_COLORS[drop.typeId] }}>
       <header>
         <span>
-          Building {drop.slot}. {TYPE_LABELS[drop.typeId]}
+          Building {drop.slot}. {spec.label}
         </span>
         <button type="button" className="text-button" onClick={onClear}>
           Remove
@@ -113,21 +117,22 @@ function DropCard({ drop, feature, weights, zoning, stops, summary, onClear }) {
         {props.neighborhood}
       </p>
       <p>
-        About <strong>{spec.units}</strong> homes added, shown {spec.heightM} m tall ({spec.floors} floors). Those
-        figures are defaults for the type, not a permit or a measured unit count, and they do not change the scores.
+        About <strong>{spec.units}</strong> {spec.units === 1 ? "home" : "homes"}, shown {spec.heightM} m tall ({spec.floors}{" "}
+        floors). An illustration, not a permitted envelope, yield, or verified unit count.
       </p>
+      {proxy ? <p className="hint">{proxy}</p> : null}
       <p>
-        <span className={`badge ${badge.id}`}>{badge.label}</span>
+        <span className={`badge ${permission.badgeId}`}>{permission.label}</span>
       </p>
-      <p className="hint">{badge.detail}</p>
+      <p className="hint">{permission.detail}</p>
       <p className="hint">
         Zoning on the parcel: {props.zoning_code || "not matched"}
         {props.zoning_label ? ` (${props.zoning_label})` : ""}.
       </p>
       {transit ? (
         <p>
-          Inside the {WALK_RADIUS_M} m ring: {transit.count} stops and about {transit.trips.toLocaleString()} weekday
-          scheduled trips
+          Within {WALK_RADIUS_M} m in a straight line (not a walking route): {transit.count} stops and about{" "}
+          {transit.trips.toLocaleString()} weekday scheduled trips
           {transit.routes.length ? ` (${transit.routes.join(", ")})` : ""}. Scheduled service is not reliability.
         </p>
       ) : (
@@ -138,18 +143,23 @@ function DropCard({ drop, feature, weights, zoning, stops, summary, onClear }) {
           ? `Flood overlay: about ${Math.round(props.sfha_overlap * 100)}% of the parcel is in a FEMA Special Flood Hazard Area.`
           : (props.flood_02_overlap || 0) > 0
             ? "Flood overlay: the parcel touches the FEMA 0.2% zone."
-            : "No mapped FEMA Special Flood Hazard Area on this parcel."}{" "}
+            : props.sfha_overlap === null || props.sfha_overlap === undefined
+              ? "Flood layer missing for this parcel."
+              : "No overlap with the checked FEMA flood zones (a map screen, not a flood determination)."}{" "}
         {(props.steep_slope_overlap || 0) > 0
           ? `Slope overlay: about ${Math.round(props.steep_slope_overlap * 100)}% is on a 25%+ slope, a landslide-risk proxy, not a landslide inventory.`
-          : "No mapped 25%+ slope on this parcel."}
+          : props.steep_slope_overlap === null || props.steep_slope_overlap === undefined
+            ? "Slope layer missing for this parcel."
+            : "No overlap with the mapped 25%+ slope layer."}
       </p>
-      <ScoreLine label="Demand" value={row?.demand} {...SCORE_TAGS.demand} />
-      <ScoreLine label="Transit" value={row?.transit} {...SCORE_TAGS.transit} />
-      <ScoreLine label="Equity" value={row?.equity} {...SCORE_TAGS.equity} />
-      <ScoreLine label="Climate risk" value={row?.climate_risk} {...SCORE_TAGS.climate_risk} />
-      <ScoreLine label="Displacement risk (screen)" value={row?.displacement_risk} {...SCORE_TAGS.displacement_risk} />
-      <ScoreLine label="Marginal carbon (estimate)" value={row?.carbon_index} {...SCORE_TAGS.carbon_index} />
+      <ScoreLine label={FACTOR_BY_ID.demand.label} value={row?.demand} {...SCORE_TAGS.demand} />
+      <ScoreLine label={FACTOR_BY_ID.transit.label} value={row?.transit} {...SCORE_TAGS.transit} />
+      <ScoreLine label={FACTOR_BY_ID.equity.label} value={row?.equity} {...SCORE_TAGS.equity} />
+      <ScoreLine label={`${FACTOR_BY_ID.climate.label} (higher is worse)`} value={row?.climate_risk} {...SCORE_TAGS.climate_risk} />
+      <ScoreLine label={`${FACTOR_BY_ID.displacement.label} (higher is worse)`} value={row?.displacement_risk} {...SCORE_TAGS.displacement_risk} />
+      <ScoreLine label={`${FACTOR_BY_ID.carbon.label} (higher is worse)`} value={row?.carbon_index} {...SCORE_TAGS.carbon_index} />
       <ScoreLine label="Weighted total" value={row?.composite} {...SCORE_TAGS.composite} />
+      <p className="hint">{coverage}</p>
       <button type="button" className="explain" onClick={onExplain} disabled={explaining}>
         {explaining ? "Writing explanation…" : "Explain this parcel"}
       </button>
@@ -181,51 +191,33 @@ export default function DropPanel({
   byPin,
   exampleNote,
   onDismissExample,
+  onCompareState,
+  onPrintBrief,
+  guide = null,
 }) {
-  const cards = useMemo(() => {
-    return ["A", "B"].map((slot) => {
-      const drop = drops.find((item) => item.slot === slot)
-      const feature = drop ? byPin.get(drop.pin) : null
-      if (!drop || !feature) return null
-      const props = feature.properties
-      const ranked = rankTypes(props.scores, weights, {
-        allowed: resolveZoning(props.zoning_code, zoning).allowed,
-        whatIf: false,
-      })
-      const row = ranked.find((item) => item.id === drop.typeId)
-      return {
-        pin: drop.pin,
-        address: props.address,
-        neighborhood: props.neighborhood,
-        typeLabel: TYPE_LABELS[drop.typeId],
-        composite: row?.composite ?? null,
-        demand: row?.demand ?? null,
-        transit: row?.transit ?? null,
-        equity: row?.equity ?? null,
-        climate_suitability: row?.climate_suitability ?? null,
-        displacement_suitability: inverted(row?.displacement_risk),
-        carbon_suitability: inverted(row?.carbon_index),
-      }
-    })
-  }, [byPin, drops, weights, zoning])
-  const comparison = cards[0] && cards[1] ? compareDrops(cards[0], cards[1]) : ""
   const dropA = drops.find((item) => item.slot === "A")
   const dropB = drops.find((item) => item.slot === "B")
+  const scenarios = useMemo(() => {
+    return [dropA, dropB].map((drop) => {
+      const feature = drop ? byPin.get(drop.pin) : null
+      return drop && feature ? buildScenario(drop.slot, drop.typeId, feature.properties, zoning) : null
+    })
+  }, [byPin, dropA, dropB, zoning])
+  const result = useMemo(
+    () => (scenarios[0] && scenarios[1] ? compareScenarios(scenarios[0], scenarios[1], weights) : null),
+    [scenarios, weights],
+  )
+  const comparison = Boolean(result)
   const compareKey = `${dropA?.pin}:${dropA?.typeId}|${dropB?.pin}:${dropB?.typeId}|${JSON.stringify(weights)}`
   const compareAi = useExplanation(compareKey)
-  const compareRobustness = useMemo(() => {
-    if (!comparison || !dropA || !dropB) return null
-    const featureA = byPin.get(dropA.pin)
-    const featureB = byPin.get(dropB.pin)
-    if (!featureA || !featureB) return null
-    return analyzeRobustness(
-      compareWinner(
-        { scores: featureA.properties.scores, typeId: dropA.typeId },
-        { scores: featureB.properties.scores, typeId: dropB.typeId },
-      ),
-      weights,
-    )
-  }, [comparison, dropA, dropB, byPin, weights])
+  const compareRobustness = useMemo(
+    () => (result ? analyzeRobustness(compareWinner(scenarios[0], scenarios[1]), weights) : null),
+    [result, scenarios, weights],
+  )
+
+  useEffect(() => {
+    onCompareState?.(result ? { result, robustness: compareRobustness, explanation: compareAi.explanation } : null)
+  }, [result, compareRobustness, compareAi.explanation, onCompareState])
 
   function jumpToComparison() {
     const target = document.getElementById("comparison")
@@ -277,6 +269,49 @@ export default function DropPanel({
           </p>
         </section>
       ) : null}
+{guide}
+      {comparison ? (
+        <section className="review-box" id="comparison" tabIndex={-1}>
+          <h2>Compare A and B</h2>
+          <ComparisonView result={result} onPrint={onPrintBrief} />
+          <Robustness analysis={compareRobustness} title="Does the winner hold?" />
+          <button type="button" className="explain" onClick={onExplainCompare} disabled={compareAi.explaining}>
+            {compareAi.explaining ? "Writing explanation…" : "Explain A vs B"}
+          </button>
+          <Explanation explanation={compareAi.explanation} />
+        </section>
+      ) : (
+        <p className="hint">
+          {drops.length ? "Drop a second building to compare them side by side." : "Pick a building type below, then click a parcel on the map or choose an address."}
+        </p>
+      )}
+
+      <div className="compare-grid">
+        {["A", "B"].map((slot) => {
+          const drop = drops.find((item) => item.slot === slot)
+          const feature = drop ? byPin.get(drop.pin) : null
+          if (!drop || !feature) {
+            return (
+              <article key={slot} className="drop-card empty">
+                <header>Building {slot}</header>
+                <p className="hint">Empty. Choose this slot and click a parcel.</p>
+              </article>
+            )
+          }
+          return (
+            <DropCard
+              key={`${slot}:${drop.pin}:${drop.typeId}`}
+              drop={drop}
+              feature={feature}
+              weights={weights}
+              zoning={zoning}
+              stops={stops}
+              summary={summary}
+              onClear={() => onClear(slot)}
+            />
+          )
+        })}
+      </div>
       <section className="limitations">
         <h2>Screening aid only</h2>
         <p>
@@ -306,7 +341,7 @@ export default function DropPanel({
           {Object.entries(BUILDINGS).map(([id, spec]) => (
             <button key={id} type="button" className={activeType === id ? "on" : ""} onClick={() => onType(id)}>
               <i style={{ background: TYPE_COLORS[id] }} />
-              {TYPE_LABELS[id]}
+              {spec.label}
               <span>
                 {spec.units} homes · {spec.heightM} m
               </span>
@@ -322,7 +357,7 @@ export default function DropPanel({
           </button>
         </div>
         <p className="hint">
-          Next click drops {TYPE_LABELS[activeType]} as Building {activeSlot}. Right-drag the map to tilt the blocks.
+          Next click drops {BUILDINGS[activeType]?.label} as Building {activeSlot}. Right-drag the map to tilt the blocks.
         </p>
       </section>
 
@@ -371,7 +406,7 @@ export default function DropPanel({
             &quot;4200 butler&quot;.
           </p>
         ) : null}
-        {matches.length ? <p className="hint">Choosing an address drops {TYPE_LABELS[activeType]} as Building {activeSlot}.</p> : null}
+        {matches.length ? <p className="hint">Choosing an address drops {BUILDINGS[activeType]?.label} as Building {activeSlot}.</p> : null}
         <ul className="matches">
           {matches.map((feature) => (
             <li key={feature.properties.pin}>
@@ -384,46 +419,6 @@ export default function DropPanel({
         </ul>
       </section>
 
-      {comparison ? (
-        <section className="review-box" id="comparison" tabIndex={-1}>
-          <h2>Why they rank differently</h2>
-          <p>{comparison}</p>
-          <Robustness analysis={compareRobustness} title="Does the winner hold?" />
-          <button type="button" className="explain" onClick={onExplainCompare} disabled={compareAi.explaining}>
-            {compareAi.explaining ? "Writing explanation…" : "Explain A vs B"}
-          </button>
-          <Explanation explanation={compareAi.explanation} />
-        </section>
-      ) : (
-        <p className="hint">Drop a second building to compare them side by side.</p>
-      )}
-
-      <div className="compare-grid">
-        {["A", "B"].map((slot) => {
-          const drop = drops.find((item) => item.slot === slot)
-          const feature = drop ? byPin.get(drop.pin) : null
-          if (!drop || !feature) {
-            return (
-              <article key={slot} className="drop-card empty">
-                <header>Building {slot}</header>
-                <p className="hint">Empty. Choose this slot and click a parcel.</p>
-              </article>
-            )
-          }
-          return (
-            <DropCard
-              key={`${slot}:${drop.pin}:${drop.typeId}`}
-              drop={drop}
-              feature={feature}
-              weights={weights}
-              zoning={zoning}
-              stops={stops}
-              summary={summary}
-              onClear={() => onClear(slot)}
-            />
-          )
-        })}
-      </div>
     </aside>
   )
 }

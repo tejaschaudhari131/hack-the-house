@@ -106,7 +106,8 @@ export function unitPermission(typeId, useRow, zoningInfo, units = null) {
   if (!useRow || zoningInfo?.status !== "use_table") {
     const badge = dropZoningBadge(typeId, zoningInfo)
     const category = BADGE_TO_CATEGORY[badge.id] || "unknown"
-    return { category, badgeId: badge.id, label: badge.label, detail: badge.detail, useRow: null, letter: null }
+    const label = category === "partial" || category === "special" ? badge.label : PERMISSION_CATEGORIES[category]
+    return { category, badgeId: badge.id, label, detail: badge.detail, useRow: null, letter: null }
   }
   const letter = zoningInfo.district?.use_rows?.[useRow]
   let category

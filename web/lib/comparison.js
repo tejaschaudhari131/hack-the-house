@@ -9,6 +9,9 @@ export const CLOSE_GAP = 1
 
 const EPSILON = 1e-9
 
+/** Contribution differences smaller than the displayed precision (0.1 point) are not named as drivers. */
+const DRIVER_MIN = 0.05
+
 /** One scenario: a building (type + unit count) on one parcel. */
 export function buildScenario(slot, buildingId, props, zoningRules) {
   const spec = BUILDINGS[buildingId]
@@ -75,7 +78,7 @@ export function compareScenarios(a, b, weights) {
   const shownGap = ranked ? round1(ra.composite - rb.composite) : null
   let winner = null
   if (ranked) winner = Math.abs(gap) < EPSILON || shownGap === 0 ? "tie" : gap > 0 ? "A" : "B"
-  const drivers = factors.filter((row) => row.weight > 0 && !row.coverageDiffers && Math.abs(row.difference) > EPSILON)
+  const drivers = factors.filter((row) => row.weight > 0 && !row.coverageDiffers && Math.abs(row.difference) >= DRIVER_MIN)
   const sameCoverage = ra.availableIds.join() === rb.availableIds.join()
   const permitted = (scenario) => scenario.permission.category === "permitted" || scenario.permission.category === "partial"
   return {
