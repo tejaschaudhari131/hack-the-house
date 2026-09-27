@@ -135,10 +135,6 @@ export default function PlannerMap({ parcels, neighborhoods, stops, existingBuil
       element.textContent = `${selected.properties.address || selected.properties.pin} · ${selected.properties.zoning_code || '?'}`
       marker.current = new Marker({ element, anchor: 'bottom', offset: [0, -35] }).setLngLat(point).addTo(map)
     }
-    if (lastPin.current !== selected.properties.pin && point) {
-      lastPin.current = selected.properties.pin
-      map.easeTo({ center: point, zoom: 17.6, duration: 650 })
-    }
   }, [ready, selected])
 
   useEffect(() => {
@@ -156,7 +152,20 @@ export default function PlannerMap({ parcels, neighborhoods, stops, existingBuil
     ]) : empty())
   }, [ready, stop, selected, proposed, additionalDepartures, networkResult])
 
-  useEffect(() => { if (ready) mapRef.current?.easeTo({ pitch: view3d ? 55 : 0, bearing: view3d ? -25 : 0, duration: 350 }) }, [ready, view3d])
+  useEffect(() => {
+    if (!ready || !mapRef.current) return
+    const point = selected && geometryCenter(selected.geometry)
+    const newSite = point && lastPin.current !== selected.properties.pin
+    // A second easeTo cancels the first: apply the complete camera destination
+    // together, including on direct parcel links and rapid tool/site switches.
+    mapRef.current.easeTo({
+      ...(point ? { center: point } : {}),
+      ...(newSite ? { zoom: 17.6 } : {}),
+      pitch: view3d ? 55 : 0, bearing: view3d ? -25 : 0,
+      duration: newSite ? 650 : 350,
+    })
+    if (point) lastPin.current = selected.properties.pin
+  }, [ready, selected, view3d])
 
   return <><div ref={container} className="planner-map" aria-label="3D parcel planning map. Select a parcel on the map or use the address search." />{error && <div className="planner-map-error" role="alert">{error}</div>}</>
 }
