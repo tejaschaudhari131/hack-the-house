@@ -56,12 +56,14 @@
       "label": "Equity",
       "higher_means": "Stronger case that this type serves lower-income households here, after a displacement penalty",
       "measured": [
-        "Block-group median household income compared with the county median",
-        "Share of renters paying 30 percent or more of income in rent (ACS B25070, not HUD CHAS)",
+        "Block-group median household income compared with the county median (ACS 2024 5-year B19013)",
+        "Share of renters paying 30 percent or more of income in rent (ACS 2024 5-year B25070, all renters with a computed ratio)",
+        "Share of renter households at or below 80 percent of HAMFI that pay more than 30 percent of income (HUD CHAS 2018-2022 Table 8, census tract). This is a different universe and an older vintage than the ACS share.",
         "The same sale prices and turnover used in demand, read here as displacement pressure"
       ],
       "normative": [
         "Treating income below the county median as need",
+        "Equal weight, among whichever of the income gap, the ACS rent-burden share, and the CHAS low-income renter cost-burden share are present. A missing measure is dropped, not treated as zero.",
         "Treating hotter sales as displacement pressure",
         "Type factors that give larger buildings more production value and more displacement exposure"
       ]

@@ -72,6 +72,11 @@ CENSUS_TABLES = {
     "B25064": "https://www2.census.gov/programs-surveys/acs/summary_file/2024/table-based-SF/data/5YRData/acsdt5y2024-b25064.dat",
 }
 BLOCK_GROUP_ZIP_URL = "https://www2.census.gov/geo/tiger/GENZ2024/shp/cb_2024_42_bg_500k.zip"
+# 2018-2022 CHAS, Census tract summary level 140. The download tool on cp.html
+# builds this path as cp/{year}-{geo}-{ftype}.zip. Released December 2025.
+CHAS_PAGE_URL = "https://www.huduser.gov/portal/datasets/cp.html"
+CHAS_TRACT_ZIP_URL = "https://www.huduser.gov/portal/datasets/cp/2018thru2022-140-csv.zip"
+CHAS_DICTIONARY_URL = "https://www.huduser.gov/portal/datasets/cp/CHAS-data-dictionary-18-22.xlsx"
 
 # Census API was checked on 2026-09-26. Unauthenticated calls redirect to missing_key.html.
 CENSUS_API_NOTE = (

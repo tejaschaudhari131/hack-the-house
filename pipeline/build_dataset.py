@@ -25,7 +25,7 @@ import shapely
 from shapely.strtree import STRtree
 
 import config
-from score import model_card, score_parcel
+from score import chas_low_income_renter_cost_burden, model_card, score_parcel
 from util import (
     arcgis_features,
     cached_download,
@@ -596,6 +596,37 @@ def _lookup_census(tables, geoid):
     }
 
 
+def load_chas(refresh):
+    """2018-2022 CHAS Table 8, Allegheny County census tracts (summary level 140)."""
+    dest = config.RAW_DIR / "2018thru2022-140-csv.zip"
+    cached_download(config.CHAS_TRACT_ZIP_URL, dest, refresh=refresh)
+    by_tract = {}
+    with zipfile.ZipFile(dest) as archive:
+        with archive.open("140/Table8.csv") as handle:
+            text = io.TextIOWrapper(handle, encoding="latin-1", newline="")
+            reader = csv.DictReader(text)
+            for row in reader:
+                if (row.get("st") or "").strip() != "42":
+                    continue
+                if (row.get("cnty") or "").strip() != "003":
+                    continue
+                if (row.get("sumlevel") or "").strip() != "140":
+                    continue
+                geoid = (row.get("geoid") or "").strip()
+                tract = geoid[-11:]
+                if len(tract) != 11 or not tract.isdigit() or not tract.startswith("42003"):
+                    continue
+                parsed = chas_low_income_renter_cost_burden(row)
+                if tract in by_tract:
+                    raise RuntimeError(f"CHAS Table 8 has more than one Allegheny row for tract {tract}")
+                by_tract[tract] = parsed
+    if not by_tract:
+        raise RuntimeError("CHAS Table 8 had no Allegheny County tract rows")
+    measured = sum(1 for value in by_tract.values() if value)
+    print(f"  CHAS Allegheny tracts: {len(by_tract)}; with a cost-burden share: {measured}", flush=True)
+    return by_tract
+
+
 def _county_median(tables):
     row = tables["B19013"].get("0500000US42003")
     if not row:
@@ -701,6 +732,7 @@ def assemble(
     block_groups,
     census_tables,
     transit,
+    chas_by_tract=None,
 ):
     print("Joining parcels to neighborhoods and layers", flush=True)
     hood_geoms = [item["geom"] for item in neighborhoods]
@@ -827,12 +859,26 @@ def assemble(
         record["income_moe"] = None
         record["rent_burden_share"] = None
         record["median_gross_rent"] = None
-        if bg_tree is not None and census_tables is not None:
+        record["chas_tract_geoid"] = None
+        record["chas_rent_burden_share"] = None
+        record["chas_low_income_renter_households"] = None
+        record["chas_cost_burdened_low_income_renters"] = None
+        record["chas_vintage"] = None
+        if bg_tree is not None:
             bg_hits = bg_tree.query(point, predicate="intersects")
             if len(bg_hits):
-                census = _lookup_census(census_tables, block_groups[int(bg_hits[0])]["geoid"])
-                if census:
-                    record.update(census)
+                bg_geoid = block_groups[int(bg_hits[0])]["geoid"]
+                tract_geoid = bg_geoid[:11]
+                if census_tables is not None:
+                    census = _lookup_census(census_tables, bg_geoid)
+                    if census:
+                        record.update(census)
+                if chas_by_tract is not None:
+                    record["chas_tract_geoid"] = tract_geoid
+                    record["chas_vintage"] = "2018-2022"
+                    chas = chas_by_tract.get(tract_geoid)
+                    if chas:
+                        record.update(chas)
 
         record["sfha_overlap"] = round(_overlap(geometry, sfha), 3) if flood_features is not None else None
         record["flood_02_overlap"] = round(_overlap(geometry, shaded), 3) if flood_features is not None else None
@@ -884,6 +930,11 @@ def _public_feature(record):
         "income_moe": record.get("income_moe"),
         "rent_burden_share": record.get("rent_burden_share"),
         "median_gross_rent": record.get("median_gross_rent"),
+        "chas_tract_geoid": record.get("chas_tract_geoid"),
+        "chas_rent_burden_share": record.get("chas_rent_burden_share"),
+        "chas_low_income_renter_households": record.get("chas_low_income_renter_households"),
+        "chas_cost_burdened_low_income_renters": record.get("chas_cost_burdened_low_income_renters"),
+        "chas_vintage": record.get("chas_vintage"),
         "flood_zones": record.get("flood_zones") or [],
         "sfha_overlap": record.get("sfha_overlap"),
         "flood_02_overlap": record.get("flood_02_overlap"),
@@ -948,6 +999,24 @@ def _stops_collection(stops):
     return {"type": "FeatureCollection", "features": features}
 
 
+def _chas_status(parcels):
+    shares = [record.get("chas_rent_burden_share") for record in parcels if record.get("chas_rent_burden_share") is not None]
+    tracts = {record.get("chas_tract_geoid") for record in parcels if record.get("chas_tract_geoid")}
+    if not shares:
+        return (
+            "Not loaded. Equity is using ACS income and ACS rent burden only. "
+            "The 2018-2022 CHAS tract file was not joined."
+        )
+    return (
+        f"Loaded HUD CHAS 2018-2022 Table 8, census tract summary level 140, Allegheny County. "
+        f"{len(shares)} of {len(parcels)} parcels have a tract share "
+        f"({len(tracts)} tracts). The measured input is the share of renter households at or below "
+        "80% of HAMFI with housing cost burden greater than 30%, among households whose cost burden "
+        "was computed. Joined on the 11-digit tract GEOID (the suffix of geoid 1400000US…). "
+        "ACS 2024 rent burden stays a separate input. CHAS lags that ACS release by several years."
+    )
+
+
 def write_outputs(neighborhoods, parcels, market, county_income, sources, transit_meta, failures, stops=None):
     config.PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
     config.WEB_DATA_DIR.mkdir(parents=True, exist_ok=True)
@@ -1000,12 +1069,7 @@ def write_outputs(neighborhoods, parcels, market, county_income, sources, transi
         "transit_service_date": None if not transit_meta else transit_meta.get("service_date"),
         "sources_failed": failures,
         "decision_support_only": True,
-        "chas_status": (
-            "Not loaded. huduser.gov answered unattended downloads with an AWS WAF challenge "
-            "(HTTP 202) on 2026-09-26, and the CHAS API needs an account token. Equity uses ACS "
-            "income and rent burden. Next step is the 2018-2022 CHAS tract table of cost burden "
-            "by HUD income band, joined on the tract GEOID."
-        ),
+        "chas_status": _chas_status(parcels),
     }
     zoning_review = {
         "needs_expert_review": True,
@@ -1240,6 +1304,31 @@ def main(refresh=False):
             "access_url": config.GTFS_URL,
         },
     )
+    chas_by_tract = _run_step(
+        sources,
+        failures,
+        "Comprehensive Housing Affordability Strategy (CHAS)",
+        config.CHAS_PAGE_URL,
+        "U.S. Department of Housing and Urban Development",
+        "Public",
+        "2018-2022 CHAS (released December 2025), Table 8, census tract summary level 140. "
+        "The equity input is the share of renter households at or below 80% of HAMFI with cost burden greater than 30%, "
+        "excluding households whose cost burden was not computed. Joined to the parcel on the 11-digit tract GEOID. "
+        "ACS 2024 B25070 stays a separate rent-burden input. CHAS lags that ACS vintage by several years. "
+        "Column names are from the 2018-2022 data dictionary.",
+        lambda: load_chas(refresh),
+        extra={
+            "catalog_priority": "Core",
+            "catalog_name": "Comprehensive Housing Affordability Strategy (CHAS)",
+            "catalog_url": config.CHAS_PAGE_URL,
+            "caveat": "Based on multi-year ACS data; releases lag and tables are complex.",
+            "access_url": config.CHAS_TRACT_ZIP_URL,
+            "dictionary_url": config.CHAS_DICTIONARY_URL,
+            "vintage": "2018-2022",
+            "summary_level": "140",
+            "table": "Table8",
+        },
+    )
 
     def clip_once():
         return assemble(
@@ -1253,6 +1342,7 @@ def main(refresh=False):
             block_groups or [],
             census_tables,
             transit,
+            chas_by_tract,
         )
 
     parcels = clip_once()
@@ -1282,20 +1372,6 @@ def main(refresh=False):
     transit_meta = None if transit is None else {"service_date": transit.get("service_date")}
     sources.extend(
         [
-            _source(
-                "Comprehensive Housing Affordability Strategy (CHAS)",
-                "https://www.huduser.gov/portal/datasets/cp.html",
-                "HUD",
-                "Public",
-                "deferred",
-                "Tract-level cost burden by HUD income band was not loaded. huduser.gov returned an AWS WAF challenge (HTTP 202, x-amzn-waf-action: challenge) to unattended downloads on 2026-09-26, and the CHAS API requires an account token. Equity uses ACS B19013 and B25070 instead. Next step: join the 2018-2022 CHAS tract table (summary level 080) of cost burden by income on the tract GEOID.",
-                {
-                    "catalog_priority": "Core",
-                    "catalog_name": "Comprehensive Housing Affordability Strategy (CHAS)",
-                    "catalog_url": "https://www.huduser.gov/portal/datasets/cp.html",
-                    "caveat": "Based on multi-year ACS data; releases lag and tables are complex.",
-                },
-            ),
             _source(
                 "Allegheny County Property Sale Transactions",
                 "https://data.wprdc.org/dataset/allegheny-county-property-sale-transactions",
