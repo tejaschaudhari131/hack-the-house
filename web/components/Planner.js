@@ -147,6 +147,10 @@ function Studio({ data }) {
   }, [scenario.pin])
   const selected = byPin.get(scenario.pin), props = selected.properties
   const [slot, setSlot] = useState('B'), [tool, setTool] = useState('housing'), [proposed, setProposed] = useState(true), [view3d, setView3d] = useState(true)
+  useEffect(() => {
+    if (tool === 'housing') setView3d(true)
+    else if (tool === 'network' || tool === 'service') setView3d(false)
+  }, [tool])
   const [placing, setPlacing] = useState(false)
   const [drawing, setDrawing] = useState(null), [draftNode, setDraftNode] = useState(null)
   useEffect(() => { setPlacing(false) }, [slot, tool, scenario.pin])

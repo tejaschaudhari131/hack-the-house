@@ -2,6 +2,8 @@
 
 The default route is now a browser-based 3D housing and transit scenario studio. The original parcel inspector, Find Sites, drop comparison, reports and AI explanations remain at `/explore`. Existing `?pin=` links select a parcel in either interface.
 
+Housing opens at the original 55° pitch and −25° bearing. Entering Infra or Transit switches to a north-up top-down camera; returning to Housing restores the original angled view. Compare preserves the current view and the 2D/3D control remains available. Camera switches leave the road graph and scenario edits intact.
+
 ## Run
 
 ```bash
