@@ -6,6 +6,8 @@ Studio now applies [supported Title Nine checks](TITLE_NINE.md) before scoring. 
 
 Under **Assumptions → Advanced options**, enter exact stories and choose duplex versus attached-house form. **Additional zoning evidence** holds optional parcel-specific parking, grading, tree, landscaping and IZ inputs. Blank fields remain unknown; entered values are scenario assumptions. Undo/redo and exports retain these inputs.
 
+A six-step tour opens on the first visit to Studio. **Tour** in the header replays it. **Skip**, Escape or **Start planning** dismiss it; that choice is remembered in this browser. The tour previews the relevant controls, restores the previous view when dismissed and never edits the scenario. If browser storage is blocked, dismissal still works for the current session.
+
 The map legend starts collapsed, with short labels and the existing building colours. Expand **Legend** for full labels, map symbols and the building-layer toggle.
 
 Studio has one editable next-building draft, with no A/B controls. Cycle its housing type on the map or in Edit. In Rankings, **Compare to** adds any of the other four templates; **All types** compares all five, including triplex. **Expand comparison** opens the table at full width; **Back to map** returns to the same scene.

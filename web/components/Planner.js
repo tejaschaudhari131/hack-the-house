@@ -17,6 +17,7 @@ import TitleNineChecks, { ZoningInputs } from './TitleNine.js'
 import { evaluateTitleNine, housingSpec } from '../lib/titleNine.js'
 import StudioWorkspace from './StudioWorkspace.js'
 import MapLegend from './MapLegend.js'
+import StudioTour from './StudioTour.js'
 import { draftPreview } from '../lib/draftPreview.js'
 import { evaluatePlanner, nearbyStops, preferredStop, round } from '../lib/plannerModel.js'
 import { EXAMPLES, MODEL_VERSION, PLANNER_FACTORS, MASSING_DEFAULTS, initialStudioScenario, historyFor, scenarioReducer, scenarioExport } from '../lib/plannerState.js'
@@ -160,8 +161,10 @@ function Studio({ data }) {
   const selected = byPin.get(scenario.pin), props = selected.properties
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [tool, setActiveTool] = useState('housing'), [proposed, setProposed] = useState(true), [view3d, setView3d] = useState(true)
+  const returningCamera = useRef(null)
   function setTool(value) { setActiveTool(value); setSidebarOpen(true) }
   useEffect(() => {
+    if (returningCamera.current !== null) { setView3d(returningCamera.current); returningCamera.current = null; return }
     if (tool === 'housing') setView3d(true)
     else if (tool === 'network' || tool === 'service') setView3d(false)
   }, [tool])
@@ -173,6 +176,20 @@ function Studio({ data }) {
   useEffect(() => { setDrawing(null); setDraftNode(null) }, [tool, scenario.pin])
   useEffect(() => { if (!placing) setHoverPoint(null) }, [scenario.pin])
   const [query, setQuery] = useState(''), [notice, setNotice] = useState(''), [inspectorTab, setInspectorTab] = useState('rankings')
+  const [tourRequest, setTourRequest] = useState(0)
+  const tourButton = useRef(null), tourReturn = useRef(null), tourView = useRef(null)
+  tourView.current = { tool, inspectorTab, sidebarOpen, view3d }
+  const showTourStep = useCallback(step => {
+    tourReturn.current ||= { ...tourView.current }
+    setSidebarOpen(true); setActiveTool(step.tool); setInspectorTab(step.tab); setView3d(step.tool !== 'service')
+  }, [])
+  const finishTour = useCallback(() => {
+    const previous = tourReturn.current
+    if (!previous) return
+    if (tourView.current.tool !== previous.tool) returningCamera.current = previous.view3d
+    setActiveTool(previous.tool); setInspectorTab(previous.inspectorTab); setSidebarOpen(previous.sidebarOpen); setView3d(previous.view3d)
+    tourReturn.current = null
+  }, [])
   const [siteFilters, setSiteFilters] = useState({})
   const sites = useMemo(() => studioSites(parcels, zoning, props.area, siteFilters), [parcels, zoning, props.area, siteFilters])
   const discoveryPins = useMemo(() => tool === 'sites' ? sites.map(f => f.properties.pin) : [], [tool, sites])
@@ -273,23 +290,23 @@ function Studio({ data }) {
     <header className="studio-header">
       <div className="studio-brand"><span className="planner-brandmark"><Icon name="building"/></span><div><strong>Playhouse<span className="studio-beta">LAB</span></strong><small>Housing + infrastructure studio</small></div></div>
       <nav className="study-switch" aria-label="Study examples">{EXAMPLES.map((example, i) => <button key={example.id} className={props.area === example.label ? 'active' : ''} onClick={() => select(example.pin)}><span>0{i + 1}</span>{example.label}</button>)}</nav>
-      <div className="studio-header-actions"><button className="sidebar-toggle" aria-expanded={sidebarOpen} aria-controls="planner-inspector" onClick={() => { if (tool === 'compare') setActiveTool('housing'); setSidebarOpen(!sidebarOpen) }}>{sidebarOpen ? 'Hide sidebar' : 'Show sidebar'}</button><button className="find-sites-button" onClick={() => { setTool('sites'); setInspectorTab('edit') }}>Find sites</button><button className="studio-export" onClick={download} disabled={!result || evaluation.pending}>Export scenario <span aria-hidden="true">↓</span></button></div>
+      <div className="studio-header-actions"><button ref={tourButton} className="studio-tour-trigger" onClick={() => setTourRequest(n => n + 1)}>Tour</button><button className="sidebar-toggle" aria-expanded={sidebarOpen} aria-controls="planner-inspector" onClick={() => { if (tool === 'compare') setActiveTool('housing'); setSidebarOpen(!sidebarOpen) }}>{sidebarOpen ? 'Hide sidebar' : 'Show sidebar'}</button><button className="find-sites-button" onClick={() => { setTool('sites'); setInspectorTab('edit') }}>Find sites</button><button data-tour="export" className="studio-export" onClick={download} disabled={!result || evaluation.pending}>Export scenario <span aria-hidden="true">↓</span></button></div>
     </header>
     <StudioWorkspace sidebarOpen={sidebarOpen} expanded={tool === 'compare'} map={
       <section className="studio-canvas" aria-label="Planning map">
         <PlannerMap parcels={mapParcels} neighborhoods={neighborhoods} stops={stops} existingBuildings={coloredBuildings} showExisting={showExisting} selected={selected} buildingPreview={buildingPreview} stop={stop} proposed={proposed} additionalDepartures={scenario.additionalDepartures} view3d={view3d} onSelect={select} onStop={selectStop} tool={tool} placing={placing} onPlace={placeProposal} onHover={setHoverPoint} placedBuildings={result?.committed?.[proposed ? 'proposal' : 'baseline'] || []} network={network} networkResult={evaluated?.access} reservations={result?.reservations} connections={scenario.connections} drawing={drawing} draftNode={draftNode} onDraw={drawInfrastructure} discoveryPins={discoveryPins}/>
         {placing && <div className="placement-banner" role="status">Click to add {housingSpec(option).label}. Green: passes placement screen · red: needs review. <button onClick={() => setPlacing(false)}>Cancel placement</button></div>}
-        <nav className="studio-tools" aria-label="Planning tools">{[['sites', 'pin', 'Sites'], ['housing', 'building', 'Housing'], ['service', 'bus', 'Transit'], ['network', 'network', 'Infra'], ['compare', 'chart', 'Compare']].map(([id, icon, label]) => <button key={id} className={tool === id ? 'active' : ''} aria-pressed={tool === id} onClick={() => { setTool(id); setInspectorTab(id === 'compare' ? 'rankings' : 'edit') }}><Icon name={icon}/><span>{label}</span></button>)}<div className="tool-divider"/><button onClick={() => setView3d(!view3d)} aria-pressed={view3d}><Icon name="layers"/><span>{view3d ? '3D' : '2D'}</span></button></nav>
+        <nav data-tour="tools" className="studio-tools" aria-label="Planning tools">{[['sites', 'pin', 'Sites'], ['housing', 'building', 'Housing'], ['service', 'bus', 'Transit'], ['network', 'network', 'Infra'], ['compare', 'chart', 'Compare']].map(([id, icon, label]) => <button key={id} className={tool === id ? 'active' : ''} aria-pressed={tool === id} onClick={() => { setTool(id); setInspectorTab(id === 'compare' ? 'rankings' : 'edit') }}><Icon name={icon}/><span>{label}</span></button>)}<div className="tool-divider"/><button onClick={() => setView3d(!view3d)} aria-pressed={view3d}><Icon name="layers"/><span>{view3d ? '3D' : '2D'}</span></button></nav>
         <div className="canvas-heading"><span className="eyebrow">PITTSBURGH / {props.area?.toUpperCase()}</span></div>
         <div className="canvas-mode"><div className="segmented" aria-label="Infrastructure view"><button className={!proposed ? 'active' : ''} aria-pressed={!proposed} onClick={() => setProposed(false)}>Baseline</button><button className={proposed ? 'active' : ''} aria-pressed={proposed} onClick={() => setProposed(true)}>Proposal {scenario.additionalDepartures > 0 && <i/>}</button></div><div className="history-controls"><button aria-label="Undo scenario edit" disabled={!history.past.length} onClick={() => dispatch({ type: 'undo' })}>↶</button><button aria-label="Redo scenario edit" disabled={!history.future.length} onClick={() => dispatch({ type: 'redo' })}>↷</button></div></div>
         <div className="map-overlays">
-        {tool === 'housing' && <div className="massing-tray"><div className="tray-top"><div><span className="eyebrow">CURRENT DRAFT</span><strong>{housingSpec(option).label}</strong></div><span className="option-chip">{housingSpec(option).units} homes</span></div><div className="type-cycler"><button aria-label="Previous housing type" onClick={() => cycle(-1)}>←</button><div className="type-dots">{BUILDING_IDS.map(id => <button key={id} title={BUILDINGS[id].label} aria-label={`Preview ${BUILDINGS[id].label}`} aria-pressed={id === option.typeId} className={id === option.typeId ? 'active' : ''} onClick={() => changeType(id)}><Icon name="building" size={18}/></button>)}</div><button aria-label="Next housing type" onClick={() => cycle(1)}>→</button></div><p>{option.width} × {option.depth} m footprint · {option.height} m high <span>Proposed dimensions</span></p><div className="draft-preview-status" role="status"><i style={{ background: buildingPreview?.properties.color || "#94a3b8" }}/>{buildingPreview?.properties.status || "Preparing preview…"}<small>Preview only · not added to plan</small></div></div>}
+        {tool === 'housing' && <div data-tour="housing" className="massing-tray"><div className="tray-top"><div><span className="eyebrow">CURRENT DRAFT</span><strong>{housingSpec(option).label}</strong></div><span className="option-chip">{housingSpec(option).units} homes</span></div><div className="type-cycler"><button aria-label="Previous housing type" onClick={() => cycle(-1)}>←</button><div className="type-dots">{BUILDING_IDS.map(id => <button key={id} title={BUILDINGS[id].label} aria-label={`Preview ${BUILDINGS[id].label}`} aria-pressed={id === option.typeId} className={id === option.typeId ? 'active' : ''} onClick={() => changeType(id)}><Icon name="building" size={18}/></button>)}</div><button aria-label="Next housing type" onClick={() => cycle(1)}>→</button></div><p>{option.width} × {option.depth} m footprint · {option.height} m high <span>Proposed dimensions</span></p><div className="draft-preview-status" role="status"><i style={{ background: buildingPreview?.properties.color || "#94a3b8" }}/>{buildingPreview?.properties.status || "Preparing preview…"}<small>Preview only · not added to plan</small></div></div>}
         <MapLegend showExisting={showExisting} onShowExisting={setShowExisting} context={context} error={contextError} onRetry={() => setContextAttempt(n => n + 1)}/>
         </div>
       </section>
     }>
-      <aside id="planner-inspector" className="studio-inspector" tabIndex={-1}>
-        <div className="inspector-top">{tool === 'compare' && <button className="comparison-back" onClick={() => setTool('housing')}>← Back to map</button>}<div className="inspector-status"><span className="live-dot"/>{evaluation.pending ? 'Recalculating…' : 'Scenario ready'}<span>{MODEL_VERSION}</span></div><label className="site-search"><Icon name="pin" size={16}/><input aria-label="Search address or parcel ID" placeholder="Find an address or parcel…" value={query} onChange={e => setQuery(e.target.value)}/></label>{query.length > 1 && <div className="search-results">{matches.length ? matches.map(f => <button key={f.properties.pin} onClick={() => select(f.properties.pin)}>{f.properties.address || f.properties.pin}<small>{f.properties.neighborhood}</small></button>) : <p>No matching study parcels.</p>}</div>}</div>
+      <aside data-tour="inspector" id="planner-inspector" className="studio-inspector" tabIndex={-1}>
+        <div className="inspector-top">{tool === 'compare' && <button className="comparison-back" onClick={() => setTool('housing')}>← Back to map</button>}<div className="inspector-status"><span className="live-dot"/>{evaluation.pending ? 'Recalculating…' : 'Scenario ready'}<span>{MODEL_VERSION}</span></div><label data-tour="site" className="site-search"><Icon name="pin" size={16}/><input aria-label="Search address or parcel ID" placeholder="Find an address or parcel…" value={query} onChange={e => setQuery(e.target.value)}/></label>{query.length > 1 && <div className="search-results">{matches.length ? matches.map(f => <button key={f.properties.pin} onClick={() => select(f.properties.pin)}>{f.properties.address || f.properties.pin}<small>{f.properties.neighborhood}</small></button>) : <p>No matching study parcels.</p>}</div>}</div>
         <nav className="inspector-tabs" aria-label="Inspector sections">{[['edit', tool === 'sites' ? 'Sites' : 'Edit'], ['rankings','Rankings'], ['priorities','Priorities'], ['assumptions','Assumptions']].map(([id,label]) => <button key={id} aria-pressed={inspectorTab === id} onClick={() => setInspectorTab(id)}>{label}</button>)}</nav>
         <div className="inspector-scroll" key={inspectorTab}>
           {inspectorTab === 'edit' && tool === 'sites' && <StudioSites filters={siteFilters} setFilters={setSiteFilters} sites={sites} selectedPin={scenario.pin} onSelect={select}/>}
@@ -357,6 +374,7 @@ function Studio({ data }) {
         <footer className="inspector-footer"><span className="live-dot"/>Local scenario · public data · human review</footer>
       </aside>
     </StudioWorkspace>
+    <StudioTour startRequest={tourRequest} onStep={showTourStep} onFinish={finishTour} triggerRef={tourButton}/>
     <div className={notice ? 'network-notice' : 'planner-announcement'} role="status" aria-live="polite">{notice}{notice && <button aria-label="Dismiss notification" onClick={() => setNotice('')}>×</button>}</div>
   </main>
 }

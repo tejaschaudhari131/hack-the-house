@@ -15,6 +15,7 @@ Explore housing and infrastructure decisions on a 3D map of Pittsburgh.
 - Checks supported Title Nine rules. A zoning conflict or failed physical fit removes the housing score; rules without enough evidence are marked **Not assessed**.
 - Keeps exact income, rent, utilities and building dimensions under **Assumptions → Advanced options**.
 - Supports undo/redo and scenario JSON export.
+- Offers a short first-visit tour; use **Tour** in the header to replay it.
 
 Studio is at `/`. The original parcel Explorer remains at `/explore` for reference, with its own reports, sharing and explanations.
 

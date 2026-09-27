@@ -9,7 +9,7 @@ export default function HousingComparison({ comparison, draft, selectedTypes = [
   const state = proposed ? 'proposal' : 'baseline'
   const entries = comparison?.entries || []
   function toggle(id) { onSelection(selectedTypes.includes(id) ? selectedTypes.filter(type => type !== id) : [...selectedTypes, id]) }
-  return <section className="studio-rankings housing-comparison" aria-label="Housing type comparison" aria-busy={pending}>
+  return <section data-tour="comparison" className="studio-rankings housing-comparison" aria-label="Housing type comparison" aria-busy={pending}>
     <div className="section-heading"><h3>{area ? 'Your plan + next building' : 'Compare housing types'}</h3>{!expanded && <button onClick={onExpand}>Expand comparison</button>}</div>
     <p className="compact-help">Current draft: <strong>{housingSpec(draft).label}</strong>. {area ? 'Scores include your placed plan, averaged per proposed home.' : 'Same parcel, costs and priorities.'}</p>
     <fieldset className="comparison-picker"><legend>Compare to</legend>
