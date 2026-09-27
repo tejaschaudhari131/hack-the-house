@@ -1,13 +1,15 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 
 import EvidenceDrawer from "./EvidenceDrawer.js"
 import Explanation from "./Explanation.js"
 import Robustness from "./Robustness.js"
 import WeightPresets from "./WeightPresets.js"
 import { SHARED_FACTOR_NOTE, analyzeRobustness, compareWinner, sweepPair } from "../lib/robustness.js"
+import AnswerCard from "./AnswerCard.js"
 import ComparisonView from "./ComparisonView.js"
+import WeightsPanel from "./WeightsPanel.js"
 import { BUILDINGS, SCORE_TAGS, WALK_RADIUS_M, scoreProxyNote } from "../lib/buildings.js"
 import { TYPE_COLORS } from "../lib/colors.js"
 import { buildScenario, compareScenarios } from "../lib/comparison.js"
@@ -192,6 +194,7 @@ export default function DropPanel({
   byPin,
   onCompareState,
   onPrintBrief,
+  onGoBrief = null,
   onAntiDisplacement = null,
   share = null,
   sources = null,
@@ -217,6 +220,20 @@ export default function DropPanel({
     () => (result ? analyzeRobustness(compareWinner(scenarios[0], scenarios[1]), weights) : null),
     [result, scenarios, weights],
   )
+
+  const [cue, setCue] = useState(null)
+  const lastWinner = useRef(null)
+  useEffect(() => {
+    const winner = result?.winner ?? null
+    const label = winner === "A" ? result.a.label : winner === "B" ? result.b.label : null
+    if (lastWinner.current && winner && lastWinner.current !== winner) {
+      setCue(winner === "tie" ? "Ranking changed: the two options now score the same." : `Ranking changed: ${label} now scores higher.`)
+      const timer = setTimeout(() => setCue(null), 6000)
+      lastWinner.current = winner
+      return () => clearTimeout(timer)
+    }
+    lastWinner.current = winner
+  }, [result])
 
   const compareSweep = useMemo(() => (result ? sweepPair(scenarios[0], scenarios[1], weights) : null), [result, scenarios, weights])
 
@@ -247,74 +264,125 @@ export default function DropPanel({
 
   return (
     <aside className="panel" id="panel">
-{guide}
+      {guide}
       {comparison ? (
-        <section className="review-box" id="comparison" tabIndex={-1}>
-          <h2>Compare A and B</h2>
-          <ComparisonView result={result} onPrint={onPrintBrief} />
-          {share}
-          {[result.a, ...(result.sameParcel ? [] : [result.b])].map((side) => (
-            <EvidenceDrawer
-              key={side.slot}
-              props={byPin.get(side.pin)?.properties}
-              typeId={side.scoreType}
-              typeLabel={`scenario ${side.slot} (${side.label})`}
-              sources={sources}
-              summary={summary}
-              zoning={zoning}
-              model={model}
-            />
-          ))}
-          <Robustness
-            analysis={compareRobustness}
-            title="Does the winner hold?"
-            sweep={compareSweep}
-            sweepNote={result?.sameParcel ? SHARED_FACTOR_NOTE : null}
-          />
-          <button type="button" className="explain" onClick={onExplainCompare} disabled={compareAi.explaining}>
-            {compareAi.explaining ? "Writing explanation…" : "Explain A vs B"}
-          </button>
+        <section className="answer-section" id="comparison" tabIndex={-1}>
+          <AnswerCard result={result} robustness={compareRobustness} onBrief={onGoBrief} />
+          <WeightsPanel weights={weights} onWeights={onWeights} onAntiDisplacement={onAntiDisplacement} cue={cue} />
+          <div className="action-row">
+            <button type="button" className="secondary" onClick={onExplainCompare} disabled={compareAi.explaining}>
+              {compareAi.explaining ? "Writing explanation…" : "Explain the difference in plain words"}
+            </button>
+          </div>
           <Explanation explanation={compareAi.explanation} />
+          <details className="more">
+            <summary>How was this scored?</summary>
+            <ComparisonView result={result} onPrint={onPrintBrief} />
+            <Robustness
+              analysis={compareRobustness}
+              title="Does the winner hold?"
+              sweep={compareSweep}
+              sweepNote={result?.sameParcel ? SHARED_FACTOR_NOTE : null}
+            />
+          </details>
+          <details className="more">
+            <summary>Where the numbers come from (sources and evidence)</summary>
+            {[result.a, ...(result.sameParcel ? [] : [result.b])].map((side) => (
+              <EvidenceDrawer
+                key={side.slot}
+                props={byPin.get(side.pin)?.properties}
+                typeId={side.scoreType}
+                typeLabel={`option ${side.slot} (${side.label})`}
+                sources={sources}
+                summary={summary}
+                zoning={zoning}
+                model={model}
+              />
+            ))}
+          </details>
+          <details className="more">
+            <summary>Option details (every score, map layers, flag a problem)</summary>
+            <div className="compare-grid">{cardsFor()}</div>
+          </details>
+          <details className="more">
+            <summary>Save or share this comparison</summary>
+            {share}
+          </details>
         </section>
       ) : (
-        <p className="hint">
-          {drops.length ? "Drop a second building to compare them side by side." : "Pick a building type below, then click a parcel on the map or choose an address."}
-        </p>
+        <section className="empty-state">
+          <h2>Compare two options</h2>
+          <p>
+            {drops.length
+              ? "One option is placed. Pick a second building type and a lot to compare them."
+              : "Pick a building type, then click a lot on the map or search an address. Do it twice to compare. Or start the guided example at the top."}
+          </p>
+          {drops.length ? <div className="compare-grid">{cardsFor()}</div> : null}
+        </section>
       )}
 
-      <div className="compare-grid">
-        {["A", "B"].map((slot) => {
-          const drop = drops.find((item) => item.slot === slot)
-          const feature = drop ? byPin.get(drop.pin) : null
-          if (!drop || !feature) {
-            return (
-              <article key={slot} className="drop-card empty">
-                <header>Building {slot}</header>
-                <p className="hint">Empty. Choose this slot and click a parcel.</p>
-              </article>
-            )
-          }
-          return (
-            <DropCard
-              key={`${slot}:${drop.pin}:${drop.typeId}`}
-              drop={drop}
-              feature={feature}
-              weights={weights}
-              zoning={zoning}
-              stops={stops}
-              summary={summary}
-              onClear={() => onClear(slot)}
-            />
-          )
-        })}
-      </div>
-      <section className="limitations">
-        <h2>Screening aid only</h2>
+      <details className="more" open={!comparison}>
+        <summary>{comparison ? "Change the options" : "Choose options"}</summary>
+        <p className="hint">Pick a building type, then click a lot. The first pick is option A, the next is option B.</p>
+        <div className="palette">
+          {Object.entries(BUILDINGS).map(([id, spec]) => (
+            <button key={id} type="button" className={activeType === id ? "on" : ""} aria-pressed={activeType === id} onClick={() => onType(id)}>
+              <i style={{ background: TYPE_COLORS[id] }} aria-hidden="true" />
+              {spec.label}
+              <span>
+                {spec.units} {spec.units === 1 ? "home" : "homes"} · {spec.heightM} m (illustration)
+              </span>
+            </button>
+          ))}
+        </div>
+        <div className="zoom-row" role="group" aria-label="Which option to place next">
+          <button type="button" className={activeSlot === "A" ? "on" : ""} aria-pressed={activeSlot === "A"} onClick={() => onSlot("A")}>
+            Option A
+          </button>
+          <button type="button" className={activeSlot === "B" ? "on" : ""} aria-pressed={activeSlot === "B"} onClick={() => onSlot("B")}>
+            Option B
+          </button>
+        </div>
+        <label>
+          Search an address
+          <input value={query} onChange={(event) => onQuery(event.target.value)} name="address-search" placeholder="Try a street name, for example 4200 butler" />
+        </label>
+        {query.trim() && matches.length === 0 ? <p className="hint">No address match in Hazelwood or Lawrenceville.</p> : null}
+        {matchTotal > matches.length ? (
+          <p className="hint">
+            Showing {matches.length} of {matchTotal.toLocaleString()} matches. Add a house number to narrow it.
+          </p>
+        ) : null}
+        {matches.length ? <p className="hint">Choosing an address places {BUILDINGS[activeType]?.label} as option {activeSlot}.</p> : null}
+        <ul className="matches">
+          {matches.map((feature) => (
+            <li key={feature.properties.pin}>
+              <button type="button" onClick={() => onSelectPin(feature.properties.pin)}>
+                {feature.properties.address || feature.properties.pin}
+                <span>{feature.properties.neighborhood}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+        <div className="zoom-row" role="group" aria-label="Zoom the map">
+          <button type="button" className={focus === "Hazelwood" ? "on" : ""} onClick={() => onFocus("Hazelwood")}>
+            Hazelwood
+          </button>
+          <button type="button" className={focus === "Lawrenceville" ? "on" : ""} onClick={() => onFocus("Lawrenceville")}>
+            Lawrenceville
+          </button>
+          <button type="button" className={focus ? "" : "on"} onClick={() => onFocus(null)}>
+            Both
+          </button>
+        </div>
+        <p className="hint">Right-drag the map to tilt the 3D blocks. The blocks are illustrations, not a permitted design.</p>
+      </details>
+
+      <details className="more">
+        <summary>About this screen</summary>
         <p>
-          Dropping a building does not mean it may be built. A consequential decision should go to City Planning /
-          the Zoning Administrator or a qualified professional.
-        </p>
-        <p>
+          Placing a building does not mean it may be built. A real decision should go to City Planning / the Zoning
+          Administrator or a qualified professional.{" "}
           <a href={ZONING_PAGE_URL} target="_blank" rel="noreferrer">
             City Planning zoning page
           </a>
@@ -328,93 +396,34 @@ export default function DropPanel({
           </a>
           . The zoning page lists 412-255-2621 at the City-County Building, 414 Grant Street.
         </p>
-      </section>
-
-      <section>
-        <h2>Palette</h2>
-        <p className="hint">Pick a type, then click a parcel. Building A is the first drop. The next click fills Building B.</p>
-        <div className="palette">
-          {Object.entries(BUILDINGS).map(([id, spec]) => (
-            <button key={id} type="button" className={activeType === id ? "on" : ""} onClick={() => onType(id)}>
-              <i style={{ background: TYPE_COLORS[id] }} />
-              {spec.label}
-              <span>
-                {spec.units} homes · {spec.heightM} m
-              </span>
-            </button>
-          ))}
-        </div>
-        <div className="zoom-row">
-          <button type="button" className={activeSlot === "A" ? "on" : ""} onClick={() => onSlot("A")}>
-            Building A
-          </button>
-          <button type="button" className={activeSlot === "B" ? "on" : ""} onClick={() => onSlot("B")}>
-            Building B
-          </button>
-        </div>
-        <p className="hint">
-          Next click drops {BUILDINGS[activeType]?.label} as Building {activeSlot}. Right-drag the map to tilt the blocks.
-        </p>
-      </section>
-
-      <section>
-        <h2>Weights</h2>
-        <p className="hint">These weights are choices. They change the total for both buildings.</p>
-        <WeightPresets weights={weights} onWeights={onWeights} onAntiDisplacement={onAntiDisplacement} />
-        {Object.entries(weights).map(([key, value]) => (
-          <label key={key} className="slider">
-            <span>
-              {WEIGHT_LABELS[key] || key}{" "}
-              <strong>{value}</strong>
-            </span>
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={value}
-              onChange={(event) => onWeights({ ...weights, [key]: Number(event.target.value) })}
-            />
-          </label>
-        ))}
-        <div className="zoom-row">
-          <button type="button" className={focus === "Hazelwood" ? "on" : ""} onClick={() => onFocus("Hazelwood")}>
-            Hazelwood
-          </button>
-          <button type="button" className={focus === "Lawrenceville" ? "on" : ""} onClick={() => onFocus("Lawrenceville")}>
-            Lawrenceville
-          </button>
-          <button type="button" className={focus ? "" : "on"} onClick={() => onFocus(null)}>
-            Both
-          </button>
-        </div>
-      </section>
-
-      <section>
-        <h2>Find a parcel</h2>
-        <label>
-          Address search
-          <input value={query} onChange={(event) => onQuery(event.target.value)} name="address-search" placeholder="Try a street name" />
-        </label>
-        {query.trim() && matches.length === 0 ? <p className="hint">No address match in the MVP area.</p> : null}
-        {matchTotal > matches.length ? (
-          <p className="hint">
-            Showing {matches.length} of {matchTotal.toLocaleString()} matches. Add a house number to narrow it, for example
-            &quot;4200 butler&quot;.
-          </p>
-        ) : null}
-        {matches.length ? <p className="hint">Choosing an address drops {BUILDINGS[activeType]?.label} as Building {activeSlot}.</p> : null}
-        <ul className="matches">
-          {matches.map((feature) => (
-            <li key={feature.properties.pin}>
-              <button type="button" onClick={() => onSelectPin(feature.properties.pin)}>
-                {feature.properties.address || feature.properties.pin}
-                <span>{feature.properties.neighborhood}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      </section>
-
+      </details>
     </aside>
   )
+
+  function cardsFor() {
+    return ["A", "B"].map((slot) => {
+      const drop = drops.find((item) => item.slot === slot)
+      const feature = drop ? byPin.get(drop.pin) : null
+      if (!drop || !feature) {
+        return (
+          <article key={slot} className="drop-card empty">
+            <header>Option {slot}</header>
+            <p className="hint">Empty. Choose this option and click a lot.</p>
+          </article>
+        )
+      }
+      return (
+        <DropCard
+          key={`${slot}:${drop.pin}:${drop.typeId}`}
+          drop={drop}
+          feature={feature}
+          weights={weights}
+          zoning={zoning}
+          stops={stops}
+          summary={summary}
+          onClear={() => onClear(slot)}
+        />
+      )
+    })
+  }
 }

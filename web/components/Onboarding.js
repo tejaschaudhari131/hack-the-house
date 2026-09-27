@@ -6,58 +6,43 @@ const STORAGE_KEY = "htm:onboarded:v1"
 
 const STEPS = [
   {
-    title: "What this is, and who it helps",
+    title: "Compare housing options for real Pittsburgh lots",
     body: (
       <>
         <p>
-          A screening aid that compares four housing types (single-family, townhouse / duplex, small apartment, large
-          apartment) on real Pittsburgh parcels in <strong>Hazelwood</strong> and <strong>Lawrenceville</strong>.
+          Hack the House helps CDC staff and city planners decide which lot and which kind of housing to look at next,
+          in <strong>Hazelwood</strong> and <strong>Lawrenceville</strong>.
         </p>
-        <p>
-          It scores market demand, transit access, equity, mapped climate hazard, a displacement screen, and a rough
-          carbon estimate from public data, and it reads the zoning use table (§911.02). It is for planners, community development corporations, developers, and residents
-          who want to see the trade-offs before a meeting.
-        </p>
-        <p className="hint">
-          It does not decide what may be built. Take real decisions to City Planning or a qualified professional.
-        </p>
+        <p className="hint">It is a screening aid, not a permit. Real decisions go to City Planning or a professional.</p>
       </>
     ),
   },
   {
-    title: "Click a parcel, drop a building, or find sites",
+    title: "Three steps",
     body: (
-      <>
-        <p>
-          <strong>Click a parcel</strong> to see all four types ranked for that lot, the §911.02 reading for each, and the
-          sources behind every score.
-        </p>
-        <p>
-          <strong>Drop a building</strong> to place a building (including a 3-unit triplex) on a lot in 3D with an 800 m straight-line ring and nearby transit stops.
-          Drop a second one to compare two scenarios side by side.
-        </p>
-        <p>
-          <strong>Find sites</strong> to filter the whole map (for example vacant or city-owned lots where a type is
-          permitted by right) and get a ranked list you can export.
-        </p>
-      </>
+      <ol className="intro-steps">
+        <li>
+          <strong>Find sites:</strong> start from a question, like City-owned vacant lots where a triplex is allowed.
+        </li>
+        <li>
+          <strong>Compare options:</strong> put two kinds of housing on one lot and see which scores higher, whether each
+          is allowed, and why.
+        </li>
+        <li>
+          <strong>Get the brief:</strong> a one-page summary with next steps to print or save.
+        </li>
+      </ol>
     ),
   },
   {
-    title: "Compare, then change what matters",
+    title: "Your priorities are a choice",
     body: (
       <>
         <p>
-          The weights are value judgments. Pick an illustrative priority (Balanced, Transit, Housing-need, Lower-hazard, Lower-carbon emphasis) or move the
-          sliders yourself.
+          Under <strong>What matters most to you?</strong> pick a starting point, like housing need or transit. The
+          scores stay the same; only how much each one counts changes, and the app tells you if the ranking changes.
         </p>
-        <p>
-          <strong>How stable is #1?</strong> tells you whether the top result holds across those priorities, or flips
-          when one weight changes. A flip means the answer is about values, not data.
-        </p>
-        <p>
-          Then ask for a plain-language explanation, or print a one-page report for a community meeting.
-        </p>
+        <p className="hint">Details on every number are one click away under &quot;How was this scored?&quot;</p>
       </>
     ),
   },
@@ -91,6 +76,7 @@ export default function Onboarding({ open, onClose, onExample }) {
     } catch {}
     onClose()
     if (next === "example") onExample()
+    else setTimeout(() => document.querySelector(".skip-link")?.focus(), 0)
   }
 
   const current = STEPS[step]
@@ -130,7 +116,7 @@ export default function Onboarding({ open, onClose, onExample }) {
           </button>
         )}
         <button type="button" className="explain" onClick={() => finish("example")}>
-          Try a real example
+          Start guided example
         </button>
       </div>
     </dialog>

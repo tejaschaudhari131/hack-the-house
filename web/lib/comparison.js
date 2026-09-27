@@ -165,3 +165,31 @@ export function describeComparison(result) {
   )
   return lines.join(" ")
 }
+
+/** Short, plain words for a permission category (the precise label stays in the details). */
+export const PERMISSION_PLAIN = {
+  permitted: "Allowed",
+  partial: "Allowed for some sizes",
+  special: "Needs special approval",
+  not_permitted: "Not allowed",
+  unknown: "Check with the City",
+}
+
+/** A one-sentence, plain-language reading of the comparison. It restates computed results only. */
+export function plainSummary(result) {
+  const { a, b } = result
+  if (!result.ranked) return { headline: "These two options can't both be scored with the current priorities.", why: "Raise at least one priority that applies to both." }
+  if (result.winner === "tie") return { headline: `${a.label} and ${b.label} score the same (${a.composite}).`, why: "Under the current priorities neither comes out ahead." }
+  const [hi, lo] = result.winner === "A" ? [a, b] : [b, a]
+  const helpsHi = (result.winner === "A" ? result.favorA : result.favorB)[0]
+  const helpsLo = (result.winner === "A" ? result.favorB : result.favorA)[0]
+  const plain = (row) => FACTORS.find((factor) => factor.id === row.id)?.plain || row.label
+  const headline = `${hi.label} scores ${result.close ? "slightly " : ""}higher: ${hi.composite} vs ${lo.composite}.`
+  const why = [
+    helpsHi ? `Mostly because of ${plain(helpsHi).toLowerCase()}` : "",
+    helpsLo ? `${lo.label} does better on ${plain(helpsLo).toLowerCase()}` : "",
+  ]
+    .filter(Boolean)
+    .join("; ")
+  return { headline, why: why ? `${why}.` : "", close: result.close }
+}

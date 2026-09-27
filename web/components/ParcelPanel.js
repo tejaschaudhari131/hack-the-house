@@ -5,7 +5,10 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import Explanation from "./Explanation.js"
 import EvidenceDrawer from "./EvidenceDrawer.js"
 import Robustness from "./Robustness.js"
-import WeightPresets from "./WeightPresets.js"
+import WeightsPanel from "./WeightsPanel.js"
+import { PERMISSION_PLAIN, compareScenarios, plainSummary, typeScenario } from "../lib/comparison.js"
+
+const PERMISSION_MARK = { permitted: "✓", partial: "~", special: "!", not_permitted: "✕", unknown: "?" }
 import { NOT_EVALUATED } from "../lib/explainFacts.js"
 import { FACTOR_BY_ID, breakdown, coverageText, transitTotalShare } from "../lib/factors.js"
 import { SHARED_FACTOR_NOTE, describeRobustness, parcelRobustness, sweepPair } from "../lib/robustness.js"
@@ -97,6 +100,38 @@ export default function ParcelPanel({
         : `Sweep compares the first two types listed (${first.label} vs ${second.label}). ${SHARED_FACTOR_NOTE}`,
     }
   }, [ranked, selected, weights, whatIf, zoningInfo])
+  const parcelAnswer = useMemo(() => {
+    const scored = (ranked || []).filter((row) => row.composite !== null)
+    if (!selected || !scored.length) return null
+    const [first, second] = scored
+    const permission = unitPermission(first.id, null, zoningInfo)
+    let why = ""
+    if (second) {
+      const grouped = !whatIf && zoningInfo?.status === "use_table" && first.allowed && !second.allowed
+      if (grouped && second.composite > first.composite) {
+        why = `${second.label} scores higher (${second.composite}) but is not allowed by right here, so ${first.label} is listed first.`
+      } else {
+        const result = compareScenarios(
+          typeScenario("A", first.id, first.label, selected, zoningInfo),
+          typeScenario("B", second.id, second.label, selected, zoningInfo),
+          weights,
+        )
+        why = `Next is ${second.label} at ${second.composite}. ${plainSummary(result).why}`
+      }
+    }
+    return { label: first.label, score: first.composite, category: permission.category, detail: permission.detail, why, id: first.id }
+  }, [ranked, selected, zoningInfo, whatIf, weights])
+  const [cue, setCue] = useState(null)
+  const lastTop = useRef({ pin: null, id: null })
+  useEffect(() => {
+    const previous = lastTop.current
+    lastTop.current = { pin: selected?.pin ?? null, id: parcelAnswer?.id ?? null }
+    if (previous.pin && previous.pin === selected?.pin && previous.id && parcelAnswer?.id && previous.id !== parcelAnswer.id) {
+      setCue(`Ranking changed: ${parcelAnswer.label} is now the best fit.`)
+      const timer = setTimeout(() => setCue(null), 6000)
+      return () => clearTimeout(timer)
+    }
+  }, [parcelAnswer, selected?.pin])
   const robustness = useMemo(
     () => (selected ? parcelRobustness(selected.scores, zoningInfo, weights, whatIf) : null),
     [selected, zoningInfo, weights, whatIf],
@@ -208,25 +243,7 @@ export default function ParcelPanel({
         ) : null}
       </details>
 
-      <section>
-        <h2>Weights</h2>
-        <p className="hint">These are choices. They re-rank every parcel on the map.</p>
-        <WeightPresets weights={weights} onWeights={onWeights} onAntiDisplacement={onAntiDisplacement} />
-        {Object.entries(weights).map(([key, value]) => (
-          <label key={key} className="slider">
-            <span>
-              {WEIGHT_LABELS[key] || key}{" "}
-              <strong>{value}</strong>
-            </span>
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={value}
-              onChange={(event) => onWeights({ ...weights, [key]: Number(event.target.value) })}
-            />
-          </label>
-        ))}
+      <WeightsPanel weights={weights} onWeights={onWeights} onAntiDisplacement={onAntiDisplacement}>
         <label className="toggle">
           <input type="checkbox" checked={whatIf} onChange={(event) => onWhatIf(event.target.checked)} />
           What-if ordering: rank all four types by score, ignoring §911.02 grouping
@@ -235,6 +252,8 @@ export default function ParcelPanel({
           Only the order changes. Scores and each type&apos;s zoning reading stay as they are. This is not a zoning
           amendment.
         </p>
+      </WeightsPanel>
+      <section>
         <div className="zoom-row">
           <button type="button" className={focus === "Hazelwood" ? "on" : ""} onClick={() => onFocus("Hazelwood")}>
             Hazelwood
@@ -316,36 +335,22 @@ export default function ParcelPanel({
             Zoning: {selected.zoning_code || "not matched"}
             {selected.zoning_label ? ` (${selected.zoning_label})` : ""}
           </p>
-          {zoningInfo?.status === "use_table" ? (
-            <p className="hint">
-              Use table {zoningInfo.codeSection}. Still needs expert review. {zoningInfo.note}{" "}
-              {zoningInfo.codeUrl ? (
-                <a href={zoningInfo.codeUrl} target="_blank" rel="noreferrer">
-                  §911.02
-                </a>
-              ) : null}
-            </p>
-          ) : zoningInfo?.status === "not_in_use_table" ? (
-            <p className="hint">
-              Check with the city / needs review. {zoningInfo.note} This district is not marked prohibited.
-            </p>
-          ) : (
-            <p className="hint">
-              {zoningInfo?.note}{" "}
-              {zoningInfo?.codeUrl ? (
-                <a href={zoningInfo.codeUrl} target="_blank" rel="noreferrer">
-                  Open the code
-                </a>
-              ) : null}
-            </p>
-          )}
-          <p>
-            Data coverage (thin-data heuristic): <strong>{selected.confidence_label}</strong> ({selected.confidence}). It
-            counts missing inputs. It is not accuracy, statistical confidence, or a grade for the value judgments.
-          </p>
-          <p className="hint">
-            <strong>Not evaluated:</strong> {NOT_EVALUATED.join(" ")}
-          </p>
+          {parcelAnswer ? (
+            <div className="answer">
+              <p className="answer-kicker">Best fit on this lot under your priorities</p>
+              <h3 className="answer-headline">
+                {parcelAnswer.label}: {parcelAnswer.score ?? "no score"}
+                <span className="answer-of"> / 100</span>
+              </h3>
+              <p className={`permit permit-${parcelAnswer.category}`} title={parcelAnswer.detail}>
+                <span aria-hidden="true">{PERMISSION_MARK[parcelAnswer.category]}</span> {PERMISSION_PLAIN[parcelAnswer.category]}
+              </p>
+              {parcelAnswer.why ? <p className="answer-why">{parcelAnswer.why}</p> : null}
+              <p className="ranking-cue" role="status" aria-live="polite">
+                {cue}
+              </p>
+            </div>
+          ) : null}
           {siteType === "triplex" ? (
             <div className="guide-banner">
               <p>
@@ -374,8 +379,8 @@ export default function ParcelPanel({
             </ul>
           ) : null}
 
-          <SiteFacts props={selected} />
-
+          <details className="more">
+            <summary>See all four housing types and their scores</summary>
           {groups.map((group) => (
             <div key={group.key}>
               <h3>
@@ -420,18 +425,40 @@ export default function ParcelPanel({
             </div>
           ))}
 
-          {ranked?.length ? (
-            <EvidenceDrawer
-              props={selected}
-              typeId={(ranked.find((row) => row.composite !== null) || ranked[0]).id}
-              typeLabel={(ranked.find((row) => row.composite !== null) || ranked[0]).label}
-              sources={sources}
-              summary={summary}
-              zoning={zoning}
-              model={model}
-            />
-          ) : null}
-
+          </details>
+          <details className="more">
+            <summary>How was this scored?</summary>
+          {zoningInfo?.status === "use_table" ? (
+            <p className="hint">
+              Use table {zoningInfo.codeSection}. Still needs expert review. {zoningInfo.note}{" "}
+              {zoningInfo.codeUrl ? (
+                <a href={zoningInfo.codeUrl} target="_blank" rel="noreferrer">
+                  §911.02
+                </a>
+              ) : null}
+            </p>
+          ) : zoningInfo?.status === "not_in_use_table" ? (
+            <p className="hint">
+              Check with the city / needs review. {zoningInfo.note} This district is not marked prohibited.
+            </p>
+          ) : (
+            <p className="hint">
+              {zoningInfo?.note}{" "}
+              {zoningInfo?.codeUrl ? (
+                <a href={zoningInfo.codeUrl} target="_blank" rel="noreferrer">
+                  Open the code
+                </a>
+              ) : null}
+            </p>
+          )}
+          <p>
+            Data coverage (thin-data heuristic): <strong>{selected.confidence_label}</strong> ({selected.confidence}). It
+            counts missing inputs. It is not accuracy, statistical confidence, or a grade for the value judgments.
+          </p>
+          <p className="hint">
+            <strong>Not evaluated:</strong> {NOT_EVALUATED.join(" ")}
+          </p>
+          <SiteFacts props={selected} />
           {robustness ? (
             <Robustness
               analysis={robustness.analysis}
@@ -448,6 +475,22 @@ export default function ParcelPanel({
             />
           ) : null}
 
+          </details>
+          <details className="more">
+            <summary>Where the numbers come from (sources and evidence)</summary>
+          {ranked?.length ? (
+            <EvidenceDrawer
+              props={selected}
+              typeId={(ranked.find((row) => row.composite !== null) || ranked[0]).id}
+              typeLabel={(ranked.find((row) => row.composite !== null) || ranked[0]).label}
+              sources={sources}
+              summary={summary}
+              zoning={zoning}
+              model={model}
+            />
+          ) : null}
+
+          </details>
           <div className="action-row">
             <button type="button" className="explain" onClick={onExplain} disabled={explaining}>
               {explaining ? "Writing explanation…" : "Explain the top two"}
@@ -456,10 +499,14 @@ export default function ParcelPanel({
               Print one-page report
             </button>
           </div>
-          {share}
+          <details className="more">
+            <summary>Save or share this view</summary>
+            {share}
+          </details>
           <Explanation explanation={explanation} />
 
-          <h3>Check it with the City, or flag it</h3>
+          <details className="more">
+            <summary>Check it with the City, or flag a problem</summary>
           <div className="review-box">
             <p>
               <strong>Screening aid only.</strong> This result is not a determination of what may be built. A
@@ -513,6 +560,7 @@ export default function ParcelPanel({
               </form>
             )}
           </div>
+          </details>
         </section>
       )}
 
