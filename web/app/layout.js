@@ -1,9 +1,14 @@
 import "./globals.css"
 
 export const metadata = {
-  title: "Housing typology matchmaker",
+  title: "Housing Typology, Equity & Climate Matchmaker · Pittsburgh",
   description:
-    "Decision support for comparing housing types in Hazelwood and Lawrenceville across demand, transit, equity, and climate risk.",
+    "Screening aid for planners, CDCs, developers, and residents: compare four housing types on real Hazelwood and Lawrenceville parcels by demand, transit, equity, and climate risk, with §911.02 zoning readings and sources.",
+}
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
 }
 
 export default function RootLayout({ children }) {

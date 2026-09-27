@@ -1,11 +1,19 @@
 "use client"
 
 import dynamic from "next/dynamic"
-import { useEffect, useMemo, useState } from "react"
+import { useDeferredValue, useEffect, useMemo, useState } from "react"
 
 import DropPanel from "./DropPanel.js"
+import Onboarding, { hasOnboarded } from "./Onboarding.js"
 import FindSitesPanel from "./FindSitesPanel.js"
 import ParcelPanel from "./ParcelPanel.js"
+import ParcelReport from "./ParcelReport.js"
+import DecisionBrief from "./DecisionBrief.js"
+import GuideBanner from "./GuideBanner.js"
+import { GUIDE_QUERY_ID, alternativeBuilding, buildingForSiteType, resolveGuide } from "../lib/guide.js"
+import { useExplanation } from "../lib/explainClient.js"
+import { buildParcelContext } from "../lib/explainFacts.js"
+import { explainTemplate } from "../lib/explainTemplate.js"
 import { DEFAULT_WEIGHTS, rankTypes } from "../lib/rank.js"
 import { DEFAULT_SITE_FILTERS, findSites } from "../lib/sites.js"
 import { resolveZoning } from "../lib/zoning.js"
@@ -32,13 +40,21 @@ export default function App() {
   const [whatIf, setWhatIf] = useState(false)
   const [focus, setFocus] = useState(null)
   const [query, setQuery] = useState("")
-  const [explanation, setExplanation] = useState(null)
-  const [explaining, setExplaining] = useState(false)
   const [mode, setMode] = useState("inspect")
   const [stops, setStops] = useState(null)
   const [activeType, setActiveType] = useState("townhouse_duplex")
   const [activeSlot, setActiveSlot] = useState("A")
   const [drops, setDrops] = useState([])
+  const [onboardingOpen, setOnboardingOpen] = useState(false)
+  const [guide, setGuide] = useState(null)
+  const [compareState, setCompareState] = useState(null)
+  const [shortlist, setShortlist] = useState(null)
+  const mapWeights = useDeferredValue(weights)
+
+  useEffect(() => {
+    const linked = new URLSearchParams(window.location.search).has("pin")
+    if (!linked && !hasOnboarded()) setOnboardingOpen(true)
+  }, [])
   const [siteFilters, setSiteFilters] = useState(DEFAULT_SITE_FILTERS)
   const [siteSort, setSiteSort] = useState("score")
   const [siteExample, setSiteExample] = useState(null)
@@ -103,6 +119,20 @@ export default function App() {
     return index
   }, [parcels])
 
+  useEffect(() => {
+    if (!parcels) return
+    const pin = new URLSearchParams(window.location.search).get("pin")
+    if (pin && byPin.has(pin)) setSelectedPin(pin)
+  }, [parcels, byPin])
+
+  useEffect(() => {
+    if (!parcels) return
+    const url = new URL(window.location.href)
+    if (selectedPin && mode === "inspect") url.searchParams.set("pin", selectedPin)
+    else url.searchParams.delete("pin")
+    window.history.replaceState(null, "", url)
+  }, [parcels, selectedPin, mode])
+
   const selectedFeature = selectedPin ? byPin.get(selectedPin) : null
   const selected = selectedFeature?.properties || null
   const zoningInfo = selected ? resolveZoning(selected.zoning_code, zoning) : null
@@ -119,85 +149,31 @@ export default function App() {
     [mode, siteRows],
   )
 
-  const matches = useMemo(() => {
-    const needle = query.trim().toLowerCase()
+  const allMatches = useMemo(() => {
+    const needle = query.trim().toLowerCase().replace(/\s+/g, " ")
     if (!needle || !parcels) return []
-    return parcels.features
-      .filter((feature) => (feature.properties.address || "").toLowerCase().includes(needle))
-      .slice(0, 8)
-  }, [parcels, query])
-
-  useEffect(() => {
-    setExplanation(null)
-  }, [selectedPin, whatIf, weights])
-
-  async function onExplain() {
-    if (!selected || !ranked) return
-    setExplaining(true)
-    try {
-      const response = await fetch("/api/explain", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          parcel: {
-            pin: selected.pin,
-            address: selected.address,
-            neighborhood: selected.neighborhood,
-            land_use: selected.land_use,
-            lot_sqft: selected.lot_sqft,
-            zoning_code: selected.zoning_code,
-            zoning_label: selected.zoning_label,
-            census_geography: selected.census_geography,
-            median_income: selected.median_income,
-            rent_burden_share: selected.rent_burden_share,
-            chas_rent_burden_share: selected.chas_rent_burden_share,
-            chas_tract_geoid: selected.chas_tract_geoid,
-            chas_vintage: selected.chas_vintage,
-            sfha_overlap: selected.sfha_overlap,
-            steep_slope_overlap: selected.steep_slope_overlap,
-            undermined_overlap: selected.undermined_overlap,
-            flood_zones: selected.flood_zones,
-            trips_within_400m: selected.trips_within_400m,
-            nearest_stop_m: selected.nearest_stop_m,
-            nearest_stop_name: selected.nearest_stop_name,
-            routes_within_400m: selected.routes_within_400m,
-            confidence: selected.confidence,
-            confidence_label: selected.confidence_label,
-            confidence_notes: selected.confidence_notes,
-            factors: selected.factors,
-          },
-          ranked: ranked.map((row) => ({
-            id: row.id,
-            label: row.label,
-            composite: row.composite,
-            demand: row.demand,
-            transit: row.transit,
-            equity: row.equity,
-            climate_risk: row.climate_risk,
-            climate_suitability: row.climate_suitability,
-            allowed: row.allowed,
-          })),
-          weights,
-          whatIf,
-          zoning: zoningInfo
-            ? {
-                status: zoningInfo.status,
-                code: zoningInfo.code,
-                allowed: zoningInfo.allowed ? [...zoningInfo.allowed] : null,
-                note: zoningInfo.note,
-                use_notes: zoningInfo.district?.use_notes || null,
-              }
-            : null,
-          countyMedianIncome: summary?.county_median_income ?? null,
-        }),
-      })
-      const payload = await response.json()
-      setExplanation(payload)
-    } catch (explainError) {
-      setExplanation({ text: explainError.message, source: "template", notice: "The explanation request failed." })
-    } finally {
-      setExplaining(false)
+    const hits = []
+    for (const feature of parcels.features) {
+      const address = (feature.properties.address || "").toLowerCase()
+      const at = address.indexOf(needle)
+      if (at === -1) continue
+      hits.push({ feature, address, rank: at === 0 ? 0 : address[at - 1] === " " ? 1 : 2 })
     }
+    hits.sort((a, b) => a.rank - b.rank || a.address.localeCompare(b.address, "en", { numeric: true }))
+    return hits.map((hit) => hit.feature)
+  }, [parcels, query])
+  const matches = allMatches.slice(0, 8)
+  const matchTotal = allMatches.length
+
+  const { explanation, explaining, run: runExplanation } = useExplanation(
+    `${selectedPin}|${whatIf}|${JSON.stringify(weights)}`,
+  )
+
+  function onExplain() {
+    if (!selected) return
+    runExplanation({ kind: "parcel", pin: selected.pin, weights, whatIf }, () =>
+      explainTemplate(buildParcelContext({ props: selected, weights, whatIf, zoningRules: zoning, sources: null, summary }).templateInput),
+    )
   }
 
   function dropOn(pin) {
@@ -209,35 +185,117 @@ export default function App() {
     setActiveSlot((current) => (current === "A" ? "B" : current))
   }
 
+  function startGuide() {
+    if (!parcels || !zoning) return
+    const resolved = resolveGuide(parcels.features, zoning, DEFAULT_WEIGHTS)
+    setOnboardingOpen(false)
+    setWeights(DEFAULT_WEIGHTS)
+    setFocus(null)
+    setQuery("")
+    setSiteFilters(resolved.filters)
+    setSiteSort("score")
+    setSiteExample(GUIDE_QUERY_ID)
+    setSelectedPin(resolved.pin)
+    setMode("sites")
+    setGuide({ ...resolved, step: 1 })
+  }
+
+  /** Drop two options on one parcel: the searched building type (a triplex stays a triplex) and the best permitted alternative. */
+  function compareOnParcel(pin, siteType, fromSites) {
+    const feature = byPin.get(pin)
+    if (!feature) return
+    const primary = buildingForSiteType(siteType)
+    const alternative = alternativeBuilding(feature.properties, primary, zoning, weights)
+    setDrops([
+      { slot: "A", pin, typeId: primary },
+      { slot: "B", pin, typeId: alternative },
+    ])
+    setActiveSlot("A")
+    setShortlist(fromSites ? { filters: siteFilters, count: siteRows.length } : null)
+    setMode("drop")
+  }
+
+  function guideNext() {
+    if (!guide) return
+    if (guide.step === 1) {
+      setDrops([guide.a, guide.b])
+      setActiveSlot("A")
+      setShortlist({ filters: guide.filters, count: guide.count })
+      setMode("drop")
+      setGuide({ ...guide, step: 2 })
+    } else if (guide.step === 2) {
+      setGuide({ ...guide, step: 3 })
+    }
+  }
+
+  function printBrief() {
+    window.print()
+  }
+
+  const guideBanner = guide ? (
+    <GuideBanner guide={guide} onNext={guideNext} onExit={() => setGuide(null)} onPrint={printBrief} />
+  ) : null
+
   return (
-    <>
+    <div className="page">
+      <a className="skip-link" href="#panel">
+        Skip to the results panel
+      </a>
       <header className="banner">
-        <strong>Screening aid only.</strong> This is not legal, zoning, financial, or permitting advice. A
-        consequential decision should go to City Planning / the Zoning Administrator or a qualified professional.
-        <span className="mode-switch">
-          <button type="button" className={mode === "inspect" ? "on" : ""} onClick={() => setMode("inspect")}>
+        <div className="banner-main">
+          <h1 className="banner-title">Hack the House</h1>
+          <p className="banner-sub">
+            Compare housing options for real Pittsburgh sites: {summary?.parcel_count ? summary.parcel_count.toLocaleString() : "…"}{" "}
+            parcels in Hazelwood and Lawrenceville, scored on six factors with the zoning use table shown separately. For
+            CDC staff and planners building a shortlist.
+          </p>
+        </div>
+        <span className="mode-switch" role="group" aria-label="Mode">
+          <button type="button" className={mode === "inspect" ? "on" : ""} aria-pressed={mode === "inspect"} onClick={() => setMode("inspect")}>
             Click a parcel
           </button>
-          <button type="button" className={mode === "drop" ? "on" : ""} onClick={() => setMode("drop")}>
+          <button type="button" className={mode === "drop" ? "on" : ""} aria-pressed={mode === "drop"} onClick={() => setMode("drop")}>
             Drop a building
           </button>
-          <button type="button" className={mode === "sites" ? "on" : ""} onClick={() => setMode("sites")}>
+          <button type="button" className={mode === "sites" ? "on" : ""} aria-pressed={mode === "sites"} onClick={() => setMode("sites")}>
             Find sites
           </button>
         </span>
-        <span className="banner-title">Housing typology, equity, and climate matchmaker</span>
+        <span className="banner-help">
+          <button type="button" className="primary" onClick={startGuide} disabled={!parcels}>
+            Try a real example
+          </button>
+          <button type="button" onClick={() => setOnboardingOpen(true)}>
+            How it works
+          </button>
+        </span>
+        <p className="banner-note">
+          <strong>Screening aid only.</strong> Not legal, zoning, financial, or permitting advice. Confirm real decisions
+          with City Planning / the Zoning Administrator or a qualified professional.
+        </p>
       </header>
+      <Onboarding open={onboardingOpen} onClose={() => setOnboardingOpen(false)} onExample={startGuide} />
       <div className={mode === "drop" ? "app drop-mode" : mode === "sites" ? "app sites-mode" : "app"}>
-        <div className="map-wrap">
-          {error ? <p className="map-loading">{error}. Run the pipeline, then reload.</p> : null}
-          {!error && !parcels ? <p className="map-loading">Loading parcels…</p> : null}
+        <div className="map-wrap" role="region" aria-label="Parcel map. Keyboard users can pick a parcel with Address search in the panel.">
+          {error ? (
+            <p className="map-loading" role="alert">
+              Parcel data did not load ({error}). Reload the page. If this keeps happening, the files in
+              web/public/data are missing from the deployment.
+            </p>
+          ) : null}
+          {!error && !parcels ? (
+            <div className="map-loading" role="status">
+              <span className="spinner" aria-hidden="true" /> Loading about 8,600 parcels with their scores. This can
+              take a few seconds on a slow connection.
+            </div>
+          ) : null}
           {parcels && neighborhoods && (mode === "inspect" || mode === "sites") ? (
             <MapView
               key={mode}
               parcels={parcels}
               neighborhoods={neighborhoods}
               zoning={zoning}
-              weights={weights}
+              weights={mapWeights}
               whatIf={mode === "sites" ? false : whatIf}
               selectedPin={selectedPin}
               focus={mode === "sites" ? siteFilters.area || null : focus}
@@ -256,14 +314,15 @@ export default function App() {
               onDrop={dropOn}
             />
           ) : null}
-          <ul className="legend">
+          <ul className="legend" aria-label="Map legend">
+            {mode === "inspect" ? <li className="legend-note">Color: #1 type under your weights</li> : null}
             <li><i style={{ background: "#1d4e89" }} /> Single-family</li>
             <li><i style={{ background: "#0f766e" }} /> Townhouse / duplex</li>
             <li><i style={{ background: "#c2410c" }} /> Small apartment</li>
             <li><i style={{ background: "#9f1239" }} /> Large apartment</li>
             {mode === "drop" ? (
               <>
-                <li><i style={{ background: "#1d4ed8" }} /> 800 m walk ring</li>
+                <li><i style={{ background: "#1d4ed8" }} /> 800 m straight-line ring</li>
                 <li><i style={{ background: "#111827" }} /> Stop inside the ring</li>
               </>
             ) : null}
@@ -295,6 +354,8 @@ export default function App() {
             sources={sources}
             activeExample={siteExample}
             onExample={setSiteExample}
+            onCompareSite={(pin, siteType) => compareOnParcel(pin, siteType, true)}
+            guide={guideBanner}
           />
         ) : mode === "drop" ? (
           <DropPanel
@@ -306,6 +367,7 @@ export default function App() {
             query={query}
             onQuery={setQuery}
             matches={matches}
+            matchTotal={matchTotal}
             onSelectPin={dropOn}
             zoning={zoning}
             stops={stops}
@@ -316,6 +378,9 @@ export default function App() {
             onSlot={setActiveSlot}
             onClear={(slot) => setDrops((current) => current.filter((item) => item.slot !== slot))}
             byPin={byPin}
+            onCompareState={setCompareState}
+            onPrintBrief={printBrief}
+            guide={guideBanner}
           />
         ) : (
         <ParcelPanel
@@ -330,6 +395,7 @@ export default function App() {
           query={query}
           onQuery={setQuery}
           matches={matches}
+          matchTotal={matchTotal}
           onSelectPin={setSelectedPin}
           selected={selected}
           ranked={ranked}
@@ -337,11 +403,36 @@ export default function App() {
           explanation={explanation}
           explaining={explaining}
           onExplain={onExplain}
+          onPrint={() => window.print()}
           sources={sources}
           onBackToSites={openedFromSites ? () => setMode("sites") : null}
+          siteType={openedFromSites ? siteFilters.typeId : null}
+          onCompareSite={(pin, siteType) => compareOnParcel(pin, siteType, openedFromSites)}
         />
         )}
       </div>
-    </>
+      {mode === "inspect" && selectedFeature ? (
+        <ParcelReport
+          feature={selectedFeature}
+          weights={weights}
+          whatIf={whatIf}
+          zoning={zoning}
+          summary={summary}
+          explanation={explanation}
+        />
+      ) : null}
+      {mode === "drop" && compareState ? (
+        <DecisionBrief
+          compare={compareState}
+          weights={weights}
+          featureA={byPin.get(compareState.result.a.pin)}
+          featureB={byPin.get(compareState.result.b.pin)}
+          zoning={zoning}
+          summary={summary}
+          model={model}
+          shortlist={shortlist}
+        />
+      ) : null}
+    </div>
   )
 }

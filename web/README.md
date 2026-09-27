@@ -11,6 +11,8 @@ npm run dev
 
 Open http://localhost:3000.
 
-`LLM_API_KEY` is optional. Copy `.env.example` to `.env.local`. With no key, Explain uses the template in `lib/explainTemplate.js`.
+Explanations go through the Vercel AI Gateway with the AI SDK (`lib/explainHandler.js`). The default model is `anthropic/claude-haiku-4.5`; set `AI_MODEL` to another gateway `provider/model` string to change it. Locally, copy `.env.example` to `.env.local` and set `AI_GATEWAY_API_KEY`, or run `vercel env pull .env.local` for an OIDC token. With no credentials, on error, on timeout, or past the rate limit, Explain returns the template in `lib/explainTemplate.js` and the UI says which one you got.
 
-Vercel: set the project root to `web`. Do not put API keys in the repo.
+The server rebuilds every number it sends to the model from `public/data/` (see `lib/explainFacts.js`). The browser only sends parcel PINs, housing types, weights, and the what-if toggle.
+
+Vercel: set the project root to `web`. No `vercel.json` is needed. `next.config.mjs` traces `public/data/*` into the explain function. Do not put API keys in the repo.

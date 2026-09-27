@@ -1,5 +1,7 @@
 /** Live ranking. Keep the composite math aligned with pipeline/score.py and shared/rank_vector.json. */
 
+import { FACTORS, breakdown, isScore, round1 } from "./factors.js"
+
 export const HOUSING_TYPES = [
   "single_family",
   "townhouse_duplex",
@@ -16,42 +18,19 @@ export const TYPE_LABELS = {
 
 export const DEFAULT_WEIGHTS = { demand: 25, transit: 25, equity: 25, climate: 25, displacement: 15, carbon: 15 }
 
-export const WEIGHT_LABELS = {
-  demand: "Demand",
-  transit: "Transit",
-  equity: "Equity",
-  climate: "Climate (prefer lower hazard)",
-  displacement: "Displacement (prefer lower risk, screening signal)",
-  carbon: "Carbon (prefer lower, estimate)",
-}
+export const WEIGHT_LABELS = Object.fromEntries(FACTORS.map((factor) => [factor.id, factor.sliderLabel]))
 
-/** 100 minus a "higher is worse" score. Used for climate, displacement, and carbon. */
+/** 100 minus a "higher is worse" score, rounded for display only. Composites use the unrounded value. */
 export function inverted(value) {
-  if (value === null || value === undefined || Number.isNaN(Number(value))) return null
-  return Math.round((100 - Number(value)) * 10) / 10
+  if (!isScore(value)) return null
+  return round1(100 - value)
 }
 
 export const climateSuitability = inverted
 
+/** Weighted average of available factors with positive weights, rounded like Python's round(x, 1). */
 export function composite(typeScore, weights) {
-  const parts = [
-    [typeScore?.demand, weights?.demand],
-    [typeScore?.transit, weights?.transit],
-    [typeScore?.equity, weights?.equity],
-    [inverted(typeScore?.climate_risk), weights?.climate],
-    [inverted(typeScore?.displacement_risk), weights?.displacement],
-    [inverted(typeScore?.carbon_index), weights?.carbon],
-  ]
-  let num = 0
-  let den = 0
-  for (const [value, weight] of parts) {
-    if (value === null || value === undefined || Number.isNaN(Number(value))) continue
-    if (!(weight > 0)) continue
-    num += Number(weight) * Number(value)
-    den += Number(weight)
-  }
-  if (den === 0) return null
-  return Math.round((num / den) * 10) / 10
+  return breakdown(typeScore, weights).composite
 }
 
 export function rankTypes(scores, weights, { allowed = null, whatIf = false } = {}) {
@@ -71,7 +50,7 @@ export function rankTypes(scores, weights, { allowed = null, whatIf = false } = 
       confidence_label: score.confidence_label ?? null,
       allowed: allowed ? allowed.has(id) : null,
     }
-    row.composite = composite(row, weights)
+    row.composite = composite(score, weights)
     return row
   })
   rows.sort((a, b) => {

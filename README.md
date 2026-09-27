@@ -1,4 +1,6 @@
-# Housing Typology, Equity & Climate Matchmaker
+# Hack the House
+
+Housing Typology, Equity & Climate Matchmaker.
 
 Decision-support prototype for the AI Horizons 2026 AI for Housing Hackathon, Challenge 3. Pick a real Pittsburgh parcel and compare four housing types — single-family, townhouse/duplex, small apartment (3–19 units), and large apartment (20+ units) — on demand, transit access, equity, climate risk, displacement risk, and marginal carbon. Weight sliders re-rank the types. The screen labels which parts are observed data and which parts are value judgments.
 
@@ -16,6 +18,30 @@ This is not legal, zoning, financial, or permitting advice. It does not say what
 The MVP map is Hazelwood plus Lower, Central, and Upper Lawrenceville. Those are the official city neighborhoods. "Lawrenceville" in everyday speech is the three Lawrenceville neighborhoods together.
 
 Why these two places: the public data actually separates them. In this pull, parcel block-group median incomes are about $40,000 in Hazelwood and about $101,000 in Lawrenceville. Median rent burden (share of renters paying 30% or more) is about 58% in Hazelwood and 34% in Lawrenceville. Median valid sale prices since 2021-09-26 are about $153 per square foot in Hazelwood and $247–$274 in the Lawrenceville neighborhoods. Lawrenceville also has more weekday transit trips within 400 meters (median about 950 versus about 420). Slopes of 25% or greater, the landslide-risk proxy, touch about 57% of Hazelwood parcels and about 15% of Lawrenceville parcels. Mapped undermined areas show up on about 13% of Hazelwood parcels and on none of these Lawrenceville parcels. Mapped FEMA flood zones are the other way around: about 6% of Lawrenceville parcels and under 1% of Hazelwood parcels. Glen Hazel is not included; it is its own neighborhood.
+
+## Features
+
+| | |
+| --- | --- |
+| **Guided example.** **Try a real example** runs a real Find Sites question (City-owned vacant lots where a triplex is allowed by right, outside flood zones, near frequent transit), takes the top match from the committed data, compares a triplex with the best-scoring other permitted building on the same lot, and ends at a printable decision brief. **How it works** reopens the three-step intro. | <img src="docs/screenshots/01-onboarding.png" alt="Three-step onboarding dialog" width="420"> |
+| **Click a parcel.** All four types ranked for one lot, with the §911.02 reading per type (allowed, needs special approval, not allowed, or check with the City), every score bar, and data confidence. Choosing an address flies the map to the lot. The URL keeps `?pin=` so a parcel can be shared. | <img src="docs/screenshots/04-parcel-view.png" alt="Parcel view with ranked types" width="420"> |
+| **Weight presets.** Resident, CDC / affordability-first, Planner / balanced, Developer / demand-first, and Climate-first set the sliders in one click. The screen says presets are value judgments, not data. | <img src="docs/screenshots/05b-presets.png" alt="Viewpoint presets above the weight sliders" width="420"> |
+| **How stable is #1?** For a parcel, and for the two-building compare, the app reruns the ranking under all five presets and under one-slider changes. It reports, for example, "Townhouse / duplex stays #1 under 5 of 5 presets. Flips to Large apartment if the demand weight falls to 5 (now 25)." When §911.02 leaves only one type, it says zoning, not the weights, decides #1, and shows the what-if result too. | <img src="docs/screenshots/05-parcel-robustness.png" alt="How stable is #1 for a parcel" width="420"> |
+| **Find sites.** Filter every parcel by public records, what §911.02 allows, hazards, transit walk time, lot size, and displacement risk; get a ranked list and a CSV. The same presets sit above its sliders. See [Find sites](#find-sites). "Explain the top 5 sites" says why they rank highest. | <img src="docs/screenshots/09-find-sites-explain.png" alt="Find Sites with an explanation of the top sites" width="420"> |
+| **Drop a building.** Put one type on a lot in 3D with an 800 m walk ring and nearby transit; drop a second to compare A and B side by side. | <img src="docs/screenshots/03-compare-robustness.png" alt="Two dropped buildings: does the winner hold" width="420"> |
+| **Explanations.** "Explain the top two", "Explain A vs B", or "Explain the top 5 sites" (Find Sites) streams an AI summary labeled "AI-generated summary of the scores above; check sources", or the template when no model is available, with the reason shown. | <img src="docs/screenshots/06-explanation-template.png" alt="Template explanation with its label" width="420"> |
+| **One-page report.** "Print one-page report" prints the parcel, zoning reading with the §911.02 citation, scores, weights and preset, robustness, measured inputs with sources and vintages, the summary, limitations, and the "screening aid, confirm with City Planning" note. Save as PDF for a community meeting. | <img src="docs/screenshots/07-report-page.png" alt="One-page parcel report" width="300"> |
+| **Works on a phone and with a keyboard.** The layout stacks under 900 px. There is a skip link to the results, visible focus outlines, labeled controls, live regions for streamed text, and an address search for anyone who cannot click the map. | <img src="docs/screenshots/08-mobile.png" alt="Mobile layout" width="160"> |
+
+## How to use it
+
+1. Open the app. Read the three-step guide, or click **Try an example**.
+2. **Click a parcel** on the map, or type an address (add a house number, such as `4200 butler`, to narrow the list).
+3. Read the ranked cards and the §911.02 badges. Anything marked "needs special approval" is not a variance and not a denial.
+4. Pick a viewpoint preset, or move the sliders. Watch **How stable is #1?**: if the result flips under a small change, the answer is about values, not data.
+5. **Drop a building** to compare two scenarios, then check **Does the winner hold?** Or use **Find sites** to ask where a type could go.
+6. Click **Explain** for a plain-language summary, or **Print one-page report** to bring it to a meeting.
+7. If a result looks wrong, flag it (the flag stays in your browser). Take real decisions to City Planning / the Zoning Administrator or a qualified professional.
 
 ## How to run
 
@@ -47,15 +73,19 @@ Open http://localhost:3000. The default view is click a parcel. **Find sites** i
 
 ### One-minute demo
 
-1. Open the app. Leave **Click a parcel** if you only want the original map.
-2. Choose **Drop a building**. Townhouse / duplex is already selected.
-3. Search `Butler` and click a Lawrenceville address. A block and an 800 m ring appear. Right-drag the map to tilt it.
-4. Small apartment is the next type if you click it. Search `Glenwood` and click a Hazelwood address. That fills Building B.
-5. Read the sentence **Why they rank differently**, then the two cards: homes added, the four scores, the weighted total, and whether each number is measured or a weighting choice. The zoning badge cites §911.02 and still says it needs expert review.
+1. Click **Try a real example**. Step 1 (Shortlist) applies the Find Sites question and selects the top match under the default weights. In this data it is PIN 0056F00338000000 on Hazelwood Ave in Hazelwood: 5,100 sq ft of vacant land in LNC with a City inventory record. A record is not availability.
+2. Click **Compare two housing options on this parcel**. Scenario A is a triplex (3 units, read from the §911.02 Three-Unit row; scored with the small-apartment score). Scenario B is the best-scoring other building permitted by right on the lot (a townhouse / duplex here). The contribution table shows the points each factor adds; transit and displacement are held constant on one parcel. Under the default weights the two are close (72.9 vs 72.6).
+3. Under **Weights**, click the **CDC / affordability-first** preset: the triplex moves ahead because equity carries more weight. **Does the winner hold?** lists the result under all five presets and the one-slider change that flips it.
+4. Click **Next: the decision brief**, then **Print decision brief** (or save as PDF). It lists both scenarios, permission separately from the score, contributions, weights, what other priorities do, what is not evaluated, three next steps chosen by fixed rules, sources, and the build and data versions.
+5. The plain **Click a parcel** map and **Find sites** are one click away in the header.
 
-For a plain-language explanation, click "Explain the top two." With no API key, that uses a deterministic template. To use a model, copy `web/.env.example` to `web/.env.local` and set `LLM_API_KEY`. Optional: `LLM_BASE_URL` (default `https://api.openai.com/v1`) and `LLM_MODEL` (default `gpt-4o-mini`).
+The demo parcel and numbers come from the committed data and default weights; `web/lib/guide.js` resolves them at runtime, and a test checks that the triplex keeps its three-unit semantics.
 
-On Vercel, set the project root to `web`. Put the key in the project environment, not in git.
+For a plain-language explanation, click "Explain the top two" on a parcel, "Explain this parcel" on a dropped building, or "Explain A vs B" once two buildings are dropped. The text streams from a language model through the Vercel AI Gateway and is labeled **AI-generated summary of the scores above; check sources**. With no gateway credentials, or if the model errors or times out, the same button returns the deterministic template and is labeled **Template explanation (no AI)** with the reason. See [AI explanations](#ai-explanations).
+
+To use the model locally, copy `web/.env.example` to `web/.env.local` and set `AI_GATEWAY_API_KEY` (create one under AI Gateway → API Keys in the Vercel dashboard), or run `vercel link` then `vercel env pull .env.local` inside `web/` to get a short-lived OIDC token. Optional: `AI_MODEL` (default `anthropic/claude-haiku-4.5`), `AI_EXPLANATIONS=off` to force the template.
+
+On Vercel, set the project root to `web`. The gateway authenticates with the project's OIDC token automatically, so no key is needed there. Nothing in `web/` depends on running the Python pipeline at deploy time: the app and the explain API both read the committed files in `web/public/data/`.
 
 After Chris edits `zoning/districts.json`:
 
@@ -103,7 +133,13 @@ pipeline/          Tejas. Download, clean, score. Writes data/processed and web/
   sites.py         City-owned, tax-delinquent, and condemned records to booleans and codes.
 zoning/            Chris. districts.json maps a zoning code to allowed housing types.
 web/               YY. Next.js map. Ranks on the client from the static GeoJSON.
-  app/api/explain  Template explanation, or an LLM if LLM_API_KEY is set.
+  app/api/explain  AI Gateway explanation grounded in server-side facts; template fallback.
+  lib/explainFacts.js, lib/explainPrompt.js, lib/explainHandler.js
+                   What the model may see, what it is told, and the guardrails.
+  lib/presets.js, lib/robustness.js
+                   Viewpoint presets, and whether #1 holds across presets and one-slider changes.
+  components/ParcelReport.js, components/Onboarding.js
+                   Print-only one-page report; first-run guide and example case (lib/example.js).
   lib/sites.js     Find Sites filters, zoning readings, ranking, and CSV export.
 shared/rank_vector.json
                    One numeric example both the Python tests and the JS tests must match.
@@ -165,20 +201,39 @@ About 5% of clipped parcels (411 of 8,645) did not match an assessment row in ZI
 ## Libraries
 
 - Python: shapely, pyshp (and the standard library)
-- Web: Next.js, React, Leaflet, react-leaflet, MapLibre GL (drop-a-building view only)
+- Web: Next.js, React, Leaflet, react-leaflet, MapLibre GL (drop-a-building view only), Vercel AI SDK (`ai` v7) for explanations
 - Basemap tiles: OpenStreetMap, attributed on the map
 
-No paid data product. No model is required for the scores. The optional explanation model is called only when `LLM_API_KEY` is set.
+No paid data product. No model is required for the scores. A language model only writes the optional explanation text, and the template covers it when the model is not available.
 
 ## AI Tools Used
 
-- Cursor cloud agent, model Grok 4.7, used during the hackathon to scaffold the pipeline, the scoring model, and the first web app. The scoring rules are in `pipeline/score.py` and `data/processed/score_model.json` so a person can read and change them.
-- Cursor cloud agent, model Claude Opus 5.5, added the Find Sites mode, the site-inventory joins, the displacement screen, and the carbon estimate. It found the RECS table and the embodied-carbon papers by web search, then checked each figure against the source file before using it.
-- Optional explanation model: any OpenAI-compatible chat endpoint configured with `LLM_API_KEY`. The default model name is `gpt-4o-mini`. If the key is missing or the call fails, `web/lib/explainTemplate.js` writes the explanation from the same numbers. The demo does not depend on a model being up.
+- **Explanations in the app:** `anthropic/claude-haiku-4.5` (Anthropic Claude Haiku 4.5) through the [Vercel AI Gateway](https://vercel.com/docs/ai-gateway), called with the Vercel AI SDK. Set `AI_MODEL` to use another gateway model. The model writes prose only. It does not compute scores, choose weights, or read the zoning code. If it is unavailable, `web/lib/explainTemplate.js` writes the explanation from the same numbers, and the UI says so. The demo does not depend on a model being up.
+- **Writing the code:** Cursor cloud agents helped write this repository. Grok 4.7 scaffolded the pipeline, the scoring model, and the first web app. Claude Opus 5.5 wrote the AI Gateway explanation route, the grounding and guardrails, the presets, the robustness check, the one-page report, the onboarding, and their tests. The five presets are value judgments that agent proposed; the team should confirm or change them in `web/lib/presets.js`. People on the team reviewed the scoring rules, which are in `pipeline/score.py` and `data/processed/score_model.json` so anyone can read and change them.
+  Claude Opus 5.5 (another Cursor agent run) also added the Find Sites mode, the site-inventory joins, the displacement screen, and the carbon estimate. It found the RECS table and the embodied-carbon papers by web search, then checked each figure against the source file before using it.
+
+## AI explanations
+
+The model sees only what the server builds in `web/lib/explainFacts.js`, from the committed files in `web/public/data/`. The browser sends parcel PINs, housing types, the weights, and the what-if toggle; it cannot put its own numbers into the prompt. For a parcel, the facts are the four types' demand, transit, equity, climate, displacement, and carbon scores and the weighted totals (the same six-factor totals the UI shows), the six weights, the §911.02 reading for each type (including whether it needs special approval, the legend, the mapping assumption, and `needs_expert_review`), the flood, steep-slope, undermined, transit, income, ACS, and CHAS inputs, and each input's source name, vintage, pull date, and caveat. Displacement risk is passed and must be described as a tract-level screening signal (the same for every type, not a prediction), and carbon as a relative estimate (not tonnes). For Find Sites, the server reruns the same filter and sort from sanitized filter values and passes the top five sites: their scores, §911.02 reading, public-record flags, hazards, walk time, and the gap to the next site, plus the rule that a public record is not availability. Shares are converted to whole percents on the server so the model never does arithmetic. Owner and deed-party fields are not in the data, and the facts builder does not copy any field it does not name.
+
+The system prompt (`web/lib/explainPrompt.js`) asks for plain language for residents and planners. It asks the model to explain why the types or the two scenarios rank differently, keep measured findings apart from value judgments (the weights and scoring rules), state uncertainty and source vintages, use no number that is not in the facts, make no legal conclusion, and send real decisions to City Planning or a qualified professional.
+
+Guardrails (`web/lib/explainHandler.js`): at most 600 output tokens; a 15 second total timeout and 8 seconds to the first token; an in-memory cache keyed by a hash of the model, prompt version, and facts (6 hours, 500 entries); 6 AI requests per minute per IP and 60 per minute per server instance; a 4 KB request limit; strict input validation. Past a limit, or on any error, the reply is the template with a notice. Tests: `web/lib/explain.test.js` (uses the AI SDK's mock model, no network).
+
+How to check it locally: run `npm run dev` in `web/` with `AI_GATEWAY_API_KEY` set, click a parcel, and click "Explain the top two." The label under the button shows the model. Or call the API directly:
+
+```bash
+curl -N -X POST localhost:3000/api/explain -H 'content-type: application/json' \
+  -d '{"kind":"parcel","pin":"0049B00013000000","weights":{"demand":25,"transit":25,"equity":25,"climate":25,"displacement":15,"carbon":15}}' -D -
+```
+
+For Find Sites, send `{"kind":"sites","weights":{...},"filters":{"vacant":true,"cityOwned":true,"typeId":"triplex","permission":"by_right"},"sort":"score"}`. The `x-explain-source` header is `ai` or `template`, `x-explain-model` names the model, `x-explain-cache` is `hit` or `miss`, and `x-explain-notice` gives the reason for a template fallback. For two dropped buildings, send `{"kind":"compare","weights":{...},"a":{"pin":"...","typeId":"small_apartment"},"b":{"pin":"...","typeId":"townhouse_duplex"}}`.
 
 ## Human in the loop
 
 Every parcel result is a screening aid. It is not a zoning determination, a permit, or an appraisal. The page says so on the result, and it links to the [City Planning zoning page](https://www.pittsburghpa.gov/Business-Development/City-Planning/Zoning), the [zoning code](https://ecode360.com/45474054), and the [zoning map](https://pittsburghpa.maps.arcgis.com/apps/instant/sidebar/index.html?appid=4bb79ea64bf848b3a0560e3856efeccb). The zoning page lists 412-255-2621 at the City-County Building, 414 Grant Street.
+
+The robustness check makes the value judgment visible: it shows which presets agree on #1 and how far one weight must move to flip it. The printed report carries the same screening note, the §911.02 citation, and the source vintages, and it includes a browser flag if there is one, so the paper copy is not stripped of its caveats.
 
 A person can flag a result as wrong. The flag, and an optional note, stay in that browser's local storage. They are not uploaded and they are not a filing with the City. Take a consequential question to City Planning / the Zoning Administrator or to a qualified professional.
 

@@ -2,10 +2,14 @@
 
 import { useMemo, useState } from "react"
 
+import Explanation from "./Explanation.js"
 import SiteFacts from "./SiteFacts.js"
 import SourcesList from "./SourcesList.js"
+import WeightPresets from "./WeightPresets.js"
 import WeightSliders from "./WeightSliders.js"
 import { TYPE_COLORS } from "../lib/colors.js"
+import { useExplanation } from "../lib/explainClient.js"
+import { TOP_SITES, buildSitesContext, explainSitesTemplate } from "../lib/explainSites.js"
 import {
   CITY_STATUS_LABELS,
   DEFAULT_SITE_FILTERS,
@@ -80,8 +84,11 @@ export default function FindSitesPanel({
   sources,
   activeExample,
   onExample,
+  onCompareSite,
+  guide = null,
 }) {
   const [shown, setShown] = useState(PAGE)
+  const sitesAi = useExplanation(JSON.stringify([filters, sort, weights]))
   const set = (patch) => {
     onExample(null)
     onFilters({ ...filters, ...patch })
@@ -95,7 +102,8 @@ export default function FindSitesPanel({
   const selected = rows.find((row) => row.pin === selectedPin) || null
 
   return (
-    <aside className="panel">
+    <aside className="panel" id="panel">
+      {guide}
       <section className="limitations">
         <h2>Find sites: where could we build what?</h2>
         <p>
@@ -128,6 +136,7 @@ export default function FindSitesPanel({
               onClick={() => {
                 onExample(example.id)
                 onFilters(filtersFor(example))
+                if (example.weights) onWeights({ ...weights, ...example.weights })
                 setShown(PAGE)
               }}
             >
@@ -308,6 +317,7 @@ export default function FindSitesPanel({
       <section>
         <h2>Weights</h2>
         <p className="hint">The list is ranked by the weighted score of the chosen type, or of the best type the zoning filter lets through.</p>
+        <WeightPresets weights={weights} onWeights={onWeights} />
         <WeightSliders weights={weights} onWeights={onWeights} />
       </section>
 
@@ -333,6 +343,19 @@ export default function FindSitesPanel({
             Download CSV
           </button>
         </div>
+        <button
+          type="button"
+          className="explain"
+          disabled={!rows.length || sitesAi.explaining}
+          onClick={() =>
+            sitesAi.run({ kind: "sites", weights, filters, sort }, () =>
+              explainSitesTemplate(buildSitesContext({ rows, filters, sort, weights, sources, summary: null, zoningRules: null })),
+            )
+          }
+        >
+          {sitesAi.explaining ? "Writing explanation…" : `Explain the top ${Math.min(TOP_SITES, rows.length) || ""} sites`}
+        </button>
+        <Explanation explanation={sitesAi.explanation} />
 
         {selected ? (
           <article className="site-detail" style={{ borderColor: TYPE_COLORS[selected.scoreType] }}>
@@ -350,9 +373,22 @@ export default function FindSitesPanel({
               </span>
             </p>
             <SiteFacts props={selected.props} compact />
-            <button type="button" className="explain" onClick={() => onOpenParcel(selected.pin)}>
-              Open full parcel detail
-            </button>
+            <div className="action-row">
+              {onCompareSite ? (
+                <button type="button" className="explain" onClick={() => onCompareSite(selected.pin, filters.typeId || selected.typeId)}>
+                  Compare two options on this parcel
+                </button>
+              ) : null}
+              <button type="button" className="secondary" onClick={() => onOpenParcel(selected.pin)}>
+                Open full parcel detail
+              </button>
+            </div>
+            {filters.typeId === "triplex" ? (
+              <p className="hint">
+                The comparison keeps the triplex as 3 units read from the §911.02 Three-Unit row. Its score uses the small
+                apartment (3–19 units) score; the unit count does not change the score.
+              </p>
+            ) : null}
           </article>
         ) : null}
 

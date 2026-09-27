@@ -28,6 +28,23 @@ function FitTo({ collection, focus }) {
   return null
 }
 
+function FlyToSelected({ layerRef, selectedPin }) {
+  const map = useMap()
+  useEffect(() => {
+    const layer = layerRef.current
+    if (!layer || !selectedPin) return
+    let target = null
+    layer.eachLayer((child) => {
+      if (child.feature?.properties.pin === selectedPin) target = child
+    })
+    if (!target) return
+    const bounds = target.getBounds()
+    if (map.getZoom() >= 16 && map.getBounds().contains(bounds)) return
+    map.flyToBounds(bounds, { maxZoom: 17, duration: 0.6 })
+  }, [layerRef, selectedPin, map])
+  return null
+}
+
 /** Zoom to the Find Sites matches when there are few enough to see. */
 function FitToMatches({ parcels, highlight }) {
   const map = useMap()
@@ -134,6 +151,7 @@ export default function MapView({
           layer.on("click", () => onSelect(feature.properties.pin))
         }}
       />
+      <FlyToSelected layerRef={geoRef} selectedPin={selectedPin} />
       {matchPoints.map((item) => (
         <CircleMarker
           key={`match-${item.pin}`}

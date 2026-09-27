@@ -2,12 +2,18 @@
 
 import { useEffect, useMemo, useRef, useState } from "react"
 
+import Explanation from "./Explanation.js"
+import Robustness from "./Robustness.js"
+import WeightPresets from "./WeightPresets.js"
+import { NOT_EVALUATED } from "../lib/explainFacts.js"
+import { FACTOR_BY_ID, breakdown, coverageText, transitTotalShare } from "../lib/factors.js"
+import { SHARED_FACTOR_NOTE, describeRobustness, parcelRobustness } from "../lib/robustness.js"
 import SiteFacts from "./SiteFacts.js"
 import SourcesList from "./SourcesList.js"
 import { TYPE_COLORS } from "../lib/colors.js"
 import { clearFlag, loadFlags, saveFlag } from "../lib/flags.js"
 import { TYPE_LABELS, WEIGHT_LABELS } from "../lib/rank.js"
-import { dropZoningBadge } from "../lib/zoning.js"
+import { dropZoningBadge, unitPermission } from "../lib/zoning.js"
 
 const CODE_URL = "https://ecode360.com/45474054"
 const MAP_URL =
@@ -36,13 +42,11 @@ function Bar({ label, value, hint }) {
 }
 
 function ZoningBadge({ row, whatIf, zoningInfo }) {
-  if (whatIf && zoningInfo?.status === "use_table") {
-    return <span className="badge scenario">What-if: treated as allowed</span>
-  }
   const badge = dropZoningBadge(row.id, zoningInfo)
   return (
     <p className="zoning-badge">
       <span className={`badge ${badge.id}`}>{badge.label}</span>
+      {whatIf && zoningInfo?.status === "use_table" ? <span className="badge scenario">What-if ordering on</span> : null}
       <span className="hint">{badge.detail}</span>
     </p>
   )
@@ -60,6 +64,7 @@ export default function ParcelPanel({
   query,
   onQuery,
   matches,
+  matchTotal = 0,
   onSelectPin,
   selected,
   ranked,
@@ -67,10 +72,32 @@ export default function ParcelPanel({
   explanation,
   explaining,
   onExplain,
+  onPrint,
   sources,
   onBackToSites,
+  siteType = null,
+  onCompareSite = null,
 }) {
   const [showModel, setShowModel] = useState(false)
+  const headingRef = useRef(null)
+  const selectedRef = useRef(null)
+  const robustness = useMemo(
+    () => (selected ? parcelRobustness(selected.scores, zoningInfo, weights, whatIf) : null),
+    [selected, zoningInfo, weights, whatIf],
+  )
+
+  useEffect(() => {
+    const heading = headingRef.current
+    const section = selectedRef.current || heading
+    if (!selected?.pin || !heading) return
+    heading.focus({ preventScroll: true })
+    const panel = section.closest(".panel")
+    if (panel && panel.scrollHeight > panel.clientHeight && getComputedStyle(panel).overflowY !== "visible") {
+      panel.scrollTo({ top: panel.scrollTop + section.getBoundingClientRect().top - panel.getBoundingClientRect().top - 8, behavior: "smooth" })
+    } else {
+      section.scrollIntoView({ block: "start", behavior: "smooth" })
+    }
+  }, [selected?.pin])
   const [flags, setFlags] = useState({})
   const [flagNote, setFlagNote] = useState("")
   const failed = summary?.sources_failed || []
@@ -83,12 +110,6 @@ export default function ParcelPanel({
     setFlagNote("")
   }, [selected?.pin])
 
-  const selectedRef = useRef(null)
-  useEffect(() => {
-    const node = selectedRef.current
-    const panel = node?.closest(".panel")
-    if (onBackToSites && selected?.pin && panel) panel.scrollTop = node.offsetTop - panel.offsetTop
-  }, [onBackToSites, selected?.pin])
   const groups = useMemo(() => {
     if (!ranked) return []
     const blocks = []
@@ -102,15 +123,18 @@ export default function ParcelPanel({
         blocks.push(current)
       }
       place += 1
-      current.rows.push({ ...row, place })
+      const result = breakdown(selected?.scores?.[row.id], weights)
+      current.rows.push({ ...row, place, coverage: result.noScoreReason || coverageText(result) })
     }
     return blocks
-  }, [ranked, whatIf, zoningInfo])
+  }, [ranked, whatIf, zoningInfo, selected, weights])
 
   return (
-    <aside className="panel">
-      <section className="limitations" aria-labelledby="limits-heading">
-        <h2 id="limits-heading">Limitations / what this tool can&apos;t tell you</h2>
+    <aside className="panel" id="panel">
+      <details className="limitations" open={!selected}>
+        <summary>
+          <h2 id="limits-heading">Limitations / what this tool can&apos;t tell you</h2>
+        </summary>
         <p>
           This is decision support. It is not legal, zoning, financial, or permitting advice, and it
           will not tell you what may be built or what a project will cost.
@@ -134,8 +158,15 @@ export default function ParcelPanel({
             four types.
           </li>
           <li>
-            Marginal carbon is a relative estimate, not tonnes of CO2: published per-household energy by building type
-            (EIA RECS 2020, Northeast), a coarse embodied-carbon tier, and transit access as a travel proxy.
+            The carbon-related proxy is relative and per home, not tonnes: existing-stock site energy by building type (EIA
+            RECS 2020, Northeast; energy is not an emissions inventory), an assumed embodied-carbon tier, and transit
+            access as a travel term. There is no project baseline, so it is not true marginal CO2.
+          </li>
+          <li>
+            The factors overlap. Transit counts directly and inside the carbon proxy, so with complete data and these
+            weights transit carries about{" "}
+            {Math.round(transitTotalShare(weights, model?.normative_choices?.carbon_transport_weight) * 1000) / 10}% of the
+            total. Need indicators feed both equity and displacement.
           </li>
           <li>
             Site records (vacant, City-owned, tax-delinquent, condemned) are not availability. Verify with the URA, the
@@ -159,11 +190,12 @@ export default function ParcelPanel({
             These sources failed and were not filled in with made-up numbers: {failed.map((item) => item.name).join("; ")}.
           </p>
         ) : null}
-      </section>
+      </details>
 
       <section>
         <h2>Weights</h2>
         <p className="hint">These are choices. They re-rank every parcel on the map.</p>
+        <WeightPresets weights={weights} onWeights={onWeights} />
         {Object.entries(weights).map(([key, value]) => (
           <label key={key} className="slider">
             <span>
@@ -181,8 +213,12 @@ export default function ParcelPanel({
         ))}
         <label className="toggle">
           <input type="checkbox" checked={whatIf} onChange={(event) => onWhatIf(event.target.checked)} />
-          What if zoning changed (rank all four types)
+          What-if ordering: rank all four types by score, ignoring §911.02 grouping
         </label>
+        <p className="hint">
+          Only the order changes. Scores and each type&apos;s zoning reading stay as they are. This is not a zoning
+          amendment.
+        </p>
         <div className="zoom-row">
           <button type="button" className={focus === "Hazelwood" ? "on" : ""} onClick={() => onFocus("Hazelwood")}>
             Hazelwood
@@ -203,10 +239,16 @@ export default function ParcelPanel({
           <input
             value={query}
             onChange={(event) => onQuery(event.target.value)}
-            placeholder="Try a street name"
+            name="address-search" placeholder="Try a street name"
           />
         </label>
         {query.trim() && matches.length === 0 ? <p className="hint">No address match in the MVP area.</p> : null}
+        {matchTotal > matches.length ? (
+          <p className="hint">
+            Showing {matches.length} of {matchTotal.toLocaleString()} matches. Add a house number to narrow it, for example
+            &quot;4200 butler&quot;.
+          </p>
+        ) : null}
         <ul className="matches">
           {matches.map((feature) => (
             <li key={feature.properties.pin}>
@@ -242,7 +284,151 @@ export default function ParcelPanel({
               ← Back to Find Sites results
             </button>
           ) : null}
-          <h2>{selected.address || selected.pin}</h2>
+          <h2 ref={headingRef} tabIndex={-1} className="parcel-heading">
+            {selected.address || selected.pin}
+          </h2>
+          <p className="screening-line">
+            <strong>Screening aid only.</strong> Not a determination of what may be built. Confirm with City Planning
+            (links below).
+          </p>
+          <p>
+            {selected.neighborhood}
+            {selected.land_use ? ` · ${selected.land_use}` : ""}
+            {selected.lot_sqft ? ` · ${Number(selected.lot_sqft).toLocaleString()} sq ft` : ""}
+          </p>
+          <p>
+            Zoning: {selected.zoning_code || "not matched"}
+            {selected.zoning_label ? ` (${selected.zoning_label})` : ""}
+          </p>
+          {zoningInfo?.status === "use_table" ? (
+            <p className="hint">
+              Use table {zoningInfo.codeSection}. Still needs expert review. {zoningInfo.note}{" "}
+              {zoningInfo.codeUrl ? (
+                <a href={zoningInfo.codeUrl} target="_blank" rel="noreferrer">
+                  §911.02
+                </a>
+              ) : null}
+            </p>
+          ) : zoningInfo?.status === "not_in_use_table" ? (
+            <p className="hint">
+              Check with the city / needs review. {zoningInfo.note} This district is not marked prohibited.
+            </p>
+          ) : (
+            <p className="hint">
+              {zoningInfo?.note}{" "}
+              {zoningInfo?.codeUrl ? (
+                <a href={zoningInfo.codeUrl} target="_blank" rel="noreferrer">
+                  Open the code
+                </a>
+              ) : null}
+            </p>
+          )}
+          <p>
+            Data coverage (thin-data heuristic): <strong>{selected.confidence_label}</strong> ({selected.confidence}). It
+            counts missing inputs. It is not accuracy, statistical confidence, or a grade for the value judgments.
+          </p>
+          <p className="hint">
+            <strong>Not evaluated:</strong> {NOT_EVALUATED.join(" ")}
+          </p>
+          {siteType === "triplex" ? (
+            <div className="guide-banner">
+              <p>
+                You searched Find Sites for a triplex. §911.02 Three-Unit row here:{" "}
+                <strong>{unitPermission("small_apartment", "Three-Unit", zoningInfo, 3).label}</strong>. The small apartment
+                card below scores 3–19 units broadly and shows the four-type reading.
+              </p>
+              {onCompareSite ? (
+                <button type="button" className="explain" onClick={() => onCompareSite(selected.pin, "triplex")}>
+                  Compare a triplex with another option on this parcel
+                </button>
+              ) : null}
+            </div>
+          ) : onCompareSite ? (
+            <p>
+              <button type="button" className="secondary" onClick={() => onCompareSite(selected.pin, ranked?.find((row) => row.composite !== null)?.id)}>
+                Compare the top option with another on this parcel
+              </button>
+            </p>
+          ) : null}
+          {selected.confidence_notes?.length ? (
+            <ul>
+              {selected.confidence_notes.map((note) => (
+                <li key={note}>{note}</li>
+              ))}
+            </ul>
+          ) : null}
+
+          <SiteFacts props={selected} />
+
+          {groups.map((group) => (
+            <div key={group.key}>
+              <h3>
+                {group.key === "flagged"
+                  ? "Not permitted by right under §911.02"
+                  : whatIf && zoningInfo?.status === "use_table"
+                    ? "Ranked as if zoning allowed all four"
+                    : zoningInfo?.status === "use_table"
+                      ? "Ranked among types §911.02 permits by right, including partial unit counts"
+                      : "Ranked without a zoning filter"}
+              </h3>
+              {group.rows.map((row) => (
+                <article key={row.id} className="type-card" style={{ borderColor: TYPE_COLORS[row.id] }}>
+                  <header>
+                    <span>
+                      {row.place}. {TYPE_LABELS[row.id]}
+                    </span>
+                    <strong>{formatScore(row.composite)}</strong>
+                  </header>
+                  <p className="hint">{row.coverage}</p>
+                  <ZoningBadge row={row} whatIf={whatIf} zoningInfo={zoningInfo} />
+                  <Bar label={FACTOR_BY_ID.demand.label} value={row.demand} hint="Neighborhood valid-sale price and turnover, blended with an assumed lot-size fit curve. Not demand for the type." />
+                  <Bar label={FACTOR_BY_ID.transit.label} value={row.transit} hint="Measured for the place; same for every type" />
+                  <Bar label={FACTOR_BY_ID.equity.label} value={row.equity} hint="Measured need (ACS income and rent burden, CHAS low-income cost burden), then team-chosen type multipliers (assumptions)" />
+                  <Bar
+                    label={`${FACTOR_BY_ID.climate.label} (higher is worse)`}
+                    value={row.climate_risk}
+                    hint="Flood, steep-slope proxy, and undermined area. Higher means more mapped hazard."
+                  />
+                  <Bar
+                    label={`${FACTOR_BY_ID.displacement.label} (higher is worse)`}
+                    value={row.displacement_risk}
+                    hint="Tract renters, cost burden, and rent growth versus the county. Same for every type. Higher means more risk."
+                  />
+                  <Bar
+                    label={`${FACTOR_BY_ID.carbon.label} (higher is worse)`}
+                    value={row.carbon_index}
+                    hint="Existing-stock building energy, an assumed embodied tier, and transit access. Not tonnes or true marginal CO2."
+                  />
+                </article>
+              ))}
+            </div>
+          ))}
+
+          {robustness ? (
+            <Robustness
+              analysis={robustness.analysis}
+              note={[robustness.note, SHARED_FACTOR_NOTE].filter(Boolean).join(" ")}
+              secondary={
+                robustness.whatIfAnalysis ? (
+                  <p className="hint">
+                    <strong>If zoning were not binding (what-if):</strong> {describeRobustness(robustness.whatIfAnalysis)}
+                  </p>
+                ) : null
+              }
+            />
+          ) : null}
+
+          <div className="action-row">
+            <button type="button" className="explain" onClick={onExplain} disabled={explaining}>
+              {explaining ? "Writing explanation…" : "Explain the top two"}
+            </button>
+            <button type="button" className="secondary" onClick={onPrint}>
+              Print one-page report
+            </button>
+          </div>
+          <Explanation explanation={explanation} />
+
+          <h3>Check it with the City, or flag it</h3>
           <div className="review-box">
             <p>
               <strong>Screening aid only.</strong> This result is not a determination of what may be built. A
@@ -288,7 +474,7 @@ export default function ParcelPanel({
                   <input
                     value={flagNote}
                     onChange={(event) => setFlagNote(event.target.value)}
-                    placeholder="What looks wrong? Optional."
+                    name="flag-note" placeholder="What looks wrong? Optional."
                   />
                 </label>
                 <button type="submit">Save flag on this browser</button>
@@ -296,109 +482,6 @@ export default function ParcelPanel({
               </form>
             )}
           </div>
-          <p>
-            {selected.neighborhood}
-            {selected.land_use ? ` · ${selected.land_use}` : ""}
-            {selected.lot_sqft ? ` · ${Number(selected.lot_sqft).toLocaleString()} sq ft` : ""}
-          </p>
-          <p>
-            Zoning: {selected.zoning_code || "not matched"}
-            {selected.zoning_label ? ` (${selected.zoning_label})` : ""}
-          </p>
-          {zoningInfo?.status === "use_table" ? (
-            <p className="hint">
-              Use table {zoningInfo.codeSection}. Still needs expert review. {zoningInfo.note}{" "}
-              {zoningInfo.codeUrl ? (
-                <a href={zoningInfo.codeUrl} target="_blank" rel="noreferrer">
-                  §911.02
-                </a>
-              ) : null}
-            </p>
-          ) : zoningInfo?.status === "not_in_use_table" ? (
-            <p className="hint">
-              Check with the city / needs review. {zoningInfo.note} This district is not marked prohibited.
-            </p>
-          ) : (
-            <p className="hint">
-              {zoningInfo?.note}{" "}
-              {zoningInfo?.codeUrl ? (
-                <a href={zoningInfo.codeUrl} target="_blank" rel="noreferrer">
-                  Open the code
-                </a>
-              ) : null}
-            </p>
-          )}
-          <p>
-            Data confidence: <strong>{selected.confidence_label}</strong> ({selected.confidence}). This is not a
-            grade for the value judgments.
-          </p>
-          {selected.confidence_notes?.length ? (
-            <ul>
-              {selected.confidence_notes.map((note) => (
-                <li key={note}>{note}</li>
-              ))}
-            </ul>
-          ) : null}
-
-          <SiteFacts props={selected} />
-
-          {groups.map((group) => (
-            <div key={group.key}>
-              <h3>
-                {group.key === "flagged"
-                  ? "Not permitted by right under §911.02"
-                  : whatIf && zoningInfo?.status === "use_table"
-                    ? "Ranked as if zoning allowed all four"
-                    : zoningInfo?.status === "use_table"
-                      ? "Ranked among types §911.02 permits by right, including partial unit counts"
-                      : "Ranked without a zoning filter"}
-              </h3>
-              {group.rows.map((row) => (
-                <article key={row.id} className="type-card" style={{ borderColor: TYPE_COLORS[row.id] }}>
-                  <header>
-                    <span>
-                      {row.place}. {TYPE_LABELS[row.id]}
-                    </span>
-                    <strong>{formatScore(row.composite)}</strong>
-                  </header>
-                  <ZoningBadge row={row} whatIf={whatIf} zoningInfo={zoningInfo} />
-                  <Bar label="Demand" value={row.demand} hint="Sales, turnover, and a lot-fit rule" />
-                  <Bar label="Transit" value={row.transit} hint="Measured for the place; same for every type" />
-                  <Bar label="Equity" value={row.equity} hint="ACS income and rent burden, plus CHAS low-income renter cost burden, then a normative type rule" />
-                  <Bar
-                    label="Climate risk"
-                    value={row.climate_risk}
-                    hint="Flood, steep-slope proxy, and undermined area. Higher means more mapped hazard."
-                  />
-                  <Bar
-                    label="Displacement risk (screen)"
-                    value={row.displacement_risk}
-                    hint="Tract renters, cost burden, and rent growth versus the county. Same for every type. Higher means more risk."
-                  />
-                  <Bar
-                    label="Marginal carbon (estimate)"
-                    value={row.carbon_index}
-                    hint="Relative index per new home: building energy and embodied tier, plus transit access. Higher means more."
-                  />
-                </article>
-              ))}
-            </div>
-          ))}
-
-          <button type="button" className="explain" onClick={onExplain} disabled={explaining}>
-            {explaining ? "Writing explanation…" : "Explain the top two"}
-          </button>
-          {explanation ? (
-            <div className="explanation">
-              <p className="badge">
-                {explanation.source === "llm" ? `Language model (${explanation.model})` : "Template explanation"}
-              </p>
-              {explanation.notice ? <p className="warning">{explanation.notice}</p> : null}
-              {explanation.text.split("\n").filter(Boolean).map((paragraph) => (
-                <p key={paragraph.slice(0, 40)}>{paragraph}</p>
-              ))}
-            </div>
-          ) : null}
         </section>
       )}
 
