@@ -99,6 +99,10 @@ export default function MapView({
   lihtc = null,
 }) {
   const geoRef = useRef(null)
+
+  useEffect(() => {
+    requestAnimationFrame(() => performance.mark("htm:map-drawn"))
+  }, [])
   const matchPoints = useMemo(() => {
     if (!highlight || highlight.size === 0 || highlight.size > 1500) return []
     const points = []

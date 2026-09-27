@@ -80,6 +80,7 @@ export default function App() {
           responses.map((response) => response.json()),
         )
         if (!cancelled) {
+          performance.mark("htm:parcels-parsed")
           setParcels(parcelJson)
           setNeighborhoods(neighborhoodJson)
           setZoning(zoningJson)
