@@ -1,44 +1,72 @@
 # Playhouse
 
-Explore housing and infrastructure decisions on a 3D map of Pittsburgh.
+**Plan homes. Test infrastructure. Compare tradeoffs.**
 
-**[Playhouse](https://hack-the-house.vercel.app)** · Built for the AI Horizons 2026 AI for Housing Hackathon. The Studio is released from `main`; feature branches use Vercel previews.
+Playhouse helps planners, developers and communities test housing and infrastructure proposals on a 3D map of Pittsburgh, using public data and explicit assumptions.
 
-## What it does
+[Open Playhouse](https://hack-the-house.vercel.app) · [Citywide preview](https://hack-the-house-git-playhouse-citywide-tej-fff0.vercel.app) · [Hackathon challenge](https://ai-horizons-2026-ai-for-housing-hackathon.brandon831577.chatgpt.site/challenges/typology-equity-climate)
 
-- Shows existing buildings, recorded uses and estimated heights.
-- Lets you place several proposed buildings across selected parcels.
-- Lets you cycle one housing draft and compare selected housing types side by side.
-- Previews the draft automatically, with green/red placement status, before adding it to the plan.
-- Routes between two points along existing roads and paths. New walking/street connections snap into that network.
-- Tests new connections, parks and added service at existing bus stops.
-- Shows factor scores, tradeoffs, adjustable priorities and the assumptions behind them.
-- Checks supported Title Nine rules. A zoning conflict or failed physical fit removes the housing score; rules without enough evidence are marked **Not assessed**.
-- Keeps exact income, rent, utilities and building dimensions under **Assumptions → Advanced options**.
-- Supports undo/redo and scenario JSON export.
-- Offers a short first-visit tour; use **Tour** in the header to replay it.
+The screenshots show the citywide branch. The preview may require team sign-in; production follows `main`.
 
-Studio is at `/`. The original parcel Explorer remains at `/explore` for reference, with its own reports, sharing and explanations.
+![A single-family proposal previewed among existing buildings on Wylie Avenue in Middle Hill](docs/images/studio-housing.jpg)
 
-## Scope
+## Try it
 
-Both views cover **all 90 City of Pittsburgh neighborhoods and 142,865 parcels**; no neighborhood is omitted. Choose a neighborhood in the header. Hazelwood and Lawrenceville remain regression examples. This is data coverage, not a proposal to redevelop every parcel. Existing building colours show recorded use, not recommendations.
+1. **Pick a place.** Choose a neighborhood, then a parcel.
+2. **Try housing types.** Preview houses, duplexes, triplexes and apartments. Place several to form a plan.
+3. **Compare options.** Open **Rankings → Compare to**. See scores, factor differences and zoning checks side by side.
+4. **Set your priorities.** Use **Priorities** to change what matters. Relative weights matter: all 1s and all 100s produce the same ranking.
+5. **Test infrastructure.** Add bus service, a walking/street connection or a park. Compare the baseline with your proposal.
 
-Both maps are limited to the bounding rectangle of Pittsburgh’s official neighborhood boundaries. Neighboring basemap areas can still appear inside that rectangle; their parcels are not included.
+Adjust income, rent, utilities and dimensions under **Assumptions**. Use **Tour** for help. **Export scenario** before reloading to keep your work.
 
-Studio shows detail for the selected neighborhood and its immediate adjoining neighborhoods, only where they are in view. Use the neighborhood picker to explore another part of the city. New downloads wait for the camera to settle and run two neighborhoods at a time. Explorer loads the selected neighborhood; shared comparisons can fetch another neighborhood on demand. Close views show 3D buildings; wider views use flat footprints, then neighborhood outlines. Off-screen detail is removed from rendering. The active plan keeps its full evidence even when its buildings are off screen. Geometry, heights and routing precision are unchanged.
+![Single-family, duplex and triplex scenarios compared on the same Middle Hill parcel, with scores and evidence labels](docs/images/studio-comparison.jpg)
 
-There is one editable **next-building draft**. Use **Compare to** to add other housing types to the comparison; all selected types share the same costs, priorities and evidence coverage. Each visitor has their own local Studio scenario. This is not a shared multiplayer session; export before reloading to keep a copy.
+Compare alternatives for the same parcel, rather than declaring one universally correct housing type.
 
-Priority sliders are relative: all 1s, all 50s or all 100s give the same result. Each slider shows its percentage of the score after excluding missing evidence. Turning every priority off disables ranking.
+<details>
+<summary>See priority sliders and a transit scenario</summary>
 
-The seven decision dimensions are demand, physical feasibility, affordability, displacement risk, infrastructure capacity, access and carbon. Some use measured data; others use proxies or editable assumptions. Unknown evidence stays unknown. Scores are screening aids, not development approval or forecasts.
+Your priorities are value judgments. The sliders show each factor's share of the score.
 
-Road edits currently affect walking routes and reserved land. They do not simulate traffic. Transit edits add assumed service at an existing stop. The app does not forecast changes in rents, displacement or emissions from these edits.
+![Adjustable priorities beside the 3D map, including market fit, affordability and displacement risk](docs/images/studio-priorities.jpg)
+
+Adding 60 assumed departures to this stop's 88 scheduled departures reduces estimated walk-plus-wait from 12.9 to 10.8 minutes. This is a scenario calculation, not a reliability forecast.
+
+![A transit scenario showing recorded stop service, proposed extra departures and before-and-after access estimates](docs/images/studio-transit.jpg)
+
+</details>
+
+## The seven-factor screen
+
+The hackathon asks for housing alternatives, explained tradeoffs, adjustable priorities and a clear separation of data from value judgments. Playhouse supports that workflow across these seven factors:
+
+| Challenge factor | What Playhouse uses today |
+| --- | --- |
+| Household demand | Market activity and lot-size fit proxies; not a demand forecast. |
+| Physical feasibility | Building footprints, parcel fit and supported Title Nine zoning checks. |
+| Affordability | Proposed rent and utilities relative to editable household income. |
+| Displacement risk | A Census tract screening signal; not a prediction of displacement. |
+| Infrastructure capacity | Scheduled transit service × assumed spare places. Utility capacity is unknown. |
+| Access to opportunity | Walking routes, transit service and park proximity; not travel to jobs. |
+| Marginal carbon | A relative per-home carbon proxy; not marginal tonnes of CO₂. |
+
+**Evidence, proxies and assumptions are labeled.** Supported zoning conflicts and failed physical fit remove the Studio housing score. Missing evidence stays unassessed. Infrastructure changes update supported calculations, such as walking access and available land. Rankings may stay the same when improvements benefit every housing type equally.
+
+## Coverage and limits
+
+- **All 90 Pittsburgh neighborhoods:** 142,571 identified parcels plus 294 shared-ground/anonymous polygons.
+- **116,502 building outlines:** recorded locations with estimated heights. Colours show recorded use, not recommended redevelopment.
+- **Public sources:** county parcels/assessments, Census ACS, HUD CHAS, PRT schedules, OpenStreetMap, zoning and environmental layers. [Sources and provenance](docs/DATA_SOURCES.md).
+- **Fast browsing:** detailed geometry loads for the selected neighborhood and visible adjoining neighborhoods. Zooming out hides detail without simplifying the source geometry.
+
+This is a planning screen, not development approval. Utility capacity, traffic, actual transit occupancy and causal changes to rents, displacement or emissions are not modeled. [Validation and known gaps](docs/VALIDATION.md).
+
+Studio is at `/`; the original Explorer remains at `/explore` for reference.
 
 ## Run locally
 
-Use Node.js 22 or newer.
+Node.js 22 or newer:
 
 ```bash
 cd web
@@ -46,53 +74,14 @@ npm ci
 npm run dev
 ```
 
-Open http://localhost:3000. To check a release:
+Open http://localhost:3000. Prepared data is included. Keep the repository root available: startup generates browser chunks from compressed sources.
 
-```bash
-npm test
-npm run build
-npm start
-```
+Checks: `npm test` and `npm run build` in `web/`. Pipeline checks: `python -m unittest discover -s pipeline -p 'test_*.py'` after installing [pipeline dependencies](pipeline/requirements.txt).
 
-The committed, compressed neighborhood data is ready to use. `predev` / `prebuild` generates hashed static chunks; keep the repository root available when building the `web` directory. You do not need to run Python or download datasets to start the app.
+**Deploy:** import the repo into Vercel with **web** as the root directory. No database or AI credentials are required. Optional AI explains calculated facts; it does not calculate housing scores. [Web setup](web/README.md).
 
-## Hosting
+## More detail
 
-**Use the existing Vercel project for the initial 1–30-user demo.** It is connected to this repository. Branch pushes create previews; `main` deploys to production. The product is Playhouse; the repository and existing URL keep their current names.
+[Studio guide](docs/PLANNER.md) · [Model card](docs/MODEL_CARD.md) · [Title Nine checks](docs/TITLE_NINE.md) · [Data pipeline](pipeline/README.md) · [AI tool disclosure](docs/AI_TOOLS.md)
 
-For a new Vercel project: import this repository, select **Next.js**, set the root directory to **web**, and deploy. No database is required. GitHub Pages would need a static-only build because Explorer's `/api/explain` endpoint needs a server.
-
-Studio works without AI credentials. Explorer has a template explanation fallback; set `AI_EXPLANATIONS=off` for a template-only demo. See [web setup](web/README.md) for optional model configuration. Vercel Hobby is intended for personal, non-commercial use; check [plan eligibility](https://vercel.com/docs/plans/hobby) before using it for paid work.
-
-Most simulation work happens in each visitor's browser. Both views load generated neighborhood files instead of the full city download. `npm run dev` and `npm run build` prepare these automatically. Studio loads a buffered regional walking graph for the selected site so nearby routes can cross neighborhood boundaries. A 30-user load test has not been run.
-
-## Next with the team
-
-Policy review remains deferred for planning boundaries, existing/proposed labels, and how to explain ineligible proposals. Housing comparison now uses one draft plus selected types, without A/B slots.
-
-## Project guide
-
-- [Studio behavior, calculations and limits](docs/PLANNER.md)
-- [Title Nine checks and evidence limits](docs/TITLE_NINE.md)
-- [Public data sources](docs/DATA_SOURCES.md) and [data notes](docs/DATA_NOTES.md)
-- [Explorer model card](docs/MODEL_CARD.md), [validation](docs/VALIDATION.md) and [demo script](docs/DEMO_SCRIPT.md)
-- [Data pipeline](pipeline/README.md) and [zoning rules](zoning/README.md)
-- [AI tools used](docs/AI_TOOLS.md)
-
-`web/` contains the Next.js app. `pipeline/` prepares the data. `zoning/` contains the zoning use-table rules. Runtime datasets and source manifests live in `web/public/data/`.
-
-## Team
-
-- Tejas Chaudhari — data pipeline and scoring model
-- Chris Severns — zoning rules
-- YY Ng — map and frontend
-
-AI coding tools assisted development under the team's direction. Housing scores are calculated from explicit rules, not generated by a language model.
-
-## City data release
-
-Canonical inputs live in `pipeline/data/processed/parcels/*.geojson.gz`, plus compressed buildings and walking-network files. No full-city parcel, building or graph file is fetched on entry. Browser data is static and cacheable; the explanation endpoint opens at most the requested neighborhoods. No database or paid data service is needed.
-
-Rebuild with `python pipeline/run_pipeline.py`, `python pipeline/build_context.py`, and `python pipeline/build_network.py`, after installing `pipeline/requirements.txt`. Run `npm run benchmark:studio` after a web build for manifest, chunk and initial-data sizes. See [Validation](docs/VALIDATION.md) for release measurements, source refreshes and browser checks.
-
-Coverage note: the 142,865 mapped records include 142,571 identified parcels and 294 county polygons without a unique PIN. Those polygons have stable `SITE…` map IDs, retain the source label, and disclose that assessment and parcel-ID-based property flags are unknown. No neighborhood is omitted.
+Built by **Tejas Chaudhari** (data and scoring), **Chris Severns** (zoning), and **YY Ng** (map and frontend), with AI coding assistance under the team's direction.
