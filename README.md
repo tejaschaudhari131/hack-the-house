@@ -1,4 +1,6 @@
-# Housing Typology, Equity & Climate Matchmaker
+# Hack the House
+
+Housing Typology, Equity & Climate Matchmaker.
 
 Decision-support prototype for the AI Horizons 2026 AI for Housing Hackathon, Challenge 3. Pick a real Pittsburgh parcel and compare four housing types — single-family, townhouse/duplex, small apartment (3–19 units), and large apartment (20+ units) — on demand, transit access, equity, climate risk, displacement risk, and marginal carbon. Weight sliders re-rank the types. The screen labels which parts are observed data and which parts are value judgments.
 
@@ -21,7 +23,7 @@ Why these two places: the public data actually separates them. In this pull, par
 
 | | |
 | --- | --- |
-| **First-run guide and example.** A three-step intro says what the tool is and who it is for. **Try an example** loads a Lawrenceville townhouse vs a Hazelwood small apartment, both on LNC lots where §911.02 permits the type by right. **How it works** reopens the guide. | <img src="docs/screenshots/01-onboarding.png" alt="Three-step onboarding dialog" width="420"> |
+| **Guided example.** **Try a real example** runs a real Find Sites question (City-owned vacant lots where a triplex is allowed by right, outside flood zones, near frequent transit), takes the top match from the committed data, compares a triplex with the best-scoring other permitted building on the same lot, and ends at a printable decision brief. **How it works** reopens the three-step intro. | <img src="docs/screenshots/01-onboarding.png" alt="Three-step onboarding dialog" width="420"> |
 | **Click a parcel.** All four types ranked for one lot, with the §911.02 reading per type (allowed, needs special approval, not allowed, or check with the City), every score bar, and data confidence. Choosing an address flies the map to the lot. The URL keeps `?pin=` so a parcel can be shared. | <img src="docs/screenshots/04-parcel-view.png" alt="Parcel view with ranked types" width="420"> |
 | **Weight presets.** Resident, CDC / affordability-first, Planner / balanced, Developer / demand-first, and Climate-first set the sliders in one click. The screen says presets are value judgments, not data. | <img src="docs/screenshots/05b-presets.png" alt="Viewpoint presets above the weight sliders" width="420"> |
 | **How stable is #1?** For a parcel, and for the two-building compare, the app reruns the ranking under all five presets and under one-slider changes. It reports, for example, "Townhouse / duplex stays #1 under 5 of 5 presets. Flips to Large apartment if the demand weight falls to 5 (now 25)." When §911.02 leaves only one type, it says zoning, not the weights, decides #1, and shows the what-if result too. | <img src="docs/screenshots/05-parcel-robustness.png" alt="How stable is #1 for a parcel" width="420"> |
@@ -71,11 +73,13 @@ Open http://localhost:3000. The default view is click a parcel. **Find sites** i
 
 ### One-minute demo
 
-1. Open the app and click **Try an example** (in the guide or the header). Building A is a townhouse / duplex at 4200 Butler St, Central Lawrenceville. Building B is a small apartment at 4820 2nd Ave, Hazelwood. Both lots are LNC, where §911.02 permits both types by right.
-2. Click **Jump to the comparison**. With balanced weights, A ranks higher. **Does the winner hold?** says A stays #1 under 3 of 5 presets: Resident and CDC pick B. That split is a values question, not a data finding.
-3. Click the **CDC / affordability-first** preset and watch B take the lead. Click **Planner / balanced** to go back.
-4. Switch to **Click a parcel**, search `4200 butler`, and open the parcel. Read the §911.02 badges and **How stable is #1?**, then click **Print one-page report**.
-5. Right-drag the 3D map to tilt it. The plain click-a-parcel map is always one click away in the header.
+1. Click **Try a real example**. Step 1 (Shortlist) applies the Find Sites question and selects the top match under the default weights. In this data it is PIN 0056F00338000000 on Hazelwood Ave in Hazelwood: 5,100 sq ft of vacant land in LNC with a City inventory record. A record is not availability.
+2. Click **Compare two housing options on this parcel**. Scenario A is a triplex (3 units, read from the §911.02 Three-Unit row; scored with the small-apartment score). Scenario B is the best-scoring other building permitted by right on the lot (a townhouse / duplex here). The contribution table shows the points each factor adds; transit and displacement are held constant on one parcel. Under the default weights the two are close (72.9 vs 72.6).
+3. Under **Weights**, click the **CDC / affordability-first** preset: the triplex moves ahead because equity carries more weight. **Does the winner hold?** lists the result under all five presets and the one-slider change that flips it.
+4. Click **Next: the decision brief**, then **Print decision brief** (or save as PDF). It lists both scenarios, permission separately from the score, contributions, weights, what other priorities do, what is not evaluated, three next steps chosen by fixed rules, sources, and the build and data versions.
+5. The plain **Click a parcel** map and **Find sites** are one click away in the header.
+
+The demo parcel and numbers come from the committed data and default weights; `web/lib/guide.js` resolves them at runtime, and a test checks that the triplex keeps its three-unit semantics.
 
 For a plain-language explanation, click "Explain the top two" on a parcel, "Explain this parcel" on a dropped building, or "Explain A vs B" once two buildings are dropped. The text streams from a language model through the Vercel AI Gateway and is labeled **AI-generated summary of the scores above; check sources**. With no gateway credentials, or if the model errors or times out, the same button returns the deterministic template and is labeled **Template explanation (no AI)** with the reason. See [AI explanations](#ai-explanations).
 

@@ -69,7 +69,8 @@ function shortType(label) {
 export function describeFlip(flip) {
   const name = flip.key
   const verb = flip.direction === "up" ? "rises to" : "falls to"
-  return `Flips to ${shortType(flip.to.label)} if the ${name} weight ${verb} about ${flip.at} (now ${flip.from}; found by stepping that one weight by 1 with the others fixed).`
+  const outcome = flip.to.id === "tie" ? "Becomes a tie" : `Flips to ${shortType(flip.to.label)}`
+  return `${outcome} if the ${name} weight ${verb} about ${flip.at} (now ${flip.from}; found by stepping that one weight by 1 with the others fixed).`
 }
 
 /** Robustness for one parcel, plus a zoning-off view when §911.02 leaves one type or none. */

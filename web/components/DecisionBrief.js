@@ -14,7 +14,9 @@ import { describeRobustness } from "../lib/robustness.js"
 import { SITE_CAVEAT } from "../lib/sites.js"
 
 function fmt(value) {
-  return value === null || value === undefined ? "—" : Number(value).toFixed(1)
+  if (value === null || value === undefined) return "—"
+  const text = Number(value).toFixed(1)
+  return text === "-0.0" ? "0.0" : text
 }
 
 /** Print-only decision brief for a two-scenario comparison. Hidden on screen; see @media print. */

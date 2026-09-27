@@ -25,7 +25,7 @@ export default function WeightPresets({ weights, onWeights }) {
       </div>
       <p className="hint">
         {active ? `${active.label}: ${active.blurb} ` : "Custom weights. "}
-        <span className="tag choice">Value judgment</span> {PRESET_NOTE}
+        <span className="tag choice">Value judgment</span> {PRESET_NOTE} The names are team-authored examples, not measured stakeholder preferences.
       </p>
     </div>
   )

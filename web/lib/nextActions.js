@@ -17,7 +17,7 @@ export function nextActions(result, propsA, propsB) {
 
   const sides = [result.a, result.b]
   const unsettled = sides.filter((side) => side.permission.category !== "permitted")
-  const permissionText = sides.map((side) => `${side.label} (${side.permission.label.toLowerCase()})`).join(" and ")
+  const permissionText = sides.map((side) => `${side.label} (${side.permission.label})`).join(" and ")
   actions.push(
     `${unsettled.length ? "Confirm" : "Verify"} with City Planning / the Zoning Administrator whether §911.02 permits ${permissionText} at ${
       result.sameParcel ? `this parcel (${result.a.zoningCode || "district not matched"})` : "these parcels"
