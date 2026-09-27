@@ -49,7 +49,7 @@ function inputRows(inputs) {
     : ""
   return [
     [
-      "Neighborhood valid sales",
+      `Neighborhood valid sales (since ${inputs.demand.source?.vintage?.match(/\d{4}-\d{2}-\d{2}/)?.[0] || "cutoff"})`,
       `${fmt(inputs.demand.neighborhood_median_valid_sale_price_per_sqft, " $/sq ft")} median; ${fmt(inputs.demand.neighborhood_valid_sales_per_100_parcels)} per 100 parcels`,
       inputs.demand.source,
     ],
@@ -58,10 +58,27 @@ function inputRows(inputs) {
     ["Renters paying 30%+ of income (ACS, all renters)", pctText(inputs.equity.acs_renters_paying_30pct_or_more_percent), inputs.equity.sources[0]],
     ["Low-income renters paying over 30% (CHAS, tract)", pctText(inputs.equity.chas_low_income_renters_paying_over_30pct_percent), inputs.equity.sources[1]],
     [
+      "Displacement risk inputs (tract screening signal)",
+      `renters ${pctText(inputs.displacement.tract_renter_share_percent)} of homes; rent growth ${
+        inputs.displacement.tract_rent_change_vs_county_points === null
+          ? "missing"
+          : `${inputs.displacement.tract_rent_change_vs_county_points > 0 ? "+" : ""}${inputs.displacement.tract_rent_change_vs_county_points} pts vs county`
+      }`,
+      {
+        name: "ACS B25003 and B25064; HUD CHAS",
+        vintage: "ACS 2015–2019 vs 2020–2024; CHAS 2018–2022; tract",
+      },
+    ],
+    [
+      "Carbon estimate basis (relative, not tonnes)",
+      "RECS site energy by building type, an embodied-carbon tier, and transit",
+      { name: "EIA RECS 2020 Table CE1.2; embodied-carbon studies", vintage: "Northeast region; direction only" },
+    ],
+    [
       "Mapped hazard overlaps (screens, not surveys)",
       `FEMA flood zone ${pctText(inputs.flood.fema_special_flood_hazard_area_overlap_percent)}; 25%+ slope ${pctText(inputs.steep_slope.overlap_percent)}; undermined ${pctText(inputs.undermined.overlap_percent)}`,
       {
-        name: [inputs.flood.source, inputs.steep_slope.source, inputs.undermined.source].map((source) => source?.name).join("; "),
+        name: "FEMA NFHL; City 25%+ slopes; City undermined areas",
         vintage: "as published on the pull date",
         pulled: inputs.flood.source?.pulled,
       },
@@ -164,15 +181,14 @@ export default function ParcelReport({ feature, weights, whatIf, zoning, summary
                 <td>{fmt(row.marginal_carbon_index_estimate)}</td>
                 <td>
                   {row.zoning.treated_as_allowed_by_what_if ? "What-if: treated as allowed" : row.zoning.reading}
-                  {row.zoning.needs_special_approval ? " (special approval, not a variance)" : ""}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
         <p className="report-small">
-          {facts.ranking_rule} Source: {facts.zoning_source.name} ({facts.zoning_source.url}). {facts.zoning.legend} The
-          four types are mapped onto the code&apos;s uses by an assumption. Needs expert review. Overlays and lot width are
+          {facts.ranking_rule} Source: {facts.zoning_source.name} ({facts.zoning_source.url}). {facts.zoning.legend}{" "}
+          Special approval (A, S, C) is not a variance. The four types are mapped onto the code&apos;s uses by an assumption. Needs expert review. Overlays and lot width are
           not applied. Scores are 0–100 on fixed anchors; climate risk, displacement risk (a tract screening signal), and carbon (a relative estimate, not tonnes) are higher-is-worse.
         </p>
       </section>
@@ -228,7 +244,7 @@ export default function ParcelReport({ feature, weights, whatIf, zoning, summary
                 <td>{label}</td>
                 <td>{value}</td>
                 <td>
-                  {source?.name} · {source?.vintage}
+                  {source?.name} · {String(source?.vintage || "").split(";")[0]}
                 </td>
               </tr>
             ))}
