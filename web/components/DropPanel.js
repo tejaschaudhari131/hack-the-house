@@ -2,9 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react"
 
+import Explanation from "./Explanation.js"
 import { BUILDINGS, SCORE_TAGS, WALK_RADIUS_M } from "../lib/buildings.js"
 import { TYPE_COLORS } from "../lib/colors.js"
 import { compareDrops } from "../lib/compare.js"
+import { useExplanation } from "../lib/explainClient.js"
+import { buildCompareContext, buildParcelContext, explainCompareTemplate } from "../lib/explainFacts.js"
 import { explainTemplate } from "../lib/explainTemplate.js"
 import { clearFlag, loadFlags, saveFlag } from "../lib/flags.js"
 import { featurePoint, stopsWithin } from "../lib/geo.js"
@@ -74,8 +77,7 @@ function FlagBox({ flagId, address }) {
 }
 
 function DropCard({ drop, feature, weights, zoning, stops, summary, onClear }) {
-  const [explanation, setExplanation] = useState(null)
-  const [explaining, setExplaining] = useState(false)
+  const { explanation, explaining, run } = useExplanation(JSON.stringify(weights))
   const props = feature.properties
   const spec = BUILDINGS[drop.typeId]
   const zoningInfo = resolveZoning(props.zoning_code, zoning)
@@ -86,70 +88,10 @@ function DropCard({ drop, feature, weights, zoning, stops, summary, onClear }) {
   const transit = point ? stopsWithin(stops, point[0], point[1], WALK_RADIUS_M) : null
   const flagId = `drop:${drop.pin}:${drop.typeId}`
 
-  async function onExplain() {
-    setExplaining(true)
-    const body = {
-      parcel: {
-        pin: props.pin,
-        address: props.address,
-        neighborhood: props.neighborhood,
-        land_use: props.land_use,
-        lot_sqft: props.lot_sqft,
-        zoning_code: props.zoning_code,
-        zoning_label: props.zoning_label,
-        census_geography: props.census_geography,
-        median_income: props.median_income,
-        rent_burden_share: props.rent_burden_share,
-        chas_rent_burden_share: props.chas_rent_burden_share,
-        chas_tract_geoid: props.chas_tract_geoid,
-        chas_vintage: props.chas_vintage,
-        sfha_overlap: props.sfha_overlap,
-        steep_slope_overlap: props.steep_slope_overlap,
-        undermined_overlap: props.undermined_overlap,
-        flood_zones: props.flood_zones,
-        trips_within_400m: props.trips_within_400m,
-        nearest_stop_m: props.nearest_stop_m,
-        nearest_stop_name: props.nearest_stop_name,
-        routes_within_400m: props.routes_within_400m,
-        confidence: props.confidence,
-        confidence_label: props.confidence_label,
-        confidence_notes: props.confidence_notes,
-      },
-      ranked: ranked.map((item) => ({
-        id: item.id,
-        label: item.label,
-        composite: item.composite,
-        demand: item.demand,
-        transit: item.transit,
-        equity: item.equity,
-        climate_risk: item.climate_risk,
-        climate_suitability: item.climate_suitability,
-        allowed: item.allowed,
-      })),
-      weights,
-      whatIf: false,
-      zoning: {
-        status: zoningInfo.status,
-        code: zoningInfo.code,
-        allowed: zoningInfo.allowed ? [...zoningInfo.allowed] : null,
-        note: zoningInfo.note,
-        use_notes: zoningInfo.district?.use_notes || null,
-      },
-      countyMedianIncome: summary?.county_median_income ?? null,
-    }
-    try {
-      const response = await fetch("/api/explain", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      })
-      const payload = await response.json()
-      setExplanation(payload.text ? payload : { text: explainTemplate(body), source: "template" })
-    } catch (error) {
-      setExplanation({ text: explainTemplate(body), source: "template", notice: error.message })
-    } finally {
-      setExplaining(false)
-    }
+  function onExplain() {
+    run({ kind: "parcel", pin: props.pin, weights, whatIf: false }, () =>
+      explainTemplate(buildParcelContext({ props, weights, whatIf: false, zoningRules: zoning, sources: null, summary }).templateInput),
+    )
   }
 
   return (
@@ -206,13 +148,7 @@ function DropCard({ drop, feature, weights, zoning, stops, summary, onClear }) {
       <button type="button" className="explain" onClick={onExplain} disabled={explaining}>
         {explaining ? "Writing explanation…" : "Explain this parcel"}
       </button>
-      {explanation ? (
-        <div className="explanation">
-          {explanation.text.split("\n").filter(Boolean).map((paragraph) => (
-            <p key={paragraph.slice(0, 48)}>{paragraph}</p>
-          ))}
-        </div>
-      ) : null}
+      <Explanation explanation={explanation} />
       <FlagBox flagId={flagId} address={props.address} />
     </article>
   )
@@ -263,6 +199,31 @@ export default function DropPanel({
     })
   }, [byPin, drops, weights, zoning])
   const comparison = cards[0] && cards[1] ? compareDrops(cards[0], cards[1]) : ""
+  const dropA = drops.find((item) => item.slot === "A")
+  const dropB = drops.find((item) => item.slot === "B")
+  const compareKey = `${dropA?.pin}:${dropA?.typeId}|${dropB?.pin}:${dropB?.typeId}|${JSON.stringify(weights)}`
+  const compareAi = useExplanation(compareKey)
+
+  function onExplainCompare() {
+    if (!comparison || !dropA || !dropB) return
+    const a = { pin: dropA.pin, typeId: dropA.typeId }
+    const b = { pin: dropB.pin, typeId: dropB.typeId }
+    compareAi.run({ kind: "compare", weights, a, b }, () =>
+      explainCompareTemplate(
+        buildCompareContext({
+          a,
+          b,
+          featureA: byPin.get(a.pin),
+          featureB: byPin.get(b.pin),
+          weights,
+          zoningRules: zoning,
+          stops,
+          sources: null,
+          summary,
+        }),
+      ),
+    )
+  }
 
   return (
     <aside className="panel">
@@ -368,6 +329,10 @@ export default function DropPanel({
         <section className="review-box">
           <h2>Why they rank differently</h2>
           <p>{comparison}</p>
+          <button type="button" className="explain" onClick={onExplainCompare} disabled={compareAi.explaining}>
+            {compareAi.explaining ? "Writing explanation…" : "Explain A vs B"}
+          </button>
+          <Explanation explanation={compareAi.explanation} />
         </section>
       ) : (
         <p className="hint">Drop a second building to compare them side by side.</p>

@@ -5,6 +5,9 @@ import { useEffect, useMemo, useState } from "react"
 
 import DropPanel from "./DropPanel.js"
 import ParcelPanel from "./ParcelPanel.js"
+import { useExplanation } from "../lib/explainClient.js"
+import { buildParcelContext } from "../lib/explainFacts.js"
+import { explainTemplate } from "../lib/explainTemplate.js"
 import { DEFAULT_WEIGHTS, rankTypes } from "../lib/rank.js"
 import { resolveZoning } from "../lib/zoning.js"
 
@@ -30,8 +33,6 @@ export default function App() {
   const [whatIf, setWhatIf] = useState(false)
   const [focus, setFocus] = useState(null)
   const [query, setQuery] = useState("")
-  const [explanation, setExplanation] = useState(null)
-  const [explaining, setExplaining] = useState(false)
   const [mode, setMode] = useState("inspect")
   const [stops, setStops] = useState(null)
   const [activeType, setActiveType] = useState("townhouse_duplex")
@@ -99,77 +100,15 @@ export default function App() {
       .slice(0, 8)
   }, [parcels, query])
 
-  useEffect(() => {
-    setExplanation(null)
-  }, [selectedPin, whatIf, weights])
+  const { explanation, explaining, run: runExplanation } = useExplanation(
+    `${selectedPin}|${whatIf}|${JSON.stringify(weights)}`,
+  )
 
-  async function onExplain() {
-    if (!selected || !ranked) return
-    setExplaining(true)
-    try {
-      const response = await fetch("/api/explain", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          parcel: {
-            pin: selected.pin,
-            address: selected.address,
-            neighborhood: selected.neighborhood,
-            land_use: selected.land_use,
-            lot_sqft: selected.lot_sqft,
-            zoning_code: selected.zoning_code,
-            zoning_label: selected.zoning_label,
-            census_geography: selected.census_geography,
-            median_income: selected.median_income,
-            rent_burden_share: selected.rent_burden_share,
-            chas_rent_burden_share: selected.chas_rent_burden_share,
-            chas_tract_geoid: selected.chas_tract_geoid,
-            chas_vintage: selected.chas_vintage,
-            sfha_overlap: selected.sfha_overlap,
-            steep_slope_overlap: selected.steep_slope_overlap,
-            undermined_overlap: selected.undermined_overlap,
-            flood_zones: selected.flood_zones,
-            trips_within_400m: selected.trips_within_400m,
-            nearest_stop_m: selected.nearest_stop_m,
-            nearest_stop_name: selected.nearest_stop_name,
-            routes_within_400m: selected.routes_within_400m,
-            confidence: selected.confidence,
-            confidence_label: selected.confidence_label,
-            confidence_notes: selected.confidence_notes,
-            factors: selected.factors,
-          },
-          ranked: ranked.map((row) => ({
-            id: row.id,
-            label: row.label,
-            composite: row.composite,
-            demand: row.demand,
-            transit: row.transit,
-            equity: row.equity,
-            climate_risk: row.climate_risk,
-            climate_suitability: row.climate_suitability,
-            allowed: row.allowed,
-          })),
-          weights,
-          whatIf,
-          zoning: zoningInfo
-            ? {
-                status: zoningInfo.status,
-                code: zoningInfo.code,
-                allowed: zoningInfo.allowed ? [...zoningInfo.allowed] : null,
-                note: zoningInfo.note,
-                use_notes: zoningInfo.district?.use_notes || null,
-              }
-            : null,
-          countyMedianIncome: summary?.county_median_income ?? null,
-        }),
-      })
-      const payload = await response.json()
-      setExplanation(payload)
-    } catch (explainError) {
-      setExplanation({ text: explainError.message, source: "template", notice: "The explanation request failed." })
-    } finally {
-      setExplaining(false)
-    }
+  function onExplain() {
+    if (!selected) return
+    runExplanation({ kind: "parcel", pin: selected.pin, weights, whatIf }, () =>
+      explainTemplate(buildParcelContext({ props: selected, weights, whatIf, zoningRules: zoning, sources: null, summary }).templateInput),
+    )
   }
 
   function dropOn(pin) {

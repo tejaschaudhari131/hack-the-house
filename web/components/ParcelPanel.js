@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 
+import Explanation from "./Explanation.js"
 import { TYPE_COLORS } from "../lib/colors.js"
 import { clearFlag, loadFlags, saveFlag } from "../lib/flags.js"
 import { TYPE_LABELS } from "../lib/rank.js"
@@ -347,17 +348,7 @@ export default function ParcelPanel({
           <button type="button" className="explain" onClick={onExplain} disabled={explaining}>
             {explaining ? "Writing explanation…" : "Explain the top two"}
           </button>
-          {explanation ? (
-            <div className="explanation">
-              <p className="badge">
-                {explanation.source === "llm" ? `Language model (${explanation.model})` : "Template explanation"}
-              </p>
-              {explanation.notice ? <p className="warning">{explanation.notice}</p> : null}
-              {explanation.text.split("\n").filter(Boolean).map((paragraph) => (
-                <p key={paragraph.slice(0, 40)}>{paragraph}</p>
-              ))}
-            </div>
-          ) : null}
+          <Explanation explanation={explanation} />
         </section>
       )}
 

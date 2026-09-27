@@ -177,6 +177,12 @@ button.text-button { border: 0; background: transparent; color: #1d4e89; padding
 .stats { padding-left: 18px; }
 
 .explanation { background: #f8fafc; border: 1px solid #e4e7eb; padding: 10px; margin-top: 8px; }
+.explanation.is-ai { border-left: 4px solid #6d28d9; }
+.explanation.is-template { border-left: 4px solid #9aa5b1; }
+.explain-label { margin: 0 0 6px; }
+.explain-label .hint { display: block; }
+.badge.ai { background: #ede9fe; color: #4c1d95; font-weight: 600; white-space: normal; border-radius: 6px; }
+.badge.template { background: #e4e7eb; }
 .model p { font-size: 13px; }
 
 @media (max-width: 900px) {
