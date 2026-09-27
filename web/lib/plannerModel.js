@@ -22,6 +22,18 @@ export function nearbyStops(feature, stops) {
 
 export function preferredStop(stops) { return stops.find(s => s.weekday_trips >= 60) || stops[0] || null }
 
+/** GTFS is service evidence, not occupancy. Manual totals override the explicit scenario assumption. */
+export function transitReserve(stop, state) {
+  if (!stop || !numeric(stop.weekday_trips) || stop.weekday_trips <= 0) return { boardings: null, method: 'unavailable' }
+  if (numeric(state.spareBoardings) && (!state.capacityStopId || String(stop.stop_id) === state.capacityStopId)) {
+    return { boardings: Math.max(0, state.spareBoardings), method: 'manual' }
+  }
+  if (state.capacityMode === 'schedule' && numeric(state.baselinePlacesPerDeparture) && state.baselinePlacesPerDeparture >= 0) {
+    return { boardings: stop.weekday_trips * state.baselinePlacesPerDeparture, method: 'schedule_assumption' }
+  }
+  return { boardings: null, method: 'unavailable' }
+}
+
 /** One existing stop only: never sum the same trip at multiple stops. No route or timetable claim. */
 export function serviceMetrics(stop, scenario, proposed, networkMetric = undefined) {
   if (!stop || !numeric(stop.weekday_trips) || stop.weekday_trips <= 0) return null
@@ -46,7 +58,7 @@ function evaluateOption(option, feature, zoning, state, stop, proposed, massing,
   const monthly = option.rent + option.utilities
   const burden = state.targetIncome > 0 ? monthly * 12 / state.targetIncome : null
   const demandBoardings = spec.units * state.boardingsPerHome
-  const spare = numeric(state.spareBoardings) && (!state.capacityStopId || String(stop?.stop_id) === state.capacityStopId) ? state.spareBoardings : null
+  const reserve = transitReserve(stop, state), spare = reserve.boardings
   // Additional places are a user assumption about available boarding capacity, not vehicle occupancy data.
   const addedPlaces = service ? service.added * state.availablePlacesPerDeparture : 0
   const supply = spare === null ? null : spare + addedPlaces
@@ -61,7 +73,7 @@ function evaluateOption(option, feature, zoning, state, stop, proposed, massing,
     carbon: numeric(raw.carbon_index) ? 100 - raw.carbon_index : null,
   }
   const physicalEligible = massing.fits && massing.collisions === 0
-  return { ...option, pin: props.pin, label: spec.label, units: spec.units, floors: option.floors ?? spec.floors, permission, massing, scores, eligible: physicalEligible, physicalEligible, service, access, monthly, burden, demandBoardings, groupBoardings, addedPlaces, supply, raw,
+  return { ...option, pin: props.pin, label: spec.label, units: spec.units, floors: option.floors ?? spec.floors, permission, massing, scores, eligible: physicalEligible, physicalEligible, service, access, monthly, burden, demandBoardings, groupBoardings, addedPlaces, supply, reserve, raw,
     gate: !massing.fits ? 'Footprint does not fit' : massing.collisions > 0 ? 'Building or infrastructure overlap' : massing.collisions === null ? 'Building overlap check unavailable' : 'No supported conflict found',
   }
 }
@@ -196,7 +208,7 @@ export function evaluatePlanner({ feature, zoning, scenario, stop, existingBuild
       : !stop ? 'No scheduled stop is available. Transit access and capacity are excluded.'
       : routed && !baseline[activeId].service ? 'The selected stop cannot be reached in the loaded walking graph. Transit access and capacity are unknown; no straight-line fallback is used.'
       : scenario.additionalDepartures === 0 ? 'No infrastructure change yet. Add departures to compare the selected housing options before and after service changes.'
-      : `${scenario.additionalDepartures} proposed departures reduce modeled average walk + wait by ${round(accessDelta)} minutes. ${changed ? 'The preferred option changes under the current assumptions.' : 'The preferred housing option stays the same.'} Access gains are shared by selected types. ${scenario.spareBoardings === null ? 'Spare capacity is unknown and excluded from ranking.' : 'Capacity differences use your stated spare-boardings and per-home demand assumptions.'} Demand, affordability, displacement and carbon stay unchanged.`,
+      : `${scenario.additionalDepartures} proposed departures reduce modeled average walk + wait by ${round(accessDelta)} minutes. ${changed ? 'The preferred option changes under the current assumptions.' : 'The preferred housing option stays the same.'} Access gains are shared by selected types. ${baseline[activeId].supply === null ? 'Spare capacity is unknown and excluded from ranking.' : 'Capacity uses scheduled service and explicit spare-boardings and per-home demand assumptions, not observed occupancy.'} Demand, affordability, displacement and carbon stay unchanged.`,
   }
   return { ...result, audit: recommendationAudit(result, scenario, feature.properties), ...(scenario.draft ? { comparison: shortlist } : { shortlist }) }
 }

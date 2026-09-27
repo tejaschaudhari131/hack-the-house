@@ -1,6 +1,6 @@
 import { BUILDINGS } from './buildings.js'
 
-export const MODEL_VERSION = 'planner-screen-1.7'
+export const MODEL_VERSION = 'planner-screen-1.8'
 export const EXAMPLES = [
   { id: 'hazelwood', label: 'Hazelwood', pin: '0056F00338000000', caption: 'City inventory · Hazelwood Ave' },
   { id: 'lawrenceville', label: 'Lawrenceville', pin: '0049N00010000000', caption: 'City inventory · 3480 Butler St' },
@@ -17,7 +17,7 @@ export const PLANNER_FACTORS = [
   { id: 'physical', label: 'Physical feasibility', short: 'Fit', source: 'County parcel outline + proposed dimensions', kind: 'Schematic' },
   { id: 'affordability', label: 'Affordability', short: 'Affordability', source: 'Proposed rent/utilities + target household income', kind: 'Assumption' },
   { id: 'displacement', label: 'Displacement risk', short: 'Displacement', source: 'ACS 2020–2024 + HUD CHAS 2018–2022', kind: 'Screen' },
-  { id: 'capacity', label: 'Infrastructure capacity', short: 'Capacity', source: 'Assumed spare transit boardings + added service', kind: 'Conditional' },
+  { id: 'capacity', label: 'Infrastructure capacity', short: 'Capacity', source: 'PRT stop departures × assumed spare places + added service', kind: 'Conditional' },
   { id: 'access', label: 'Access to opportunity', short: 'Access', source: 'OSM walking graph / mapped parks + PRT stop departures', kind: 'Proxy' },
   { id: 'carbon', label: 'Marginal carbon emissions', short: 'Carbon', source: 'Existing RECS / embodied-tier / transit proxy', kind: 'Proxy' },
 ]
@@ -44,7 +44,7 @@ export function initialScenario(pin, props = {}, stopId = '') {
 /** Studio edits one draft. Legacy A/B scenarios remain evaluable for older exports. */
 export function initialStudioScenario(pin, props = {}, stopId = '') {
   const { options, ...scenario } = initialScenario(pin, props, stopId)
-  return { ...scenario, draft: options.A, comparisonTypes: [] }
+  return { ...scenario, capacityMode: 'schedule', baselinePlacesPerDeparture: 1, draft: options.A, comparisonTypes: [] }
 }
 
 export function historyFor(scenario) { return { past: [], present: scenario, future: [] } }

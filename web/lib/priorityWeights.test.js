@@ -45,6 +45,7 @@ test('relative ratios, zero weights and missing evidence drive displayed shares'
 test('scaling non-uniform priorities also preserves scores and missing-evidence handling', () => {
   const input = fixture()
   input.scenario.spareBoardings = null
+  input.scenario.capacityMode = 'manual'
   const weights = { demand: 2, physical: 1, affordability: 4, displacement: 3, capacity: 8, access: 1, carbon: 0 }
   const evaluate = scale => evaluatePlanner({ ...input, scenario: { ...input.scenario, weights: Object.fromEntries(ids.map(id => [id, weights[id] * scale])) } })
   const a = evaluate(1), b = evaluate(5)

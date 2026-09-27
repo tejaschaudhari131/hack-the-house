@@ -1,5 +1,14 @@
 # Planning studio
 
+## Transit capacity correction (planner-screen-1.8)
+
+New Studio scenarios use the selected stop's PRT GTFS weekday departures multiplied by **one assumed spare boarding per departure**. This deliberately small starting reserve is a scenario choice, not a measurement of occupancy. Added departures retain the editable 20 available places/departure assumption; each home assumes two new daily boardings. Scores compare this reserve with proposed housing demand, capped at 100. More scheduled service can support more homes under the same assumptions; a small plan may already score 100, so extra service need not change its rank.
+
+Why an assumption: [GTFS schedules](https://gtfs.org/documentation/schedule/reference/) contain trips and stop times, not onboard loads. [PRT Room2Ride](https://www.rideprt.org/room2ride/) describes historical APC crowding, but its public page returned HTTP 404 during the September 27, 2026 verification. Route-wide monthly ridership cannot identify spare seats at a stop because riders board and alight along the route. No occupancy or vehicle-size estimate is fabricated from ridership totals.
+
+Assumptions lets users edit spare places, override the daily reserve at a named stop, or choose manual-only mode and leave it blank to exclude capacity. Legacy exports retain manual-only behavior. Missing scheduled service or an unreachable stop remains unassessed. Unassessed priorities now say “Not assessed” rather than appearing as a measured zero. Homes sharing a stop share its reserve once; different stops can share vehicles, so the model cannot produce a citywide capacity total. Utilities and peak crowding remain outside this screen. Existing parcel source scores and Explorer calculations are unchanged; Studio totals can change because a previously excluded factor now participates explicitly.
+
+
 ## Current interface: planner-screen-1.7
 
 Studio now applies [supported Title Nine checks](TITLE_NINE.md) before scoring. A supported zoning conflict or a failed physical fit produces no housing total. Unsupported rules are **Not assessed** and excluded from eligibility. Each type has an expandable list of checks, code links and exclusions. All proposed buildings on a lot share FAR/coverage totals; project-wide IZ counts are rechecked for each alternative.
