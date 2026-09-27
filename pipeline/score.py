@@ -578,9 +578,7 @@ def score_parcel(parcel, neighborhood, county_median_income):
         "undermined_component": None if undermined_component is None else round(undermined_component, 1),
         "steep_slope_role": "landslide_risk_proxy",
         "climate_base": None if base is None else round(base, 1),
-        "displacement_risk": place_displacement,
         **displacement_parts,
-        "carbon_building": {key: round(carbon_building_relative(key), 3) for key in HOUSING_TYPES},
         "carbon_transport": None if transit is None else round(clamp(1 - transit / 100), 3),
     }
     return {
@@ -774,6 +772,7 @@ def model_card():
         "normative_choices": NORMATIVE,
         "published_inputs": {
             "recs_2020_northeast_site_mmbtu_per_household": RECS_2020_NORTHEAST_MMBTU,
+            "carbon_building_relative": {key: round(carbon_building_relative(key), 3) for key in HOUSING_TYPES},
             "recs_source": "https://www.eia.gov/consumption/residential/data/2020/c&e/xls/ce1.2.xlsx",
             "embodied_sources": [
                 "https://doi.org/10.1088/2634-4505/adfc95",

@@ -188,6 +188,12 @@
       "small_apartment": 68.0,
       "large_apartment": 36.2
     },
+    "carbon_building_relative": {
+      "single_family": 1.0,
+      "townhouse_duplex": 0.654,
+      "small_apartment": 0.582,
+      "large_apartment": 0.45
+    },
     "recs_source": "https://www.eia.gov/consumption/residential/data/2020/c&e/xls/ce1.2.xlsx",
     "embodied_sources": [
       "https://doi.org/10.1088/2634-4505/adfc95",
