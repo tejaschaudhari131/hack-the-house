@@ -82,9 +82,42 @@
         "A floor of 70 when any Special Flood Hazard Area touches the parcel",
         "A small exposure multiplier by housing type (more homes, slightly higher risk)"
       ]
+    },
+    {
+      "id": "displacement_risk",
+      "label": "Displacement risk (screening signal)",
+      "higher_means": "More signs that current renters here are vulnerable and rents are rising faster than the county. Ranking uses 100 minus this number. It is a screening signal, not a prediction that anyone will be displaced.",
+      "measured": [
+        "Renter-occupied share of occupied housing units, census tract (ACS 2024 5-year B25003)",
+        "Share of renter households at or below 80 percent of HAMFI paying more than 30 percent of income, census tract (HUD CHAS 2018-2022 Table 8)",
+        "Change in tract median gross rent from the 2015-2019 to the 2020-2024 ACS 5-year (B25064), minus the Allegheny County change over the same two periods. Non-overlapping samples. Only tracts whose 2020 boundary matches the 2010 tract (95 percent land-area overlap both ways) are compared."
+      ],
+      "normative": [
+        "Anchors: renter share 25 to 75 percent, CHAS cost burden 30 to 80 percent, rent growth 0 to 30 percentage points above the county",
+        "Vulnerability (renter share and cost burden, averaged) and pressure (rent growth) weighted 50/50. A missing input is dropped.",
+        "The same value for every housing type on a parcel. Evidence on whether a given building type adds to or relieves local displacement is mixed, so the screen does not guess.",
+        "The slider prefers lower-risk places. A CDC pursuing anti-displacement housing can set it to 0 and filter for high-risk tracts in Find Sites instead.",
+        "Overlaps the equity score's sales-heat penalty on purpose: that term is neighborhood sale prices; this one is tract renters and rents."
+      ]
+    },
+    {
+      "id": "carbon_index",
+      "label": "Marginal carbon (estimate)",
+      "higher_means": "More estimated greenhouse gas per new home from building form and travel. A relative index from 0 to 100, not tonnes of CO2. Ranking uses 100 minus this number.",
+      "measured": [
+        "Average annual site energy per household by housing type, Northeast census region, EIA RECS 2020 Table CE1.2: single-family detached 120.7, single-family attached 85.4, apartments in 2-4 unit buildings 68.0, apartments in 5+ unit buildings 36.2 million Btu. Existing homes of all ages, not new construction.",
+        "Embodied GHG per new home is higher for new single-unit buildings than for new units in large multi-unit buildings (Zuluaga and Saxe 2025, city medians about 79,000-102,000 versus 39,000-60,000 kgCO2e per dwelling). Low-rise multi-unit (missing middle) housing averaged lower embodied GHG per bedroom than single-family and mid/high-rise buildings (Rankin et al. 2024).",
+        "Transit score for the parcel, as a proxy for household travel emissions"
+      ],
+      "normative": [
+        "Embodied carbon is a relative tier, not a measured number: 1.0 for single-family and 0.6 for the three multi-unit types. The studies do not reliably separate the multi-unit types per home.",
+        "Townhouse / duplex uses the RECS single-family attached figure; small apartment uses the 2-4 unit figure (conservative); large apartment uses the 5+ unit figure",
+        "Operational and embodied weighted 50/50 inside the building part; building 60 percent and transport 40 percent of the index",
+        "Transport is 100 minus the transit score, the same for every type on a parcel. No vehicle-miles or emissions number is claimed."
+      ]
     }
   ],
-  "composite": "Weighted average of demand, transit, equity, and climate suitability (100 - climate risk). Weights are the sliders and are value judgments. Missing dimensions are skipped, not filled with zero.",
+  "composite": "Weighted average of demand, transit, equity, climate suitability (100 - climate risk), lower displacement risk (100 - displacement risk), and lower carbon (100 - carbon index). Weights are the sliders and are value judgments. Missing dimensions are skipped, not filled with zero.",
   "confidence": "Confidence falls when assessment, census, transit, or hazard data is missing or thin. It does not say whether the value judgments are good ones.",
   "normative_choices": {
     "demand_market_weight": 0.5,
@@ -128,12 +161,45 @@
         "displacement_exposure": 0.85,
         "climate_exposure": 1.08
       }
-    }
+    },
+    "displacement_renter_share_low": 0.25,
+    "displacement_renter_share_high": 0.75,
+    "displacement_chas_low": 0.3,
+    "displacement_chas_high": 0.8,
+    "displacement_rent_change_vs_county_low": 0.0,
+    "displacement_rent_change_vs_county_high": 0.3,
+    "displacement_vulnerability_weight": 0.5,
+    "displacement_pressure_weight": 0.5,
+    "carbon_embodied_tier": {
+      "single_family": 1.0,
+      "townhouse_duplex": 0.6,
+      "small_apartment": 0.6,
+      "large_apartment": 0.6
+    },
+    "carbon_operational_weight": 0.5,
+    "carbon_embodied_weight": 0.5,
+    "carbon_building_weight": 0.6,
+    "carbon_transport_weight": 0.4
+  },
+  "published_inputs": {
+    "recs_2020_northeast_site_mmbtu_per_household": {
+      "single_family": 120.7,
+      "townhouse_duplex": 85.4,
+      "small_apartment": 68.0,
+      "large_apartment": 36.2
+    },
+    "recs_source": "https://www.eia.gov/consumption/residential/data/2020/c&e/xls/ce1.2.xlsx",
+    "embodied_sources": [
+      "https://doi.org/10.1088/2634-4505/adfc95",
+      "https://doi.org/10.1111/jiec.13461"
+    ]
   },
   "default_weights": {
     "demand": 25,
     "transit": 25,
     "equity": 25,
-    "climate": 25
+    "climate": 25,
+    "displacement": 15,
+    "carbon": 15
   }
 }

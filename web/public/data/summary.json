@@ -71,5 +71,58 @@
   "transit_service_date": "2026-09-25",
   "sources_failed": [],
   "decision_support_only": true,
-  "chas_status": "Loaded HUD CHAS 2018-2022 Table 8, census tract summary level 140, Allegheny County. 8641 of 8645 parcels have a tract share (13 tracts). The measured input is the share of renter households at or below 80% of HAMFI with housing cost burden greater than 30%, among households whose cost burden was computed. Joined on the 11-digit tract GEOID (the suffix of geoid 1400000US\u2026). ACS 2024 rent burden stays a separate input. CHAS lags that ACS release by several years."
+  "chas_status": "Loaded HUD CHAS 2018-2022 Table 8, census tract summary level 140, Allegheny County. 8641 of 8645 parcels have a tract share (13 tracts). The measured input is the share of renter households at or below 80% of HAMFI with housing cost burden greater than 30%, among households whose cost burden was computed. Joined on the 11-digit tract GEOID (the suffix of geoid 1400000US\u2026). ACS 2024 rent burden stays a separate input. CHAS lags that ACS release by several years.",
+  "sites": {
+    "totals": {
+      "tax_delinquent": 1491,
+      "tax_delinquent_prior_years": 1164,
+      "vacant_lot": 1911,
+      "city_owned": 986,
+      "city_open_space": 436,
+      "condemned_or_dead_end": 190,
+      "qct_2026": 3599
+    },
+    "unknown": {
+      "vacant_lot": 390
+    },
+    "by_neighborhood": {
+      "Central Lawrenceville": {
+        "tax_delinquent": 318,
+        "tax_delinquent_prior_years": 229,
+        "vacant_lot": 91,
+        "city_owned": 6,
+        "condemned_or_dead_end": 9,
+        "city_open_space": 1
+      },
+      "Lower Lawrenceville": {
+        "tax_delinquent": 200,
+        "tax_delinquent_prior_years": 155,
+        "vacant_lot": 119,
+        "city_owned": 39,
+        "city_open_space": 8,
+        "condemned_or_dead_end": 6
+      },
+      "Upper Lawrenceville": {
+        "vacant_lot": 176,
+        "tax_delinquent": 221,
+        "tax_delinquent_prior_years": 173,
+        "city_owned": 57,
+        "city_open_space": 27,
+        "condemned_or_dead_end": 9
+      },
+      "Hazelwood": {
+        "condemned_or_dead_end": 166,
+        "qct_2026": 3599,
+        "vacant_lot": 1525,
+        "city_owned": 884,
+        "city_open_space": 400,
+        "tax_delinquent": 752,
+        "tax_delinquent_prior_years": 607
+      }
+    },
+    "frequent_stop_min_trips": 60,
+    "walk_meters_per_minute": 80,
+    "nearby_affordable_meters": 800,
+    "caveat": "Ownership, vacancy, delinquency, and condemnation records are not availability. Verify with the Urban Redevelopment Authority, the Pittsburgh Land Bank, or the City before acting."
+  }
 }
