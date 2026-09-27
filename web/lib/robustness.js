@@ -1,7 +1,7 @@
 /** Does the #1 result survive other reasonable weights? The scores (data) stay fixed; only weights move. */
 
 import { PRESETS, presetWeights, weightKeys } from "./presets.js"
-import { TYPE_LABELS, rankTypes } from "./rank.js"
+import { TYPE_LABELS, composite, rankTypes } from "./rank.js"
 
 /** Evaluate `winner(weights)` under each preset and under one-slider changes from the current weights. */
 export function analyzeRobustness(winner, weights, { keys = weightKeys(), step = 1 } = {}) {
@@ -46,17 +46,21 @@ export function parcelWinner(scores, { allowed = null, whatIf = false } = {}) {
   }
 }
 
-/** Which of two dropped buildings has the higher weighted total. Ties go to A, as in compareDrops. */
+/** Which of two scenarios (from comparison.buildScenario) has the higher weighted total. Equal totals are a tie. */
 export function compareWinner(a, b) {
   return (weights) => {
-    const left = rankTypes(a.scores, weights).find((row) => row.id === a.typeId)
-    const right = rankTypes(b.scores, weights).find((row) => row.id === b.typeId)
-    if (left?.composite == null || right?.composite == null) return null
-    return left.composite >= right.composite
-      ? { id: "A", label: `Building A (${TYPE_LABELS[a.typeId]})`, score: left.composite }
-      : { id: "B", label: `Building B (${TYPE_LABELS[b.typeId]})`, score: right.composite }
+    const left = composite(a.scores, weights)
+    const right = composite(b.scores, weights)
+    if (left === null || right === null) return null
+    if (left === right) return { id: "tie", label: "A tie", score: left }
+    return left > right
+      ? { id: "A", label: `Building A (${a.label})`, score: left }
+      : { id: "B", label: `Building B (${b.label})`, score: right }
   }
 }
+
+export const SHARED_FACTOR_NOTE =
+  "Transit access and displacement risk describe the place, so they are the same for every option on one parcel. Changing only those weights cannot reorder options on the same parcel when data are complete."
 
 function shortType(label) {
   return label.replace(/ \(.*\)$/, "")
@@ -65,7 +69,7 @@ function shortType(label) {
 export function describeFlip(flip) {
   const name = flip.key
   const verb = flip.direction === "up" ? "rises to" : "falls to"
-  return `Flips to ${shortType(flip.to.label)} if the ${name} weight ${verb} ${flip.at} (now ${flip.from}).`
+  return `Flips to ${shortType(flip.to.label)} if the ${name} weight ${verb} about ${flip.at} (now ${flip.from}; found by stepping that one weight by 1 with the others fixed).`
 }
 
 /** Robustness for one parcel, plus a zoning-off view when §911.02 leaves one type or none. */

@@ -9,7 +9,8 @@ import { PROMPT_VERSION, SYSTEM_PROMPT, buildComparePrompt, buildParcelPrompt, b
 import { explainTemplate } from "./explainTemplate.js"
 import { clientIp, createRateLimiter, createTtlCache, hashKey } from "./guardrails.js"
 import { buildSitesContext, explainSitesTemplate } from "./explainSites.js"
-import { DEFAULT_WEIGHTS, HOUSING_TYPES } from "./rank.js"
+import { BUILDING_IDS } from "./buildings.js"
+import { DEFAULT_WEIGHTS } from "./rank.js"
 import { DEFAULT_SITE_FILTERS, SORT_OPTIONS, TYPE_OPTIONS, findSites } from "./sites.js"
 
 export const DEFAULT_MODEL = "anthropic/claude-haiku-4.5"
@@ -57,7 +58,7 @@ function parsePin(raw) {
 
 function parseDrop(raw) {
   const pin = parsePin(raw?.pin)
-  const typeId = HOUSING_TYPES.includes(raw?.typeId) ? raw.typeId : null
+  const typeId = BUILDING_IDS.includes(raw?.typeId) ? raw.typeId : null
   return pin && typeId ? { pin, typeId } : null
 }
 

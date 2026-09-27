@@ -3,7 +3,7 @@
  */
 
 import { BUILDINGS, WALK_RADIUS_M } from "./buildings.js"
-import { compareDrops } from "./compare.js"
+import { buildScenario, compareScenarios, describeComparison, typeScenario } from "./comparison.js"
 import { featurePoint, stopsWithin } from "./geo.js"
 import { TYPE_LABELS, rankTypes } from "./rank.js"
 import { dropZoningBadge, resolveZoning } from "./zoning.js"
@@ -227,8 +227,18 @@ export function buildParcelContext({ props, weights, whatIf = false, zoningRules
   const zoningInfo = resolveZoning(props.zoning_code, zoningRules)
   const ranked = rankTypes(props.scores, weights, { allowed: zoningInfo.allowed || null, whatIf })
   const cited = sourceList(sources, summary, zoningRules)
+  const scored = ranked.filter((row) => row.composite !== null)
+  const topTwo =
+    scored.length >= 2
+      ? compareScenarios(
+          typeScenario("A", scored[0].id, scored[0].label, props, zoningInfo),
+          typeScenario("B", scored[1].id, scored[1].label, props, zoningInfo),
+          weights,
+        )
+      : null
+  const orderedByPermission = Boolean(topTwo && topTwo.winner === "B" && !whatIf && zoningInfo.status === "use_table")
   const facts = {
-    task: "Explain why the four housing types rank as they do on this one parcel, especially the top two.",
+    task: "Explain why the four housing types rank as they do on this one parcel, especially the top two, using the precomputed contributions.",
     place: {
       address: props.address || null,
       neighborhood: props.neighborhood || null,
@@ -245,13 +255,18 @@ export function buildParcelContext({ props, weights, whatIf = false, zoningRules
       zoningInfo.status === "use_table" && !whatIf
         ? "Types §911.02 permits by right (including partial unit counts) are listed first; the rest follow by weighted total."
         : "Ranked by weighted total with no zoning filter.",
+    top_two_comparison: topTwo ? { ...comparisonFacts(topTwo), listed_first_because_of_permission: orderedByPermission } : null,
+    what_if_note: whatIf
+      ? "What-if ordering is on: all four types are ordered by score as if §911.02 permitted them. Scores and the underlying zoning readings are unchanged. This is not a zoning amendment."
+      : null,
+    not_evaluated: NOT_EVALUATED,
     zoning: zoningFacts(props, zoningInfo, zoningRules, whatIf),
     inputs: placeInputs(props, summary, cited),
     value_judgments: VALUE_JUDGMENTS,
     confidence: {
       label: props.confidence_label || null,
       value: present(props.confidence),
-      meaning: "Only about missing or thin data. Not a grade for the value judgments.",
+      meaning: "Data-coverage (thin-data) heuristic: how many inputs were missing. Not accuracy, statistical confidence, or a grade for the value judgments.",
       notes: props.confidence_notes || [],
     },
     zoning_source: cited.zoningCode,
@@ -270,77 +285,118 @@ export function buildParcelContext({ props, weights, whatIf = false, zoningRules
       use_notes: zoningInfo.district?.use_notes || null,
     },
     countyMedianIncome: summary?.county_median_income ?? null,
+    topTwoSentence: topTwo ? describeComparison(topTwo) : null,
+    orderedByPermission,
   }
-  return { facts, templateInput, ranked, zoningInfo }
+  return { facts, templateInput, ranked, zoningInfo, topTwo }
 }
 
-function dropSide(slot, drop, feature, weights, zoningRules, stops, summary, cited) {
+function r2(value) {
+  return value === null || value === undefined ? null : Math.round(value * 100) / 100
+}
+
+/** Serializable view of comparison.compareScenarios for the model and the template. */
+export function comparisonFacts(result) {
+  return {
+    ranked: result.ranked,
+    winner: result.winner,
+    gap_points_a_minus_b: result.ranked ? r2(result.gap) : null,
+    close_under_current_weights: result.close,
+    same_parcel: result.sameParcel,
+    same_coverage: result.sameCoverage,
+    coverage_warning: result.coverageWarning,
+    held_constant: result.factors.filter((row) => result.heldConstant.includes(row.id)).map((row) => row.label),
+    contributions: result.factors.map((row) => ({
+      factor: row.label,
+      direction: row.direction === "higher_worse" ? "higher is worse; ranked as 100 minus the value" : "higher is better",
+      weight: row.weight,
+      a_value: row.a.value,
+      b_value: row.b.value,
+      a_contribution: r2(row.a.contribution),
+      b_contribution: r2(row.b.contribution),
+      difference_a_minus_b: r2(row.difference),
+    })),
+    favoring_a: result.favorA.map((row) => row.label),
+    favoring_b: result.favorB.map((row) => row.label),
+    permission: {
+      a: result.a.permission.label,
+      b: result.b.permission.label,
+      differs: result.permissionDiffers,
+      neither_permitted_by_right: result.neitherPermitted,
+    },
+    method:
+      "Contribution = weight × suitability ÷ the sum of weights of that scenario's available factors. The differences sum to the score gap. A factor with zero weight contributes nothing.",
+  }
+}
+
+function dropSide(scenario, feature, stops, summary, zoningRules, cited) {
   const props = feature.properties
   const zoningInfo = resolveZoning(props.zoning_code, zoningRules)
-  const ranked = rankTypes(props.scores, weights, { allowed: zoningInfo.allowed || null, whatIf: false })
-  const row = ranked.find((item) => item.id === drop.typeId) || null
   const point = featurePoint(feature.geometry)
   const ring = point && stops ? stopsWithin(stops, point[0], point[1], WALK_RADIUS_M) : null
-  const spec = BUILDINGS[drop.typeId]
   return {
-    card: {
-      pin: props.pin,
-      address: props.address,
-      neighborhood: props.neighborhood,
-      typeLabel: TYPE_LABELS[drop.typeId],
-      composite: row?.composite ?? null,
-      demand: row?.demand ?? null,
-      transit: row?.transit ?? null,
-      equity: row?.equity ?? null,
-      climate_suitability: row?.climate_suitability ?? null,
+    building: scenario.slot,
+    housing_type: scenario.label,
+    homes_shown: scenario.units,
+    homes_note: "Display default for the building. Not a permit or a verified unit count.",
+    score_basis: scenario.scoreNote || "Scored with this type's own score.",
+    place: {
+      address: props.address || null,
+      neighborhood: props.neighborhood || null,
+      land_use: props.land_use || null,
+      lot_sqft: present(props.lot_sqft),
     },
-    facts: {
-      building: slot,
-      housing_type: TYPE_LABELS[drop.typeId],
-      homes_shown: spec?.units ?? null,
-      homes_note: "Display default for the type. Not a permit or unit count, and it does not change the scores.",
-      place: {
-        address: props.address || null,
-        neighborhood: props.neighborhood || null,
-        land_use: props.land_use || null,
-        lot_sqft: present(props.lot_sqft),
+    weighted_total: scenario.composite,
+    evidence_coverage: scenario.coverage,
+    zoning: {
+      ...zoningFacts(props, zoningInfo, zoningRules, false),
+      this_type: {
+        category: scenario.permission.category,
+        reading: scenario.permission.label,
+        detail: scenario.permission.detail,
+        use_row: scenario.permission.useRow,
+        needs_special_approval: scenario.permission.category === "special",
       },
-      scores: row ? scoreRow(row) : null,
-      zoning: {
-        ...zoningFacts(props, zoningInfo, zoningRules, false),
-        this_type: typeZoning(drop.typeId, zoningInfo, false),
-      },
-      walk_ring_800m: ring
-        ? { stops: ring.count, weekday_scheduled_trips: ring.trips, routes: ring.routes }
-        : null,
-      inputs: placeInputs(props, summary, cited),
-      confidence: {
-        label: props.confidence_label || null,
-        value: present(props.confidence),
-        notes: props.confidence_notes || [],
-      },
+    },
+    walk_ring_800m_straight_line: ring
+      ? { stops: ring.count, weekday_scheduled_trips: ring.trips, routes: ring.routes }
+      : null,
+    not_evaluated: NOT_EVALUATED,
+    inputs: placeInputs(props, summary, cited),
+    data_coverage_heuristic: {
+      label: props.confidence_label || null,
+      value: present(props.confidence),
+      meaning: "Thin-data heuristic: how many inputs were missing. Not accuracy or statistical confidence.",
+      notes: props.confidence_notes || [],
     },
   }
 }
 
-/** Two dropped buildings (scenario A and B). */
+export const NOT_EVALUATED = [
+  "Setbacks, lot width, FAR and height, parking, utilities, and geotechnical conditions are not evaluated.",
+  "Lot area is a rough fit only. The 3D block is an illustration, not a permitted envelope or yield.",
+]
+
+/** Two scenarios (A and B), each a building on a parcel. */
 export function buildCompareContext({ a, b, featureA, featureB, weights, zoningRules, stops, sources, summary }) {
   const cited = sourceList(sources, summary, zoningRules)
-  const left = dropSide("A", a, featureA, weights, zoningRules, stops, summary, cited)
-  const right = dropSide("B", b, featureB, weights, zoningRules, stops, summary, cited)
-  const sentence = compareDrops(left.card, right.card)
+  const scenarioA = buildScenario("A", a.typeId, featureA.properties, zoningRules)
+  const scenarioB = buildScenario("B", b.typeId, featureB.properties, zoningRules)
+  const result = compareScenarios(scenarioA, scenarioB, weights)
+  const sentence = describeComparison(result)
   const facts = {
-    task: "Explain why scenario A and scenario B rank differently. Each scenario is one housing type dropped on one parcel.",
-    same_parcel: featureA.properties.pin === featureB.properties.pin,
+    task: "Explain why scenario A and scenario B rank differently, using the precomputed contributions. Each scenario is one building (type and unit count) on one parcel.",
+    same_parcel: result.sameParcel,
     weights: weightFacts(weights),
-    scenario_a: left.facts,
-    scenario_b: right.facts,
+    scenario_a: dropSide(result.a, featureA, stops, summary, zoningRules, cited),
+    scenario_b: dropSide(result.b, featureB, stops, summary, zoningRules, cited),
+    comparison: comparisonFacts(result),
     rule_based_comparison: sentence,
     value_judgments: VALUE_JUDGMENTS,
     zoning_source: cited.zoningCode,
     zoning_map_source: cited.zoningMap,
   }
-  return { facts, sentence, left, right }
+  return { facts, sentence, result }
 }
 
 /** Template fallback for the two-scenario comparison. Uses the same facts the model sees. */
@@ -348,13 +404,11 @@ export function explainCompareTemplate(context) {
   const { facts, sentence } = context
   const sideText = (side) => {
     const zoning = side.zoning.this_type
-    const scores = side.scores
     const where = side.place.address || "the parcel"
-    const total = scores?.weighted_total ?? "n/a"
     const reading = zoning.detail.startsWith(zoning.reading)
       ? zoning.detail
       : `${zoning.reading.replace(/\.$/, "")}. ${zoning.detail}`
-    return `Building ${side.building}, ${side.housing_type} at ${where} (${side.place.neighborhood}): weighted total ${total}; demand ${scores?.demand ?? "n/a"}, transit ${scores?.transit ?? "n/a"}, equity ${scores?.equity ?? "n/a"}, climate risk ${scores?.climate_risk ?? "n/a"}, displacement risk (screening signal) ${scores?.displacement_risk_screen ?? "n/a"}, carbon (estimate) ${scores?.marginal_carbon_index_estimate ?? "n/a"}. Zoning reading: ${reading}`
+    return `Building ${side.building}, ${side.housing_type} at ${where} (${side.place.neighborhood}): weighted total ${side.weighted_total ?? "n/a"}. ${side.evidence_coverage} ${side.score_basis} Zoning reading: ${reading}`
   }
   const weightText = Object.entries(facts.weights)
     .filter(([key]) => key !== "note")
@@ -364,7 +418,7 @@ export function explainCompareTemplate(context) {
     `${sentence}`,
     sideText(facts.scenario_a),
     sideText(facts.scenario_b),
-    `Value judgments, not measurements: your weights (${weightText}), the lot-fit curves, the equity type factors, and the flood/slope/undermined blend. Home counts are display defaults and do not change the scores.`,
+    `Value judgments, not measurements: your weights (${weightText}), the lot-fit curves, the equity type factors, and the flood/slope/undermined blend. Home counts are display defaults and do not change the scores. ${NOT_EVALUATED.join(" ")}`,
     "This is a screening comparison, not legal, zoning, or financial advice. A consequential decision should go to City Planning / the Zoning Administrator or a qualified professional.",
   ].join("\n\n")
 }

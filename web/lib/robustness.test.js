@@ -49,7 +49,7 @@ test("a zoning filter that leaves one type makes #1 independent of the weights",
 })
 
 test("compare robustness names which building wins and when it flips", () => {
-  const winner = compareWinner({ scores, typeId: "townhouse_duplex" }, { scores, typeId: "large_apartment" })
+  const winner = compareWinner({ scores: scores.townhouse_duplex, label: "Townhouse / duplex" }, { scores: scores.large_apartment, label: "Large apartment (40 units)" })
   const analysis = analyzeRobustness(winner, DEFAULT_WEIGHTS)
   assert.equal(analysis.current.id, "A")
   const flip = analysis.flips.find((row) => row.key === "equity")

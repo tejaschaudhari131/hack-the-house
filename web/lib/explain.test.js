@@ -261,7 +261,8 @@ test("the six-factor weights reach the server, and displacement and carbon are l
   assert.equal(facts.inputs.displacement.tract_renter_share_percent, 49)
   assert.equal(facts.inputs.displacement.tract_rent_change_vs_county_points, -29)
   assert.match(SYSTEM_PROMPT, /Always call it a screening signal/)
-  assert.match(SYSTEM_PROMPT, /not tonnes of CO2/)
+  assert.match(SYSTEM_PROMPT, /relative carbon-related proxy/)
+  assert.match(SYSTEM_PROMPT, /zero weight is never a driver/)
   assert.match(SYSTEM_PROMPT, /public record .* is not availability/)
 })
 

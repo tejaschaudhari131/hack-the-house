@@ -29,6 +29,24 @@ export function buildScenario(slot, buildingId, props, zoningRules) {
   }
 }
 
+/** A broad housing type (the four scored types) on one parcel, with the four-type §911.02 reading. */
+export function typeScenario(slot, typeId, label, props, zoningInfo) {
+  return {
+    slot,
+    buildingId: typeId,
+    label,
+    units: null,
+    scoreType: typeId,
+    scoreNote: "",
+    pin: props.pin,
+    address: props.address || null,
+    neighborhood: props.neighborhood || null,
+    zoningCode: props.zoning_code || null,
+    scores: props.scores?.[typeId] || {},
+    permission: unitPermission(typeId, null, zoningInfo),
+  }
+}
+
 function place(scenario) {
   return `${scenario.label} at ${scenario.address || scenario.pin}`
 }

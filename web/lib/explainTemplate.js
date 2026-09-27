@@ -61,43 +61,21 @@ function listMeasured(parcel, countyMedian) {
   return bits
 }
 
-function lowerIsBetter(value) {
-  return value === null || value === undefined ? null : Math.round((100 - Number(value)) * 10) / 10
-}
-
-function biggestGap(top, second) {
-  const fields = [
-    ["demand", "demand", (row) => row.demand],
-    ["transit", "transit access", (row) => row.transit],
-    ["equity", "equity", (row) => row.equity],
-    ["climate", "lower climate hazard", (row) => row.climate_suitability],
-    ["displacement", "lower displacement risk (screening signal)", (row) => lowerIsBetter(row.displacement_risk_screen ?? row.displacement_risk)],
-    ["carbon", "lower carbon (estimate)", (row) => lowerIsBetter(row.marginal_carbon_index_estimate ?? row.carbon_index)],
-  ]
-  let best = null
-  for (const [, label, get] of fields) {
-    const high = get(top)
-    const low = get(second)
-    if (high === null || high === undefined || low === null || low === undefined) continue
-    const gap = high - low
-    if (!best || gap > best.gap) best = { label, gap, top: high, second: low }
-  }
-  return best
-}
-
-export function explainTemplate({ parcel, ranked, weights, whatIf, zoning, countyMedianIncome }) {
+export function explainTemplate({ parcel, ranked, weights, whatIf, zoning, countyMedianIncome, topTwoSentence = null }) {
   const place = parcel.address || `Parcel ${parcel.pin}`
   const top = ranked[0]
   const second = ranked[1]
   const measured = listMeasured(parcel, countyMedianIncome)
-  const gap = second ? biggestGap(top, second) : null
   const weightText = Object.entries(weights)
     .map(([key, value]) => `${key} ${value}`)
     .join(", ")
 
   const at = (row) => (row.composite === null || row.composite === undefined ? "" : ` at ${row.composite}`)
   const splitByZoning = !whatIf && top.allowed === true && second?.allowed === false
-  const rankText = splitByZoning
+  const noneAllowed = !whatIf && zoning?.status === "use_table" && ranked.every((row) => row.allowed === false)
+  const rankText = noneAllowed
+    ? `§911.02 permits none of the four types by right here, so the order is by score only and none of them is a recommendation. ${top.label} scores highest${at(top)}`
+    : splitByZoning
     ? `among the types §911.02 permits by right, ${top.label} ranks first${at(top)}. ${second.label} is listed next${at(second)} even if it scores higher, because the use table does not permit it by right`
     : `${top.label} ranks first${at(top)} and ${second ? `${second.label} is next${at(second)}` : "there is no second type"}`
 
@@ -110,18 +88,14 @@ export function explainTemplate({ parcel, ranked, weights, whatIf, zoning, count
       ? `Observed for this place: ${measured.join("; ")}.`
       : "Several observed inputs are missing for this parcel, so the scores rest on less evidence.",
   )
-  if (gap && gap.gap > 0.5) {
-    paragraphs.push(
-      `${top.label} leads ${second.label} most clearly on ${gap.label} (${gap.top} versus ${gap.second}). Transit access is a property of the place, so it is the same for every housing type and only changes the ranking when you change its weight.`,
-    )
+  if (topTwoSentence) {
+    paragraphs.push(`Why the first two differ (weighted contributions): ${topTwoSentence}`)
   } else if (second) {
-    paragraphs.push(
-      `${top.label} and ${second.label} are close. Small weight changes can flip them. Transit access is the same for every type because it describes the place, not the building.`,
-    )
+    paragraphs.push(`${top.label} and ${second.label} could not be compared on weighted contributions.`)
   }
   paragraphs.push(
-    "Value judgments, not measurements: the weights themselves; the lot-fit curves that prefer townhouses on small lots and larger buildings on big lots; the equity rule that gives bigger buildings more weight where incomes are lower and a larger penalty where sales are hot; the 50/30/20 blend of flood, steep-slope proxy, and undermined area; a small climate penalty that rises with building size; the displacement screen's anchors (a tract-level screening signal, the same for every type, not a prediction); and the carbon estimate's embodied-carbon tier (a relative index, not tonnes). Steep slope is not a landslide map. Confidence (" +
-      `${parcel.confidence_label || "unknown"}, ${parcel.confidence ?? "n/a"}) is only about thin data. It does not say the value judgments are right.`,
+    "Value judgments, not measurements: the weights themselves; the lot-fit curves that prefer townhouses on small lots and larger buildings on big lots; the equity rule that gives bigger buildings more weight where incomes are lower and a larger penalty where sales are hot; the 50/30/20 blend of flood, steep-slope proxy, and undermined area; a small climate penalty that rises with building size; the displacement screen's anchors (a tract-level screening signal, the same for every type, not a prediction); and the carbon estimate's embodied-carbon tier (a relative index, not tonnes). Steep slope is not a landslide map. Data coverage (" +
+      `${parcel.confidence_label || "unknown"}, ${parcel.confidence ?? "n/a"}) is a thin-data heuristic, not accuracy or statistical confidence. It does not say the value judgments are right.`,
   )
   if (parcel.confidence_notes?.length) {
     paragraphs.push(`Thin-data notes: ${parcel.confidence_notes.join(" ")}`)

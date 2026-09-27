@@ -107,7 +107,7 @@ export function buildSitesContext({ rows, filters, sort, weights, sources, summa
     value_judgments: VALUE_JUDGMENTS,
     meanings: {
       displacement_risk_screen: "Tract-level screening signal, the same for every type on a parcel. Not a prediction that anyone will be displaced. Higher is worse.",
-      marginal_carbon_index_estimate: "Relative 0–100 estimate per new home. Not tonnes of CO2. Higher is worse.",
+      marginal_carbon_index_estimate: "Relative carbon-related proxy per home, 0–100. Not tonnes of CO2 or true marginal emissions. Higher is worse.",
       walk_minutes: "Straight-line walk to a stop with 60+ weekday scheduled trips. Not a route or reliability measure.",
     },
     sources: [
@@ -149,17 +149,19 @@ export function explainSitesTemplate(context) {
       `equity ${s.equity ?? "n/a"}`,
       `climate risk ${s.climate_risk ?? "n/a"}`,
       `displacement screen ${s.displacement_risk_screen ?? "n/a"}`,
-      `carbon estimate ${s.marginal_carbon_index_estimate ?? "n/a"}`,
+      `carbon-related proxy ${s.marginal_carbon_index_estimate ?? "n/a"}`,
     ]
     lines.push(
       `${site.rank}. ${site.address || "Unaddressed parcel"} (${site.neighborhood}, ${site.zoning_district || "no zoning match"}): ${site.ranked_as}, ${site.zoning_reading}, weighted total ${site.weighted_total ?? "n/a"}; ${bits.join(", ")}.`,
     )
   }
   if (facts.next_weighted_total_after_top !== null && facts.sort_note.startsWith("Sorted by the weighted")) {
-    lines.push(`The next site after these scores ${facts.next_weighted_total_after_top}. Small gaps can flip with a small weight change.`)
+    const last = facts.top_sites[facts.top_sites.length - 1]?.weighted_total
+    const close = last !== null && last !== undefined && Math.abs(last - facts.next_weighted_total_after_top) < 1
+    lines.push(`The next site after these scores ${facts.next_weighted_total_after_top}${close ? ", close to the fifth under the current weights" : ""}.`)
   }
   lines.push(
-    `${facts.public_record_caveat} The weights are value judgments. Displacement is a screening signal and carbon is a relative estimate. Take real decisions to City Planning / the Zoning Administrator or a qualified professional.`,
+    `${facts.public_record_caveat} The weights are value judgments. Displacement is a screening signal and carbon is a relative carbon-related proxy, not tonnes. Take real decisions to City Planning / the Zoning Administrator or a qualified professional.`,
   )
   return lines.join("\n\n")
 }
