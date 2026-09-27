@@ -8,7 +8,7 @@ Explore housing and infrastructure decisions on a 3D map of Pittsburgh.
 
 - Shows existing buildings, recorded uses and estimated heights.
 - Lets you place several proposed buildings across selected parcels.
-- Compares two options for the next building, plus a five-template shortlist.
+- Lets you cycle one housing draft and compare selected housing types side by side.
 - Tests walking connections, streets with sidewalks, parks and added service at existing bus stops.
 - Shows factor scores, tradeoffs, adjustable priorities and the assumptions behind them.
 - Keeps exact income, rent, utilities and building dimensions under **Assumptions → Advanced options**.
@@ -20,7 +20,7 @@ Studio is at `/`. The original parcel Explorer remains at `/explore` for referen
 
 The two study areas are **Hazelwood** and **Lawrenceville** (Lower, Central and Upper). The map covers 8,645 parcels; that is data coverage, not a proposal to redevelop every parcel. Existing building colours show recorded use, not recommendations.
 
-A/B are alternatives for the **next building in one shared plan**. Each visitor has their own local Studio scenario. This is not a shared multiplayer session; export before reloading to keep a copy.
+There is one editable **next-building draft**. Use **Compare to** to add other housing types to the comparison; all selected types share the same costs, priorities and evidence coverage. Each visitor has their own local Studio scenario. This is not a shared multiplayer session; export before reloading to keep a copy.
 
 The seven decision dimensions are demand, physical feasibility, affordability, displacement risk, infrastructure capacity, access and carbon. Some use measured data; others use proxies or editable assumptions. Unknown evidence stays unknown. Scores are screening aids, not development approval or forecasts.
 
@@ -58,7 +58,7 @@ Most simulation work happens in each visitor's browser. The full parcel download
 
 ## Next with the team
 
-Comparison-layer decisions are deferred for the policy teammate: planning boundaries, clearer existing/proposed labels, and how to explain hidden or ineligible A/B previews. A/B remains two next-building options for now.
+Policy review remains deferred for planning boundaries, existing/proposed labels, and how to explain hidden or ineligible previews. Housing comparison now uses one draft plus selected types, without A/B slots.
 
 ## Project guide
 

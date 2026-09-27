@@ -1,7 +1,7 @@
 import { INITIAL_WEIGHTS } from './plannerState.js'
 import { passesRecordFilters, DEFAULT_SITE_FILTERS, typePermission } from './sites.js'
 import { resolveZoning } from './zoning.js'
-export const FACTOR_LABELS = { demand: 'Market & lot fit', physical: 'Physical fit', affordability: 'Affordability', displacement: 'Lower displacement risk', capacity: 'Transit capacity', access: 'Access', carbon: 'Carbon proxy' }
+export const FACTOR_LABELS = { demand: 'Market fit', physical: 'Physical fit', affordability: 'Affordability', displacement: 'Lower displacement risk', capacity: 'Transit capacity', access: 'Access', carbon: 'Carbon proxy' }
 export const STUDIO_PRESETS = [
  { id:'balanced', label:'Balanced', weights:{...INITIAL_WEIGHTS} },
  { id:'resident', label:'Resident', weights:{demand:5,physical:15,affordability:25,displacement:30,capacity:5,access:15,carbon:5} },

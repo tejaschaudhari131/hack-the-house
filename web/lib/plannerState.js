@@ -1,6 +1,6 @@
 import { BUILDINGS } from './buildings.js'
 
-export const MODEL_VERSION = 'planner-screen-1.5'
+export const MODEL_VERSION = 'planner-screen-1.6'
 export const EXAMPLES = [
   { id: 'hazelwood', label: 'Hazelwood', pin: '0056F00338000000', caption: 'City inventory · Hazelwood Ave' },
   { id: 'lawrenceville', label: 'Lawrenceville', pin: '0049N00010000000', caption: 'City inventory · 3480 Butler St' },
@@ -13,7 +13,7 @@ export const MASSING_DEFAULTS = {
   large_apartment: { width: 22, depth: 30 },
 }
 export const PLANNER_FACTORS = [
-  { id: 'demand', label: 'Household demand', short: 'Demand', source: 'Assessment sales + team lot-fit model', kind: 'Proxy' },
+  { id: 'demand', label: 'Market fit', short: 'Market fit', source: 'Assessment sales + team lot-fit model', kind: 'Proxy' },
   { id: 'physical', label: 'Physical feasibility', short: 'Fit', source: 'County parcel outline + proposed dimensions', kind: 'Schematic' },
   { id: 'affordability', label: 'Affordability', short: 'Affordability', source: 'Proposed rent/utilities + target household income', kind: 'Assumption' },
   { id: 'displacement', label: 'Displacement risk', short: 'Displacement', source: 'ACS 2020–2024 + HUD CHAS 2018–2022', kind: 'Screen' },
@@ -40,6 +40,12 @@ export function initialScenario(pin, props = {}, stopId = '') {
   }
 }
 
+/** Studio edits one draft. Legacy A/B scenarios remain evaluable for older exports. */
+export function initialStudioScenario(pin, props = {}, stopId = '') {
+  const { options, ...scenario } = initialScenario(pin, props, stopId)
+  return { ...scenario, draft: options.A, comparisonTypes: [] }
+}
+
 export function historyFor(scenario) { return { past: [], present: scenario, future: [] } }
 export function scenarioReducer(state, action) {
   if (action.type === 'undo') {
@@ -52,6 +58,14 @@ export function scenarioReducer(state, action) {
   }
   let next = state.present
   if (action.type === 'addBuilding' && (next.buildings || []).length < 40 && !(next.buildings || []).some(b => b.id === action.building.id)) next = { ...next, buildings: [...(next.buildings || []), action.building], ...(action.slot ? { options: { ...next.options, [action.slot]: { ...next.options[action.slot], placement: null } } } : {}) }
+  if (action.type === 'addBuilding' && next.draft && next !== state.present) next = { ...next, draft: { ...next.draft, placement: null } }
+  if (action.type === 'draft') {
+    const changedType = action.value.typeId && action.value.typeId !== next.draft.typeId
+    const comparisonTypes = changedType && next.comparisonTypes.includes(action.value.typeId)
+      ? [...next.comparisonTypes.filter(id => id !== action.value.typeId), next.draft.typeId]
+      : next.comparisonTypes
+    next = { ...next, draft: { ...next.draft, ...action.value }, comparisonTypes }
+  }
   if (action.type === 'removeBuilding') next = { ...next, buildings: (next.buildings || []).filter(b => b.id !== action.id) }
   if (action.type === 'reset') next = action.scenario
   if (action.type === 'patch') next = { ...next, ...action.value }
@@ -63,5 +77,5 @@ export function scenarioReducer(state, action) {
 }
 
 export function scenarioExport(scenario, summary) {
-  return { schemaVersion: 3, modelVersion: MODEL_VERSION, dataVersion: summary?.pulled_at || null, exportedAt: new Date().toISOString(), scenario, limitations: ['Dimensions, access connectors and infrastructure buildability are user/model assumptions.', 'This model does not evaluate utilities, engineering, route schedules, travel to jobs or marginal tonnes of CO2.'] }
+  return { schemaVersion: scenario.draft ? 4 : 3, modelVersion: MODEL_VERSION, dataVersion: summary?.pulled_at || null, exportedAt: new Date().toISOString(), scenario, limitations: ['Dimensions, access connectors and infrastructure buildability are user/model assumptions.', 'This model does not evaluate utilities, engineering, route schedules, travel to jobs or marginal tonnes of CO2.'] }
 }

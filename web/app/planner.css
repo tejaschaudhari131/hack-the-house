@@ -329,3 +329,39 @@
 .placed-plan-score { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 5px; font-size: 11px; margin-bottom: 0; }
 .placed-plan-score strong { font-size: 18px; font-variant-numeric: tabular-nums; }
 .placed-plan-score small { grid-column: 1 / -1; color: #6c7e62; font-size: 10px; }
+/* One housing draft, with an optional full-width type comparison. */
+.studio-workspace.is-comparing { grid-template-columns: minmax(0, 1fr); }
+.is-comparing .studio-canvas { display: none; }
+.is-comparing .studio-inspector { border-left: 0; min-width: 0; }
+.is-comparing .inspector-scroll { padding-left: clamp(18px, 3vw, 50px); padding-right: clamp(18px, 3vw, 50px); }
+.studio .comparison-back { float: right; margin-left: 12px; padding: 8px 12px; font-size: 12px; }
+.housing-comparison .section-heading { gap: 10px; }
+.housing-comparison .section-heading button { font-size: 11px; padding: 7px 10px; }
+.comparison-picker { border: 1px solid var(--line); border-radius: 8px; padding: 10px; margin: 12px 0; }
+.comparison-picker legend { font-size: 12px; font-weight: 650; padding: 0 5px; }
+.comparison-picker > div { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+.comparison-picker label { display: flex; gap: 6px; align-items: center; font-size: 12px; }
+.comparison-picker input { accent-color: #315b46; }
+.studio .comparison-picker button { font-size: 11px; padding: 5px 8px; margin: 10px 8px 0 0; }
+.housing-table-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; }
+.housing-comparison-table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 12px; table-layout: fixed; background: #fffefa; }
+.housing-comparison-table caption { text-align: left; padding: 10px; font-size: 11px; color: var(--muted); }
+.housing-comparison-table th, .housing-comparison-table td { padding: 12px; text-align: left; vertical-align: top; border-top: 1px solid var(--line); border-right: 1px solid var(--line); overflow-wrap: anywhere; }
+.housing-comparison-table th:first-child { width: 150px; position: sticky; left: 0; z-index: 1; background: #f2f5ed; }
+.housing-comparison-table thead th { border-top: 4px solid #d7e1d2; font-weight: 650; }
+.housing-comparison-table small { display: block; color: #66776a; font-size: 10px; line-height: 1.5; margin-top: 5px; font-weight: 400; }
+.comparison-total td > strong { font-size: 20px; font-variant-numeric: tabular-nums; }
+.housing-comparison-table .excluded { color: #7c837a; }
+.comparison-factor { display: flex; align-items: center; gap: 10px; }
+.comparison-factor .factor-track { width: 60px; flex: 1; }
+.housing-comparison-table .card-tradeoffs { border-top: 0; padding-top: 0; margin-top: 0; }
+.housing-comparison-table details { font-size: 11px; line-height: 1.5; }
+.housing-comparison-table summary { cursor: pointer; }
+.studio .housing-comparison-table button { font-size: 11px; padding: 7px 10px; }
+.studio .comparison-assumptions { background: none; border: 0; padding: 0; text-decoration: underline; font-size: inherit; }
+.housing-comparison[aria-busy=true] .housing-table-scroll { opacity: .5; }
+.studio-inspector { min-width: 0; }
+.studio .priority-slider small { display: block; margin-top: 4px; }
+.studio .priority-slider .priority-raw { color: #65766a; }
+.studio .priority-slider > span { gap: 12px; }
+.studio .priority-slider b { white-space: nowrap; font-variant-numeric: tabular-nums; font-size: 12px; }

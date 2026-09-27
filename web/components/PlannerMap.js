@@ -12,7 +12,7 @@ import { buildingHeightDescription, buildingHeightSource } from '../lib/building
 const empty = () => ({ type: 'FeatureCollection', features: [] })
 const fc = features => ({ type: 'FeatureCollection', features })
 
-export default function PlannerMap({ parcels, neighborhoods, stops, existingBuildings, showExisting, selected, option, slot, stop, proposed, additionalDepartures, view3d, onSelect, onStop, tool, placing, onPlace, onHover, placedBuildings = [], network, networkResult, reservations, connections, drawing, draftNode, onDraw, discoveryPins = [] }) {
+export default function PlannerMap({ parcels, neighborhoods, stops, existingBuildings, showExisting, selected, option, stop, proposed, additionalDepartures, view3d, onSelect, onStop, tool, placing, onPlace, onHover, placedBuildings = [], network, networkResult, reservations, connections, drawing, draftNode, onDraw, discoveryPins = [] }) {
   const container = useRef(null), mapRef = useRef(null), callbacks = useRef({ onSelect, onStop, tool, placing, onPlace })
   const [ready, setReady] = useState(false), [error, setError] = useState(null)
   const lastPin = useRef(null)
@@ -149,9 +149,9 @@ export default function PlannerMap({ parcels, neighborhoods, stops, existingBuil
 
   useEffect(() => {
     if (!ready || !mapRef.current) return
-    const building = tool !== 'sites' && option?.massing.geometry && (placing || (option.massing.fits && option.massing.collisions === 0)) ? [{ type: 'Feature', geometry: option.massing.geometry, properties: { height: option.height, color: placing ? (option.eligible ? PLACEMENT_COLORS.valid : PLACEMENT_COLORS.invalid) : slot === 'A' ? '#0891b2' : '#eab308' } }] : []
+    const building = tool !== 'sites' && option?.massing.geometry && (placing || (option.massing.fits && option.massing.collisions === 0)) ? [{ type: 'Feature', geometry: option.massing.geometry, properties: { height: option.height, color: placing ? (option.eligible ? PLACEMENT_COLORS.valid : PLACEMENT_COLORS.invalid) : '#0891b2' } }] : []
     mapRef.current.getSource('building').setData(fc(building))
-  }, [ready, option, slot, placing, tool])
+  }, [ready, option, placing, tool])
 
   useEffect(() => {
     if (!ready) return

@@ -1,7 +1,7 @@
 "use client"
 
 export default function InfrastructurePanel({ network, manifest, error, retry, scenario, set, result, drawing, begin, cancel, draftNode, remove, numeric: Numeric, onAssumptions }) {
-  const before = result?.baseline.A.access, after = result?.proposal.A.access
+  const before = result?.baseline[scenario.draft.typeId]?.access, after = result?.proposal[scenario.draft.typeId]?.access
   const minutes = n => Number.isFinite(n) ? `${n.toFixed(1)} min` : 'No route / unknown'
   return <>
     <div className="section-heading"><h3>Connections & parks</h3><span className="data-badge">Hypothetical</span></div>
