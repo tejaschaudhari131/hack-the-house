@@ -87,7 +87,7 @@ function inputRows(inputs) {
 }
 
 /** Print-only one-page report for the selected parcel. Hidden on screen; see @media print in globals.css. */
-export default function ParcelReport({ feature, weights, whatIf, zoning, summary, explanation }) {
+export default function ParcelReport({ feature, weights, whatIf, zoning, summary, explanation, shareUrl }) {
   const [sources, setSources] = useState(null)
   const [flag, setFlag] = useState(null)
   const pin = feature.properties.pin
@@ -274,7 +274,7 @@ export default function ParcelReport({ feature, weights, whatIf, zoning, summary
         geotechnical study. ACS estimates have margins of error; CHAS 2018–2022 is older and counts only lower-income
         renters. Transit is scheduled service, not reliability. Assessed value is not used. No owner names are in this
         data. {pulled.length ? `Layers pulled ${pulled.join(", ")} (sources.json). ` : ""}Generated {generated} from the
-        committed data files; results change if the weights change.
+        committed data files; results change if the weights change.{shareUrl ? ` Reproduce: ${shareUrl}` : ""}
       </footer>
     </article>
   )

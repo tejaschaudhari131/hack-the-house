@@ -79,6 +79,7 @@ export default function ParcelPanel({
   siteType = null,
   onAntiDisplacement = null,
   zoning = null,
+  share = null,
   onCompareSite = null,
 }) {
   const [showModel, setShowModel] = useState(false)
@@ -455,6 +456,7 @@ export default function ParcelPanel({
               Print one-page report
             </button>
           </div>
+          {share}
           <Explanation explanation={explanation} />
 
           <h3>Check it with the City, or flag it</h3>

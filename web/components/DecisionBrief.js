@@ -20,7 +20,7 @@ function fmt(value) {
 }
 
 /** Print-only decision brief for a two-scenario comparison. Hidden on screen; see @media print. */
-export default function DecisionBrief({ compare, weights, featureA, featureB, zoning, summary, model, shortlist }) {
+export default function DecisionBrief({ compare, weights, featureA, featureB, zoning, summary, model, shortlist, shareUrl }) {
   const [sources, setSources] = useState(null)
   useEffect(() => {
     let cancelled = false
@@ -203,6 +203,7 @@ export default function DecisionBrief({ compare, weights, featureA, featureB, zo
         Build {process.env.NEXT_PUBLIC_COMMIT_SHA || "unknown"} · score model v{model?.version ?? "?"} · data pulled{" "}
         {summary?.pulled_at || "?"} · prompt {PROMPT_VERSION} · generated {generated}. No owner names or debt amounts are
         in this data.
+        {shareUrl ? <><br />Reproduce this scenario: {shareUrl}</> : null}
       </footer>
     </article>
   )

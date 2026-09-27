@@ -193,6 +193,7 @@ export default function DropPanel({
   onCompareState,
   onPrintBrief,
   onAntiDisplacement = null,
+  share = null,
   sources = null,
   model = null,
   guide = null,
@@ -251,6 +252,7 @@ export default function DropPanel({
         <section className="review-box" id="comparison" tabIndex={-1}>
           <h2>Compare A and B</h2>
           <ComparisonView result={result} onPrint={onPrintBrief} />
+          {share}
           {[result.a, ...(result.sameParcel ? [] : [result.b])].map((side) => (
             <EvidenceDrawer
               key={side.slot}

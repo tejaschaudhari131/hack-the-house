@@ -9,9 +9,9 @@ import { PROMPT_VERSION, SYSTEM_PROMPT, buildComparePrompt, buildParcelPrompt, b
 import { explainTemplate } from "./explainTemplate.js"
 import { clientIp, createRateLimiter, createTtlCache, hashKey } from "./guardrails.js"
 import { buildSitesContext, explainSitesTemplate } from "./explainSites.js"
-import { BUILDING_IDS } from "./buildings.js"
 import { DEFAULT_WEIGHTS } from "./rank.js"
-import { DEFAULT_SITE_FILTERS, SORT_OPTIONS, TYPE_OPTIONS, findSites } from "./sites.js"
+import { findSites } from "./sites.js"
+import { WEIGHT_KEYS, parseDrop, parsePin, parseSiteFilters, parseSort, parseWeights } from "./validate.js"
 
 export const DEFAULT_MODEL = "anthropic/claude-haiku-4.5"
 
@@ -26,8 +26,6 @@ export const LIMITS = {
   cacheTtlMs: 6 * 60 * 60 * 1000,
 }
 
-const PIN_PATTERN = /^[0-9A-Z]{6,24}$/
-const WEIGHT_KEYS = Object.keys(DEFAULT_WEIGHTS)
 
 export function aiConfig(env = process.env) {
   const model = (env.AI_MODEL || "").trim() || DEFAULT_MODEL
@@ -41,66 +39,13 @@ export function aiConfig(env = process.env) {
   return { model, enabled: false, reason: "No AI Gateway credentials are configured." }
 }
 
-function parseWeights(raw) {
-  if (!raw || typeof raw !== "object") return null
-  const weights = {}
-  for (const key of WEIGHT_KEYS) {
-    const value = Number(raw[key])
-    if (!Number.isFinite(value) || value < 0 || value > 100) return null
-    weights[key] = Math.round(value)
-  }
-  return weights
-}
-
-function parsePin(raw) {
-  return typeof raw === "string" && PIN_PATTERN.test(raw) ? raw : null
-}
-
-function parseDrop(raw) {
-  const pin = parsePin(raw?.pin)
-  const typeId = BUILDING_IDS.includes(raw?.typeId) ? raw.typeId : null
-  return pin && typeId ? { pin, typeId } : null
-}
-
-const FILTER_CHOICES = {
-  combine: ["all", "any"],
-  typeId: TYPE_OPTIONS.map((option) => option.id),
-  permission: ["any", "by_right", "by_right_or_special"],
-  flood: ["any", "none", "no_sfha"],
-  displacement: ["any", "high", "not_high"],
-  area: ["", "Hazelwood", "Lawrenceville"],
-}
-
-/** Accepts only the Find Sites filter keys, with their default types and known choices. */
-export function parseSiteFilters(raw) {
-  if (!raw || typeof raw !== "object") return null
-  const filters = {}
-  for (const [key, fallback] of Object.entries(DEFAULT_SITE_FILTERS)) {
-    const value = raw[key] === undefined ? fallback : raw[key]
-    if (FILTER_CHOICES[key]) {
-      if (!FILTER_CHOICES[key].includes(value)) return null
-      filters[key] = value
-    } else if (typeof fallback === "boolean") {
-      if (typeof value !== "boolean") return null
-      filters[key] = value
-    } else if (value === null || value === "") {
-      filters[key] = null
-    } else {
-      const number = Number(value)
-      if (!Number.isFinite(number) || number < 0 || number > 10_000_000) return null
-      filters[key] = number
-    }
-  }
-  return filters
-}
-
 export function parseExplainRequest(body) {
   const weights = parseWeights(body?.weights)
   if (!weights) return { error: `weights must have ${WEIGHT_KEYS.join(", ")}, each between 0 and 100.` }
   if (body?.kind === "sites") {
     const filters = parseSiteFilters(body.filters)
     if (!filters) return { error: "filters must use the Find Sites filter keys and choices." }
-    const sort = SORT_OPTIONS.some((option) => option.id === body.sort) ? body.sort : "score"
+    const sort = parseSort(body.sort)
     return { kind: "sites", weights, filters, sort }
   }
   if (body?.kind === "compare") {

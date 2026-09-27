@@ -86,6 +86,7 @@ export default function FindSitesPanel({
   onExample,
   onCompareSite,
   onAntiDisplacement = null,
+  share = null,
   guide = null,
 }) {
   const [shown, setShown] = useState(PAGE)
@@ -344,6 +345,7 @@ export default function FindSitesPanel({
             Download CSV
           </button>
         </div>
+        {share}
         <button
           type="button"
           className="explain"
