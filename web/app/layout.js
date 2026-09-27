@@ -1,7 +1,8 @@
 import "./globals.css"
+import "./planner.css"
 
 export const metadata = {
-  title: "Housing Typology, Equity & Climate Matchmaker · Pittsburgh",
+  title: "Hack the House · Pittsburgh Planning Studio",
   description:
     "Screening aid for planners, CDCs, developers, and residents: compare four housing types on real Hazelwood and Lawrenceville parcels by demand, transit, equity, and climate risk, with §911.02 zoning readings and sources.",
 }

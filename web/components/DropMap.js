@@ -5,6 +5,7 @@ import { Map as MapLibreMap, Marker, NavigationControl } from "maplibre-gl"
 import "maplibre-gl/dist/maplibre-gl.css"
 
 import { BUILDINGS } from "../lib/buildings.js"
+import { configureMapWorkers } from "../lib/maplibreSetup.js"
 import { TYPE_COLORS } from "../lib/colors.js"
 import { circlePolygon, featurePoint } from "../lib/geo.js"
 
@@ -71,6 +72,7 @@ export default function DropMap({ parcels, neighborhoods, stops, drops, focus, o
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return undefined
+    configureMapWorkers()
     const map = new MapLibreMap({
       container: containerRef.current,
       style: OSM_STYLE,

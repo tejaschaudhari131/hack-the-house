@@ -2,6 +2,8 @@
 
 Housing Typology, Equity & Climate Matchmaker.
 
+**New default interface: Planning Studio.** Open `/` for the 3D Hazelwood/Lawrenceville housing and transit prototype: cycle massing templates, compare two housing options, add scheduled departures at an existing stop, inspect seven decision dimensions, change assumptions/weights, undo/redo, and export a scenario. The original inspector and Find Sites remain at `/explore`. See [the studio model and demo guide](docs/PLANNER.md) for the calculation boundaries and run instructions. Dimensions and rents are editable assumptions; capacity stays unknown until supplied. This release does not add street routing, LiDAR heights, or a validated marginal-emissions model.
+
 Decision-support prototype for the AI Horizons 2026 AI for Housing Hackathon, Challenge 3. Pick a real Pittsburgh parcel and compare four housing types — single-family, townhouse/duplex, small apartment (3–19 units), and large apartment (20+ units) — on demand, transit access, equity, climate risk, displacement risk, and marginal carbon. Weight sliders re-rank the types. The screen labels which parts are observed data and which parts are value judgments.
 
 **Find sites** turns the question around: *where* could we build *what*? Filter all 8,645 parcels by public records (vacant land, City-owned, tax-delinquent, condemned), by what §911.02 allows, by flood, slope, and mine hazards, by walk time to frequent transit, by lot size, and by displacement risk. Matches light up on the map and come back as a ranked list you can sort, click into, and download as CSV. A public record is not availability; verify with the URA, the Pittsburgh Land Bank, or the City before acting.

@@ -1,5 +1,5 @@
-import App from "../components/App.js"
+import Planner from "../components/Planner.js"
 
 export default function Page() {
-  return <App />
+  return <Planner />
 }

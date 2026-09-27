@@ -262,6 +262,7 @@ export default function App() {
           </button>
         </span>
         <span className="banner-help">
+          <a href="/" style={{ color: "white", alignSelf: "center", fontSize: 13 }}>Planning studio ↗</a>
           <button type="button" className="primary" onClick={startGuide} disabled={!parcels}>
             Try a real example
           </button>
