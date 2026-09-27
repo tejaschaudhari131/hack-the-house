@@ -1,10 +1,35 @@
 {
-  "weights": {"demand": 1, "transit": 1, "equity": 1, "climate": 1},
+  "weights": {
+    "demand": 1,
+    "transit": 1,
+    "equity": 1,
+    "climate": 1
+  },
   "scores": {
-    "single_family": {"demand": 40, "transit": 50, "equity": 60, "climate_risk": 10},
-    "townhouse_duplex": {"demand": 80, "transit": 50, "equity": 30, "climate_risk": null},
-    "small_apartment": {"demand": 70, "transit": 50, "equity": 55, "climate_risk": 25},
-    "large_apartment": {"demand": 20, "transit": 50, "equity": 40, "climate_risk": 30}
+    "single_family": {
+      "demand": 40,
+      "transit": 50,
+      "equity": 60,
+      "climate_risk": 10
+    },
+    "townhouse_duplex": {
+      "demand": 80,
+      "transit": 50,
+      "equity": 30,
+      "climate_risk": null
+    },
+    "small_apartment": {
+      "demand": 70,
+      "transit": 50,
+      "equity": 55,
+      "climate_risk": 25
+    },
+    "large_apartment": {
+      "demand": 20,
+      "transit": 50,
+      "equity": 40,
+      "climate_risk": 30
+    }
   },
   "expected_composite": {
     "single_family": 60.0,
@@ -18,7 +43,10 @@
     "townhouse_duplex",
     "large_apartment"
   ],
-  "allowed": ["single_family", "townhouse_duplex"],
+  "allowed": [
+    "single_family",
+    "townhouse_duplex"
+  ],
   "expected_order_current_rules": [
     "single_family",
     "townhouse_duplex",
@@ -26,12 +54,47 @@
     "large_apartment"
   ],
   "six_factor": {
-    "weights": {"demand": 1, "transit": 1, "equity": 1, "climate": 1, "displacement": 1, "carbon": 1},
+    "weights": {
+      "demand": 1,
+      "transit": 1,
+      "equity": 1,
+      "climate": 1,
+      "displacement": 1,
+      "carbon": 1
+    },
     "scores": {
-      "single_family": {"demand": 40, "transit": 50, "equity": 60, "climate_risk": 10, "displacement_risk": 40, "carbon_index": 70},
-      "townhouse_duplex": {"demand": 80, "transit": 50, "equity": 30, "climate_risk": null, "displacement_risk": 40, "carbon_index": 44},
-      "small_apartment": {"demand": 70, "transit": 50, "equity": 55, "climate_risk": 25, "displacement_risk": 40, "carbon_index": 40},
-      "large_apartment": {"demand": 20, "transit": 50, "equity": 40, "climate_risk": 30, "displacement_risk": 40, "carbon_index": 30}
+      "single_family": {
+        "demand": 40,
+        "transit": 50,
+        "equity": 60,
+        "climate_risk": 10,
+        "displacement_risk": 40,
+        "carbon_index": 70
+      },
+      "townhouse_duplex": {
+        "demand": 80,
+        "transit": 50,
+        "equity": 30,
+        "climate_risk": null,
+        "displacement_risk": 40,
+        "carbon_index": 44
+      },
+      "small_apartment": {
+        "demand": 70,
+        "transit": 50,
+        "equity": 55,
+        "climate_risk": 25,
+        "displacement_risk": 40,
+        "carbon_index": 40
+      },
+      "large_apartment": {
+        "demand": 20,
+        "transit": 50,
+        "equity": 40,
+        "climate_risk": 30,
+        "displacement_risk": 40,
+        "carbon_index": 30
+      }
     },
     "expected_composite": {
       "single_family": 55.0,
@@ -45,5 +108,91 @@
       "single_family",
       "large_apartment"
     ]
-  }
+  },
+  "edge_cases": [
+    {
+      "name": "exact tie rounds half to even",
+      "weights": {
+        "demand": 1,
+        "transit": 1,
+        "equity": 0,
+        "climate": 0,
+        "displacement": 0,
+        "carbon": 0
+      },
+      "score": {
+        "demand": 60,
+        "transit": 64.5
+      },
+      "expected": 62.2
+    },
+    {
+      "name": "no premature rounding of 100 minus risk",
+      "weights": {
+        "demand": 1,
+        "transit": 0,
+        "equity": 0,
+        "climate": 1,
+        "displacement": 0,
+        "carbon": 0
+      },
+      "score": {
+        "demand": 50,
+        "climate_risk": 33.35
+      },
+      "expected": 58.3
+    },
+    {
+      "name": "all weights zero gives no score",
+      "weights": {
+        "demand": 0,
+        "transit": 0,
+        "equity": 0,
+        "climate": 0,
+        "displacement": 0,
+        "carbon": 0
+      },
+      "score": {
+        "demand": 50,
+        "transit": 50
+      },
+      "expected": null
+    },
+    {
+      "name": "missing factor is skipped and weights renormalize",
+      "weights": {
+        "demand": 25,
+        "transit": 25,
+        "equity": 25,
+        "climate": 25,
+        "displacement": 15,
+        "carbon": 15
+      },
+      "score": {
+        "demand": 70,
+        "transit": 80,
+        "equity": null,
+        "climate_risk": 10,
+        "displacement_risk": null,
+        "carbon_index": 40
+      },
+      "expected": 76.7
+    },
+    {
+      "name": "only weighted factor missing gives no score",
+      "weights": {
+        "demand": 0,
+        "transit": 0,
+        "equity": 1,
+        "climate": 0,
+        "displacement": 0,
+        "carbon": 0
+      },
+      "score": {
+        "demand": 50,
+        "equity": null
+      },
+      "expected": null
+    }
+  ]
 }

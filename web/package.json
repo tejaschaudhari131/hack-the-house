@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "node --test lib/rank.test.js lib/explainTemplate.test.js lib/zoning.test.js lib/drop.test.js lib/sites.test.js lib/explain.test.js lib/robustness.test.js"
+    "test": "node --test lib/rank.test.js lib/explainTemplate.test.js lib/zoning.test.js lib/drop.test.js lib/sites.test.js lib/explain.test.js lib/robustness.test.js lib/factors.test.js"
   },
   "dependencies": {
     "ai": "^7.0.116",

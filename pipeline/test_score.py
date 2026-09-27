@@ -106,6 +106,10 @@ class ScoreTests(unittest.TestCase):
         order = [row["id"] for row in rank_types(six["scores"], six["weights"], allowed=None, what_if=True)]
         self.assertEqual(order, six["expected_order_what_if"])
 
+    def test_shared_rank_vector_edge_cases(self):
+        for case in VECTOR["edge_cases"]:
+            self.assertEqual(composite(case["score"], case["weights"]), case["expected"], case["name"])
+
     def test_displacement_blends_vulnerability_and_pressure(self):
         # renter 0.5 -> 0.5, CHAS 0.55 -> 0.5, rent +15 points over county -> 0.5
         risk, parts = displacement_risk(0.5, 0.55, 0.15)
