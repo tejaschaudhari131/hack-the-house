@@ -2,7 +2,6 @@ import test from "node:test"
 import assert from "node:assert/strict"
 
 import { BUILDINGS } from "./buildings.js"
-import { compareDrops } from "./compare.js"
 import { circlePolygon, featurePoint, haversineMeters, stopsWithin } from "./geo.js"
 
 test("building defaults cover the four types", () => {
@@ -54,35 +53,4 @@ test("stops inside the ring are summed and outside stops are left out", () => {
   assert.equal(summary.count, 1)
   assert.equal(summary.trips, 10)
   assert.deepEqual(summary.routes, ["56"])
-})
-
-test("compare names the higher building and the widest gap", () => {
-  const text = compareDrops(
-    {
-      pin: "1",
-      address: "1 A St",
-      neighborhood: "Hazelwood",
-      typeLabel: "Small apartment (3–19 units)",
-      composite: 70,
-      demand: 40,
-      transit: 50,
-      equity: 80,
-      climate_suitability: 60,
-    },
-    {
-      pin: "2",
-      address: "2 B St",
-      neighborhood: "Lower Lawrenceville",
-      typeLabel: "Single-family",
-      composite: 55,
-      demand: 60,
-      transit: 70,
-      equity: 30,
-      climate_suitability: 60,
-    },
-  )
-  assert.match(text, /Small apartment/)
-  assert.match(text, /70 versus 55/)
-  assert.match(text, /equity/)
-  assert.match(text, /screening comparison/)
 })

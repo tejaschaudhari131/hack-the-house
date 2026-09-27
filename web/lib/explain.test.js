@@ -296,3 +296,32 @@ test("Find Sites: filters are validated, and the top sites are explained from se
   assert.equal(none.headers.get("x-explain-source"), "template")
   assert.match(await none.text(), /No parcels match/)
 })
+
+test("a triplex keeps three-unit semantics in the compare facts and the Find Sites export", async () => {
+  const { sitesCsv } = await import("./sites.js")
+  const r3 = parcel("0055A00100000000", { zoning_code: "R3-L" })
+  const context = buildCompareContext({
+    a: { pin: r3.properties.pin, typeId: "triplex" },
+    b: { pin: r3.properties.pin, typeId: "small_apartment" },
+    featureA: r3,
+    featureB: r3,
+    weights: WEIGHTS,
+    zoningRules: zoning,
+    stops: null,
+    sources,
+    summary,
+  })
+  const a = context.facts.scenario_a
+  const b = context.facts.scenario_b
+  assert.equal(a.homes_shown, 3)
+  assert.equal(a.zoning.this_type.use_row, "Three-Unit")
+  assert.equal(a.zoning.this_type.category, "permitted")
+  assert.equal(b.homes_shown, 12)
+  assert.equal(b.zoning.this_type.category, "not_permitted")
+  assert.match(a.score_basis, /small apartment \(3–19 units\) score/)
+  assert.equal(context.facts.comparison.contributions.length, 6)
+  assert.ok(parseExplainRequest({ kind: "compare", weights: WEIGHTS, a: { pin: r3.properties.pin, typeId: "triplex" }, b: { pin: r3.properties.pin, typeId: "townhouse_duplex" } }).kind)
+  const rows = findSites([r3], { vacant: true, typeId: "triplex", permission: "by_right" }, WEIGHTS, zoning, "score")
+  assert.equal(rows.length, 1)
+  assert.match(sitesCsv(rows), /Triplex \(3 units, §911\.02 Three-Unit row\)/)
+})

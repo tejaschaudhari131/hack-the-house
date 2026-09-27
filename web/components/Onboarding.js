@@ -33,7 +33,7 @@ const STEPS = [
           sources behind every score.
         </p>
         <p>
-          <strong>Drop a building</strong> to place one type on a lot in 3D with a 10-minute walk ring and nearby transit.
+          <strong>Drop a building</strong> to place a building (including a 3-unit triplex) on a lot in 3D with an 800 m straight-line ring and nearby transit stops.
           Drop a second one to compare two scenarios side by side.
         </p>
         <p>
@@ -130,7 +130,7 @@ export default function Onboarding({ open, onClose, onExample }) {
           </button>
         )}
         <button type="button" className="explain" onClick={() => finish("example")}>
-          Try an example
+          Try a real example
         </button>
       </div>
     </dialog>

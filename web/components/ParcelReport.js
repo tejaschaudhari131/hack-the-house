@@ -180,7 +180,7 @@ export default function ParcelReport({ feature, weights, whatIf, zoning, summary
                 <td>{fmt(row.displacement_risk_screen)}</td>
                 <td>{fmt(row.marginal_carbon_index_estimate)}</td>
                 <td>
-                  {row.zoning.treated_as_allowed_by_what_if ? "What-if: treated as allowed" : row.zoning.reading}
+                  {row.zoning.reading}{row.zoning.treated_as_allowed_by_what_if ? " (what-if ordering on)" : ""}
                 </td>
               </tr>
             ))}
@@ -213,7 +213,7 @@ export default function ParcelReport({ feature, weights, whatIf, zoning, summary
           ) : null}
         </div>
         <div>
-          <h2>Data confidence</h2>
+          <h2>Data coverage (thin-data heuristic)</h2>
           <p>
             {fmt(props.confidence_label)} ({fmt(props.confidence)}). Only about missing or thin data, not about the value
             judgments.

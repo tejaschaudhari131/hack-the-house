@@ -335,3 +335,40 @@ dialog.onboarding::backdrop { background: rgba(31, 41, 51, 0.55); }
   .report-inputs td:nth-child(2) { width: 24%; }
   .print-report footer { margin-top: 6px; border-top: 0.5pt solid #999; padding-top: 4px; }
 }
+
+button.primary { background: #f59e0b; color: #1f2933; border-color: #f59e0b; font-weight: 700; }
+.guide-banner { background: #eff6ff; border: 1px solid #93c5fd; padding: 10px 12px; margin-bottom: 12px; }
+.guide-banner p { margin: 6px 0; }
+.guide-steps { list-style: none; display: flex; gap: 6px; padding: 0; margin: 0 0 6px; flex-wrap: wrap; font-size: 13px; }
+.guide-steps li { padding: 2px 8px; border: 1px solid #93c5fd; border-radius: 999px; background: #fff; }
+.guide-steps li.on { background: #1d4e89; color: #fff; border-color: #1d4e89; font-weight: 700; }
+.guide-steps li.done { background: #dbeafe; }
+.comparison { margin: 8px 0; }
+.scenario-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.scenario-head { background: #fff; border: 1px solid #cbd2d9; padding: 8px; }
+.scenario-head p { margin: 3px 0; }
+.scenario-slot { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #52606d; }
+.scenario-score strong { font-size: 20px; }
+.comparison-summary { font-size: 14px; }
+.table-wrap { overflow-x: auto; }
+.contrib-table { width: 100%; border-collapse: collapse; font-size: 13px; background: #fff; }
+.contrib-table caption { text-align: left; font-size: 12px; color: #52606d; padding: 4px 0; caption-side: top; }
+.contrib-table th, .contrib-table td { border-bottom: 1px solid #e4e7eb; padding: 4px 6px; text-align: right; }
+.contrib-table th[scope="row"], .contrib-table thead th:first-child { text-align: left; font-weight: 600; }
+.contrib-table tr.muted { color: #7b8794; }
+.contrib-table tfoot th, .contrib-table tfoot td { font-weight: 700; border-top: 2px solid #9aa5b1; }
+.print-brief { display: none; }
+@media (max-width: 900px) {
+  .scenario-pair { grid-template-columns: 1fr; }
+}
+@media print {
+  .print-brief { display: block; font-size: 8.5pt; color: #000; }
+  .print-brief h1 { font-size: 14pt; margin: 2px 0 4px; }
+  .print-brief h2 { font-size: 10pt; margin: 6px 0 2px; }
+  .print-brief p, .print-brief li { margin: 2px 0; line-height: 1.25; }
+  .print-brief table { width: 100%; border-collapse: collapse; font-size: 8pt; }
+  .print-brief th, .print-brief td { border-bottom: 0.5pt solid #999; padding: 1.5px 4px; text-align: left; vertical-align: top; }
+  .print-brief th { background: #eee; }
+  .print-brief ol { margin: 2px 0; padding-left: 16px; }
+  .print-brief footer { margin-top: 6px; border-top: 0.5pt solid #999; padding-top: 4px; }
+}

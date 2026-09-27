@@ -189,8 +189,6 @@ export default function DropPanel({
   onSlot,
   onClear,
   byPin,
-  exampleNote,
-  onDismissExample,
   onCompareState,
   onPrintBrief,
   guide = null,
@@ -219,18 +217,6 @@ export default function DropPanel({
     onCompareState?.(result ? { result, robustness: compareRobustness, explanation: compareAi.explanation } : null)
   }, [result, compareRobustness, compareAi.explanation, onCompareState])
 
-  function jumpToComparison() {
-    const target = document.getElementById("comparison")
-    const panel = target?.closest(".panel")
-    if (!target) return
-    if (panel && getComputedStyle(panel).overflowY !== "visible") {
-      panel.scrollTo({ top: panel.scrollTop + target.getBoundingClientRect().top - panel.getBoundingClientRect().top - 8, behavior: "smooth" })
-    } else {
-      target.scrollIntoView({ behavior: "smooth", block: "start" })
-    }
-    target.focus({ preventScroll: true })
-  }
-
   function onExplainCompare() {
     if (!comparison || !dropA || !dropB) return
     const a = { pin: dropA.pin, typeId: dropA.typeId }
@@ -254,21 +240,6 @@ export default function DropPanel({
 
   return (
     <aside className="panel" id="panel">
-      {exampleNote ? (
-        <section className="example-note" role="status">
-          <h2>Example loaded</h2>
-          <p>{exampleNote}</p>
-          <p>
-            <button type="button" className="text-button" onClick={jumpToComparison}>
-              Jump to the comparison
-            </button>
-            {" · "}
-            <button type="button" className="text-button" onClick={onDismissExample}>
-              Dismiss
-            </button>
-          </p>
-        </section>
-      ) : null}
 {guide}
       {comparison ? (
         <section className="review-box" id="comparison" tabIndex={-1}>

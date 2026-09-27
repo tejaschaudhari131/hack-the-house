@@ -84,6 +84,8 @@ export default function FindSitesPanel({
   sources,
   activeExample,
   onExample,
+  onCompareSite,
+  guide = null,
 }) {
   const [shown, setShown] = useState(PAGE)
   const sitesAi = useExplanation(JSON.stringify([filters, sort, weights]))
@@ -100,7 +102,8 @@ export default function FindSitesPanel({
   const selected = rows.find((row) => row.pin === selectedPin) || null
 
   return (
-    <aside className="panel">
+    <aside className="panel" id="panel">
+      {guide}
       <section className="limitations">
         <h2>Find sites: where could we build what?</h2>
         <p>
@@ -370,9 +373,22 @@ export default function FindSitesPanel({
               </span>
             </p>
             <SiteFacts props={selected.props} compact />
-            <button type="button" className="explain" onClick={() => onOpenParcel(selected.pin)}>
-              Open full parcel detail
-            </button>
+            <div className="action-row">
+              {onCompareSite ? (
+                <button type="button" className="explain" onClick={() => onCompareSite(selected.pin, filters.typeId || selected.typeId)}>
+                  Compare two options on this parcel
+                </button>
+              ) : null}
+              <button type="button" className="secondary" onClick={() => onOpenParcel(selected.pin)}>
+                Open full parcel detail
+              </button>
+            </div>
+            {filters.typeId === "triplex" ? (
+              <p className="hint">
+                The comparison keeps the triplex as 3 units read from the §911.02 Three-Unit row. Its score uses the small
+                apartment (3–19 units) score; the unit count does not change the score.
+              </p>
+            ) : null}
           </article>
         ) : null}
 

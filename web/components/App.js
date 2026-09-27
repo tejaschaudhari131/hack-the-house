@@ -8,7 +8,9 @@ import Onboarding, { hasOnboarded } from "./Onboarding.js"
 import FindSitesPanel from "./FindSitesPanel.js"
 import ParcelPanel from "./ParcelPanel.js"
 import ParcelReport from "./ParcelReport.js"
-import { DEMO_EXAMPLE } from "../lib/example.js"
+import DecisionBrief from "./DecisionBrief.js"
+import GuideBanner from "./GuideBanner.js"
+import { GUIDE_QUERY_ID, alternativeBuilding, buildingForSiteType, resolveGuide } from "../lib/guide.js"
 import { useExplanation } from "../lib/explainClient.js"
 import { buildParcelContext } from "../lib/explainFacts.js"
 import { explainTemplate } from "../lib/explainTemplate.js"
@@ -44,7 +46,9 @@ export default function App() {
   const [activeSlot, setActiveSlot] = useState("A")
   const [drops, setDrops] = useState([])
   const [onboardingOpen, setOnboardingOpen] = useState(false)
-  const [exampleNote, setExampleNote] = useState(null)
+  const [guide, setGuide] = useState(null)
+  const [compareState, setCompareState] = useState(null)
+  const [shortlist, setShortlist] = useState(null)
   const mapWeights = useDeferredValue(weights)
 
   useEffect(() => {
@@ -181,15 +185,56 @@ export default function App() {
     setActiveSlot((current) => (current === "A" ? "B" : current))
   }
 
-  function loadExample() {
-    setMode("drop")
+  function startGuide() {
+    if (!parcels || !zoning) return
+    const resolved = resolveGuide(parcels.features, zoning, DEFAULT_WEIGHTS)
+    setOnboardingOpen(false)
     setWeights(DEFAULT_WEIGHTS)
     setFocus(null)
     setQuery("")
-    setDrops([DEMO_EXAMPLE.a, DEMO_EXAMPLE.b])
-    setActiveSlot("A")
-    setExampleNote(DEMO_EXAMPLE.story)
+    setSiteFilters(resolved.filters)
+    setSiteSort("score")
+    setSiteExample(GUIDE_QUERY_ID)
+    setSelectedPin(resolved.pin)
+    setMode("sites")
+    setGuide({ ...resolved, step: 1 })
   }
+
+  /** Drop two options on one parcel: the searched building type (a triplex stays a triplex) and the best permitted alternative. */
+  function compareOnParcel(pin, siteType, fromSites) {
+    const feature = byPin.get(pin)
+    if (!feature) return
+    const primary = buildingForSiteType(siteType)
+    const alternative = alternativeBuilding(feature.properties, primary, zoning, weights)
+    setDrops([
+      { slot: "A", pin, typeId: primary },
+      { slot: "B", pin, typeId: alternative },
+    ])
+    setActiveSlot("A")
+    setShortlist(fromSites ? { filters: siteFilters, count: siteRows.length } : null)
+    setMode("drop")
+  }
+
+  function guideNext() {
+    if (!guide) return
+    if (guide.step === 1) {
+      setDrops([guide.a, guide.b])
+      setActiveSlot("A")
+      setShortlist({ filters: guide.filters, count: guide.count })
+      setMode("drop")
+      setGuide({ ...guide, step: 2 })
+    } else if (guide.step === 2) {
+      setGuide({ ...guide, step: 3 })
+    }
+  }
+
+  function printBrief() {
+    window.print()
+  }
+
+  const guideBanner = guide ? (
+    <GuideBanner guide={guide} onNext={guideNext} onExit={() => setGuide(null)} onPrint={printBrief} />
+  ) : null
 
   return (
     <div className="page">
@@ -198,10 +243,11 @@ export default function App() {
       </a>
       <header className="banner">
         <div className="banner-main">
-          <h1 className="banner-title">Housing Typology, Equity &amp; Climate Matchmaker</h1>
+          <h1 className="banner-title">Hack the House</h1>
           <p className="banner-sub">
-            Compare four housing types on real Hazelwood and Lawrenceville parcels by demand, transit, equity, and
-            climate risk. For planners, CDCs, developers, and residents.
+            Compare housing options for real Pittsburgh sites: {summary?.parcel_count ? summary.parcel_count.toLocaleString() : "…"}{" "}
+            parcels in Hazelwood and Lawrenceville, scored on six factors with the zoning use table shown separately. For
+            CDC staff and planners building a shortlist.
           </p>
         </div>
         <span className="mode-switch" role="group" aria-label="Mode">
@@ -216,8 +262,8 @@ export default function App() {
           </button>
         </span>
         <span className="banner-help">
-          <button type="button" onClick={loadExample}>
-            Try an example
+          <button type="button" className="primary" onClick={startGuide} disabled={!parcels}>
+            Try a real example
           </button>
           <button type="button" onClick={() => setOnboardingOpen(true)}>
             How it works
@@ -228,7 +274,7 @@ export default function App() {
           with City Planning / the Zoning Administrator or a qualified professional.
         </p>
       </header>
-      <Onboarding open={onboardingOpen} onClose={() => setOnboardingOpen(false)} onExample={loadExample} />
+      <Onboarding open={onboardingOpen} onClose={() => setOnboardingOpen(false)} onExample={startGuide} />
       <div className={mode === "drop" ? "app drop-mode" : mode === "sites" ? "app sites-mode" : "app"}>
         <div className="map-wrap" role="region" aria-label="Parcel map. Keyboard users can pick a parcel with Address search in the panel.">
           {error ? (
@@ -276,7 +322,7 @@ export default function App() {
             <li><i style={{ background: "#9f1239" }} /> Large apartment</li>
             {mode === "drop" ? (
               <>
-                <li><i style={{ background: "#1d4ed8" }} /> 800 m walk ring</li>
+                <li><i style={{ background: "#1d4ed8" }} /> 800 m straight-line ring</li>
                 <li><i style={{ background: "#111827" }} /> Stop inside the ring</li>
               </>
             ) : null}
@@ -308,6 +354,8 @@ export default function App() {
             sources={sources}
             activeExample={siteExample}
             onExample={setSiteExample}
+            onCompareSite={(pin, siteType) => compareOnParcel(pin, siteType, true)}
+            guide={guideBanner}
           />
         ) : mode === "drop" ? (
           <DropPanel
@@ -330,8 +378,9 @@ export default function App() {
             onSlot={setActiveSlot}
             onClear={(slot) => setDrops((current) => current.filter((item) => item.slot !== slot))}
             byPin={byPin}
-            exampleNote={exampleNote}
-            onDismissExample={() => setExampleNote(null)}
+            onCompareState={setCompareState}
+            onPrintBrief={printBrief}
+            guide={guideBanner}
           />
         ) : (
         <ParcelPanel
@@ -357,6 +406,8 @@ export default function App() {
           onPrint={() => window.print()}
           sources={sources}
           onBackToSites={openedFromSites ? () => setMode("sites") : null}
+          siteType={openedFromSites ? siteFilters.typeId : null}
+          onCompareSite={(pin, siteType) => compareOnParcel(pin, siteType, openedFromSites)}
         />
         )}
       </div>
@@ -368,6 +419,18 @@ export default function App() {
           zoning={zoning}
           summary={summary}
           explanation={explanation}
+        />
+      ) : null}
+      {mode === "drop" && compareState ? (
+        <DecisionBrief
+          compare={compareState}
+          weights={weights}
+          featureA={byPin.get(compareState.result.a.pin)}
+          featureB={byPin.get(compareState.result.b.pin)}
+          zoning={zoning}
+          summary={summary}
+          model={model}
+          shortlist={shortlist}
         />
       ) : null}
     </div>
