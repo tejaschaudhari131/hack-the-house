@@ -22,6 +22,8 @@ The two study areas are **Hazelwood** and **Lawrenceville** (Lower, Central and 
 
 There is one editable **next-building draft**. Use **Compare to** to add other housing types to the comparison; all selected types share the same costs, priorities and evidence coverage. Each visitor has their own local Studio scenario. This is not a shared multiplayer session; export before reloading to keep a copy.
 
+Priority sliders are relative: all 1s, all 50s or all 100s give the same result. Each slider shows its percentage of the score after excluding missing evidence. Turning every priority off disables ranking.
+
 The seven decision dimensions are demand, physical feasibility, affordability, displacement risk, infrastructure capacity, access and carbon. Some use measured data; others use proxies or editable assumptions. Unknown evidence stays unknown. Scores are screening aids, not development approval or forecasts.
 
 Road edits currently affect walking routes and reserved land. They do not simulate traffic. Transit edits add assumed service at an existing stop. The app does not forecast changes in rents, displacement or emissions from these edits.

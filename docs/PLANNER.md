@@ -8,6 +8,8 @@ The current draft keeps its exact dimensions, height and placement. Other column
 
 Exports use schema 4 with `draft` and `comparisonTypes`, rather than `options.A/B`. The evaluator retains legacy A/B support for existing model fixtures; new Studio scenarios and exports do not contain hidden alternatives. Source parcel data and the seven factor calculations are unchanged. “Market fit” is a shorter display label; its existing market-activity/lot-fit formula is unchanged.
 
+Priorities are relative weights, normalized over the factors with shared evidence. Multiplying every weight by the same positive number leaves scores and rankings unchanged. Sliders show their effective percentage of the score and allow increments of 1. **Equal priorities** gives each available factor equal influence; **All off** disables ranking. Missing evidence and zero weights are excluded explicitly. Preset matching uses relative proportions, too.
+
 The sections below also document earlier model releases and their A/B interface. This current-interface section supersedes those controls and export details.
 
 The default route is now a browser-based 3D housing and transit scenario studio. The original parcel inspector, Find Sites, drop comparison, reports and AI explanations remain at `/explore`. Existing `?pin=` links select a parcel in either interface.
