@@ -12,7 +12,7 @@ test("building defaults cover the four types", () => {
   assert.ok(BUILDINGS.large_apartment.heightM > BUILDINGS.single_family.heightM)
 })
 
-test("an 800 meter ring is about a 10-minute walk", () => {
+test("the 800 meter ring is drawn at 800 m straight-line from the parcel", () => {
   const polygon = circlePolygon(-79.96, 40.45, 800, 64)
   const north = polygon.coordinates[0].find((coord) => coord[1] > 40.45)
   const distance = haversineMeters(-79.96, 40.45, north[0], north[1])
