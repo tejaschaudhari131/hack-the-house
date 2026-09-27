@@ -35,7 +35,7 @@ export default function GuideBanner({ guide, onNext, onExit, onPrint }) {
         <>
           <p>
             Scenario A is a triplex (3 units, the §911.02 Three-Unit row); scenario B is the best-scoring other building
-            permitted by right on the same lot. Permission is shown apart from the score. Try a viewpoint under Weights
+            permitted by right on the same lot. Permission is shown apart from the score. Try a priority under Weights
             and watch whether the order holds.
           </p>
           <button type="button" className="explain" onClick={onNext}>

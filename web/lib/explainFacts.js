@@ -4,6 +4,7 @@
 
 import { BUILDINGS, WALK_RADIUS_M } from "./buildings.js"
 import { buildScenario, compareScenarios, describeComparison, typeScenario } from "./comparison.js"
+import { SWEEP, analyzeRobustness, compareWinner, sweepPair } from "./robustness.js"
 import { featurePoint, stopsWithin } from "./geo.js"
 import { TYPE_LABELS, rankTypes } from "./rank.js"
 import { dropZoningBadge, resolveZoning } from "./zoning.js"
@@ -329,6 +330,25 @@ export function comparisonFacts(result) {
   }
 }
 
+/** Sensitivity results that were actually computed: the preset table and the one-factor sweep. */
+export function sensitivityFacts(a, b, weights) {
+  const analysis = analyzeRobustness(compareWinner(a, b), weights)
+  return {
+    presets_are: "Team-authored illustrative priorities, not measured stakeholder preferences.",
+    winner_now: analysis.current?.label || null,
+    same_winner_under_presets: `${analysis.agree} of ${analysis.total}`,
+    presets: analysis.presets.map((row) => ({ priority: row.label, winner: row.winner?.label || null })),
+    sweep_method: `Move one raw weight from ${SWEEP.min} to ${SWEEP.max} in steps of ${SWEEP.step}, others fixed. Solved crossings are exact; sampled changes use the displayed one-decimal scores.`,
+    sweep: sweepPair(a, b, weights).map((row) => ({
+      factor: row.label,
+      current_weight: row.weight,
+      solved_crossings: row.solved.map((w) => Math.round(w * 100) / 100),
+      first_sampled_change_at: row.sampled?.at ?? null,
+      result: row.text,
+    })),
+  }
+}
+
 function dropSide(scenario, feature, stops, summary, zoningRules, cited) {
   const props = feature.properties
   const zoningInfo = resolveZoning(props.zoning_code, zoningRules)
@@ -391,6 +411,7 @@ export function buildCompareContext({ a, b, featureA, featureB, weights, zoningR
     scenario_a: dropSide(result.a, featureA, stops, summary, zoningRules, cited),
     scenario_b: dropSide(result.b, featureB, stops, summary, zoningRules, cited),
     comparison: comparisonFacts(result),
+    sensitivity: sensitivityFacts(scenarioA, scenarioB, weights),
     rule_based_comparison: sentence,
     value_judgments: VALUE_JUDGMENTS,
     zoning_source: cited.zoningCode,

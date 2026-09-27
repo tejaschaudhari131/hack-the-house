@@ -48,11 +48,11 @@ const STEPS = [
     body: (
       <>
         <p>
-          The weights are value judgments. Pick a viewpoint (Resident, CDC, Planner, Developer, Climate-first) or move the
+          The weights are value judgments. Pick an illustrative priority (Balanced, Transit, Housing-need, Lower-hazard, Lower-carbon emphasis) or move the
           sliders yourself.
         </p>
         <p>
-          <strong>How stable is #1?</strong> tells you whether the top result holds across those viewpoints, or flips
+          <strong>How stable is #1?</strong> tells you whether the top result holds across those priorities, or flips
           when one weight changes. A flip means the answer is about values, not data.
         </p>
         <p>

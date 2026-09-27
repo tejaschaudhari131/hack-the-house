@@ -7,7 +7,7 @@ import Robustness from "./Robustness.js"
 import WeightPresets from "./WeightPresets.js"
 import { NOT_EVALUATED } from "../lib/explainFacts.js"
 import { FACTOR_BY_ID, breakdown, coverageText, transitTotalShare } from "../lib/factors.js"
-import { SHARED_FACTOR_NOTE, describeRobustness, parcelRobustness } from "../lib/robustness.js"
+import { SHARED_FACTOR_NOTE, describeRobustness, parcelRobustness, sweepPair } from "../lib/robustness.js"
 import SiteFacts from "./SiteFacts.js"
 import SourcesList from "./SourcesList.js"
 import { TYPE_COLORS } from "../lib/colors.js"
@@ -76,11 +76,24 @@ export default function ParcelPanel({
   sources,
   onBackToSites,
   siteType = null,
+  onAntiDisplacement = null,
   onCompareSite = null,
 }) {
   const [showModel, setShowModel] = useState(false)
   const headingRef = useRef(null)
   const selectedRef = useRef(null)
+  const topSweep = useMemo(() => {
+    const scored = (ranked || []).filter((row) => row.composite !== null)
+    if (!selected || scored.length < 2) return null
+    const [first, second] = scored
+    const grouped = !whatIf && zoningInfo?.status === "use_table" && first.allowed !== second.allowed
+    return {
+      rows: grouped ? null : sweepPair({ label: first.label, scores: selected.scores[first.id] }, { label: second.label, scores: selected.scores[second.id] }, weights),
+      note: grouped
+        ? `${first.label} is listed first because §911.02 permits it by right and ${second.label} is not; no weight change moves a type across that line.`
+        : `Sweep compares the first two types listed (${first.label} vs ${second.label}). ${SHARED_FACTOR_NOTE}`,
+    }
+  }, [ranked, selected, weights, whatIf, zoningInfo])
   const robustness = useMemo(
     () => (selected ? parcelRobustness(selected.scores, zoningInfo, weights, whatIf) : null),
     [selected, zoningInfo, weights, whatIf],
@@ -195,7 +208,7 @@ export default function ParcelPanel({
       <section>
         <h2>Weights</h2>
         <p className="hint">These are choices. They re-rank every parcel on the map.</p>
-        <WeightPresets weights={weights} onWeights={onWeights} />
+        <WeightPresets weights={weights} onWeights={onWeights} onAntiDisplacement={onAntiDisplacement} />
         {Object.entries(weights).map(([key, value]) => (
           <label key={key} className="slider">
             <span>
@@ -408,6 +421,8 @@ export default function ParcelPanel({
             <Robustness
               analysis={robustness.analysis}
               note={[robustness.note, SHARED_FACTOR_NOTE].filter(Boolean).join(" ")}
+              sweep={topSweep?.rows || null}
+              sweepNote={topSweep?.note || null}
               secondary={
                 robustness.whatIfAnalysis ? (
                   <p className="hint">

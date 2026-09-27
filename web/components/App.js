@@ -15,7 +15,7 @@ import { useExplanation } from "../lib/explainClient.js"
 import { buildParcelContext } from "../lib/explainFacts.js"
 import { explainTemplate } from "../lib/explainTemplate.js"
 import { DEFAULT_WEIGHTS, rankTypes } from "../lib/rank.js"
-import { DEFAULT_SITE_FILTERS, findSites } from "../lib/sites.js"
+import { DEFAULT_SITE_FILTERS, EXAMPLE_QUERIES, filtersFor, findSites } from "../lib/sites.js"
 import { resolveZoning } from "../lib/zoning.js"
 
 const MapView = dynamic(() => import("./MapView.js"), {
@@ -229,6 +229,16 @@ export default function App() {
     }
   }
 
+  function openAntiDisplacement() {
+    const example = EXAMPLE_QUERIES.find((item) => item.id === "anti-displacement")
+    if (!example) return
+    setSiteFilters(filtersFor(example))
+    setSiteExample(example.id)
+    setWeights((current) => ({ ...current, ...(example.weights || {}) }))
+    setGuide(null)
+    setMode("sites")
+  }
+
   function printBrief() {
     window.print()
   }
@@ -356,6 +366,7 @@ export default function App() {
             activeExample={siteExample}
             onExample={setSiteExample}
             onCompareSite={(pin, siteType) => compareOnParcel(pin, siteType, true)}
+            onAntiDisplacement={openAntiDisplacement}
             guide={guideBanner}
           />
         ) : mode === "drop" ? (
@@ -380,6 +391,7 @@ export default function App() {
             onClear={(slot) => setDrops((current) => current.filter((item) => item.slot !== slot))}
             byPin={byPin}
             onCompareState={setCompareState}
+            onAntiDisplacement={openAntiDisplacement}
             onPrintBrief={printBrief}
             guide={guideBanner}
           />
@@ -409,6 +421,7 @@ export default function App() {
           onBackToSites={openedFromSites ? () => setMode("sites") : null}
           siteType={openedFromSites ? siteFilters.typeId : null}
           onCompareSite={(pin, siteType) => compareOnParcel(pin, siteType, openedFromSites)}
+          onAntiDisplacement={openAntiDisplacement}
         />
         )}
       </div>

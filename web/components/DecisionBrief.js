@@ -147,6 +147,16 @@ export default function DecisionBrief({ compare, weights, featureA, featureB, zo
           {robustness ? (
             <p className="report-small">{robustness.presets.map((row) => `${row.label}: ${row.winner?.label || "not ranked"}`).join(" · ")}</p>
           ) : null}
+          {compare.sweep ? (
+            <p className="report-small">
+              One-factor sweep (0–100, step 1, others fixed):{" "}
+              {compare.sweep
+                .filter((row) => row.solved.length || row.same)
+                .map((row) => (row.same ? `${row.label}: cannot reorder (same value)` : `${row.label}: equal at ${row.solved[0].toFixed(2)} (solved)`))
+                .join("; ")}
+              .
+            </p>
+          ) : null}
         </div>
         <div>
           <h2>Unresolved before acting</h2>
