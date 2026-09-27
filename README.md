@@ -18,7 +18,7 @@ The screenshots show the citywide branch. The preview may require team sign-in; 
 4. **Set your priorities.** Use **Priorities** to change what matters. Relative weights matter: all 1s and all 100s produce the same ranking.
 5. **Test infrastructure.** Add bus service, a walking/street connection or a park. Compare the baseline with your proposal.
 
-Adjust income, rent, utilities and dimensions under **Assumptions**. Use **Tour** for help. **Export scenario** before reloading to keep your work.
+Adjust income, rent, utilities and dimensions under **Assumptions**. **Tour** walks through a real Hazelwood example, then restores your plan. **Export scenario** before reloading to keep your work.
 
 ![Single-family, duplex and triplex scenarios compared on the same Middle Hill parcel, with scores and evidence labels](docs/images/studio-comparison.jpg)
 

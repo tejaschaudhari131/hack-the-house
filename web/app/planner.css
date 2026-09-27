@@ -429,6 +429,7 @@
 .studio .tour-top button { padding: 5px 8px; border: 0; background: transparent; font-size: 12px; }
 .studio-tour h2 { margin: 18px 0 10px; font-size: 23px; font-weight: 600; letter-spacing: -.4px; outline: none; }
 .studio-tour p { font-size: 14px; line-height: 1.65; margin: 0; color: #526657; }
+.studio-tour .tour-evidence { margin-top: 14px; padding: 10px; border-radius: 6px; background: #eaf0e4; font-size: 12px; }
 .tour-progress { display: flex; gap: 5px; margin: 22px 0; }
 .tour-progress i { height: 4px; flex: 1; background: #dce5d8; border-radius: 5px; }
 .tour-progress i.active { background: #315b46; }

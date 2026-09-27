@@ -25,7 +25,9 @@ Studio now applies [supported Title Nine checks](TITLE_NINE.md) before scoring. 
 
 Under **Assumptions → Advanced options**, enter exact stories and choose duplex versus attached-house form. **Additional zoning evidence** holds optional parcel-specific parking, grading, tree, landscaping and IZ inputs. Blank fields remain unknown; entered values are scenario assumptions. Undo/redo and exports retain these inputs.
 
-A six-step tour opens on the first visit to Studio. **Tour** in the header replays it. **Skip**, Escape or **Start planning** dismiss it; that choice is remembered in this browser. The tour previews the relevant controls, restores the previous view when dismissed and never edits the scenario. If browser storage is blocked, dismissal still works for the current session.
+A six-step **Hazelwood example** opens on the first visit to Studio. **Tour** in the header replays it. It loads the real Hazelwood Avenue parcel `0056F00338000000`, previews a single-family house, compares a duplex and triplex, applies Resident priorities, and tests 60 added weekday departures at a real nearby stop. Scores and walk/wait results come from the normal evaluator, not canned outcomes. The tour waits for parcel/network evidence and calculations; unavailable evidence shows an error with Retry and Skip.
+
+The walkthrough uses a temporary scenario. **Skip**, Escape or **Return to my plan** restores the original parcel, scenario, undo/redo history, infrastructure view and inspector view. Demo changes do not remain in the user's plan. Each step starts from declared inputs, so Back does not accumulate edits. Dismissal is remembered in this browser; with storage blocked it still lasts for the current session.
 
 The map legend starts collapsed, with short labels and the existing building colours. Expand **Legend** for full labels, map symbols and the building-layer toggle.
 

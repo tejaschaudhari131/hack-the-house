@@ -23,6 +23,7 @@ import { evaluateTitleNine, housingSpec } from '../lib/titleNine.js'
 import StudioWorkspace from './StudioWorkspace.js'
 import MapLegend from './MapLegend.js'
 import StudioTour from './StudioTour.js'
+import { TOUR_PIN, tourScenario, tourEvidence } from '../lib/studioTour.js'
 import { draftPreview } from '../lib/draftPreview.js'
 import { evaluatePlanner, nearbyStops, preferredStop, round } from '../lib/plannerModel.js'
 import { EXAMPLES, MODEL_VERSION, PLANNER_FACTORS, MASSING_DEFAULTS, initialStudioScenario, historyFor, scenarioReducer, scenarioExport } from '../lib/plannerState.js'
@@ -150,6 +151,8 @@ function Studio({ data }) {
     return historyFor({ ...initialStudioScenario(initialPin, feature.properties, String(preferredStop(nearbyStops(feature, stops))?.stop_id || '')), accessMode: 'network' })
   })
   const scenario = history.present
+  const [tourStep, setTourStep] = useState(null), [tourApplied, setTourApplied] = useState(null)
+  const tourReturn = useRef(null)
   const networkDescriptor = manifest.neighborhoods.find(n => n.id === catalogue.get(scenario.pin).id)
   const networkFile = networkDescriptor.networkFile
   const network = networkData?.file === networkFile ? networkData.network : null
@@ -172,7 +175,10 @@ function Studio({ data }) {
   const requiredIds = [...new Set([scenario.pin, ...(scenario.buildings || []).map(b => b.pin)].map(pin => catalogue.get(pin).id))].sort()
   const historyTarget = pendingHistory === 'undo' ? history.past.at(-1) : pendingHistory === 'redo' ? history.future[0] : null
   const historyIds = historyTarget ? [...new Set([historyTarget.pin, ...(historyTarget.buildings || []).map(b => b.pin)].map(pin => catalogue.get(pin).id))] : []
-  const extraIds = [...historyIds, ...(pendingPin ? [catalogue.get(pendingPin).id] : []), ...(tool === 'sites' ? manifest.neighborhoods.filter(n => n.area === catalogue.get(scenario.pin).properties.area).map(n => n.id) : [])]
+  // Retain the original plan's parcels while the temporary Hazelwood example runs.
+  const savedScenario = tourReturn.current?.history.present
+  const tourIds = tourStep ? ['hazelwood', ...[savedScenario.pin, ...(savedScenario.buildings || []).map(b => b.pin)].map(pin => catalogue.get(pin).id)] : []
+  const extraIds = [...historyIds, ...tourIds, ...(pendingPin ? [catalogue.get(pendingPin).id] : []), ...(tool === 'sites' ? manifest.neighborhoods.filter(n => n.area === catalogue.get(scenario.pin).properties.area).map(n => n.id) : [])]
   const loaded = useNeighborhoodData(manifest, initialChunk, requiredIds, viewport, extraIds, networkDescriptor.id, neighborhoods)
   const { parcels } = loaded
   useMemo(() => {
@@ -214,17 +220,27 @@ function Studio({ data }) {
   useEffect(() => { if (!placing) setHoverPoint(null) }, [scenario.pin])
   const [query, setQuery] = useState(''), [notice, setNotice] = useState(''), [inspectorTab, setInspectorTab] = useState('rankings')
   const [tourRequest, setTourRequest] = useState(0)
-  const tourButton = useRef(null), tourReturn = useRef(null), tourView = useRef(null)
-  tourView.current = { tool, inspectorTab, sidebarOpen, view3d }
+  const tourButton = useRef(null), tourView = useRef(null)
+  tourView.current = { tool, inspectorTab, sidebarOpen, view3d, proposed, history, query }
   const showTourStep = useCallback(step => {
     tourReturn.current ||= { ...tourView.current }
-    setSidebarOpen(true); setActiveTool(step.tool); setInspectorTab(step.tab); setView3d(step.tool !== 'service')
+    selectionRevision.current++; setPendingPin(null); setPendingHistory(null)
+    setTourStep(step)
   }, [])
+  useEffect(() => {
+    if (!tourStep || tourApplied === tourStep.id || !byPin.has(TOUR_PIN)) return
+    const feature = byPin.get(TOUR_PIN), stop = preferredStop(nearbyStops(feature, stops))
+    dispatch({ type: 'restoreHistory', history: historyFor(tourScenario(tourStep.id, feature, stop)) })
+    setTourApplied(tourStep.id)
+    setSidebarOpen(true); setActiveTool(tourStep.tool); setInspectorTab(tourStep.tab); setView3d(tourStep.tool !== 'service'); setProposed(true); setQuery('')
+  }, [tourStep, tourApplied, byPin, stops])
   const finishTour = useCallback(() => {
     const previous = tourReturn.current
     if (!previous) return
     if (tourView.current.tool !== previous.tool) returningCamera.current = previous.view3d
-    setActiveTool(previous.tool); setInspectorTab(previous.inspectorTab); setSidebarOpen(previous.sidebarOpen); setView3d(previous.view3d)
+    dispatch({ type: 'restoreHistory', history: previous.history })
+    setTourStep(null); setTourApplied(null)
+    setActiveTool(previous.tool); setInspectorTab(previous.inspectorTab); setSidebarOpen(previous.sidebarOpen); setView3d(previous.view3d); setProposed(previous.proposed); setQuery(previous.query)
     tourReturn.current = null
   }, [])
   const [siteFilters, setSiteFilters] = useState({})
@@ -383,7 +399,7 @@ function Studio({ data }) {
         <div className="inspector-scroll" key={inspectorTab}>
           {inspectorTab === 'edit' && tool === 'sites' && <StudioSites filters={siteFilters} setFilters={setSiteFilters} sites={sites} selectedPin={scenario.pin} onSelect={select} loading={sitesLoading}/>}
           {inspectorTab === 'priorities' && <StudioPriorities pending={evaluation.pending} weights={scenario.weights} included={result?.comparison?.included} onChange={weights => set('weights', weights)}/>}
-          {inspectorTab !== 'priorities' && !(inspectorTab === 'edit' && tool === 'sites') && <div className="site-heading"><span className="eyebrow">YOUR SELECTED SITE</span><h2>{props.address || 'Unnamed parcel'}</h2><p>{props.neighborhood} · {fmt(props.lot_sqft)} sq ft</p><SiteZoning properties={props} zoning={zoning} option={option} showHousing={inspectorTab === 'rankings' || tool === 'housing' || tool === 'compare'}/></div>}
+          {inspectorTab !== 'priorities' && !(inspectorTab === 'edit' && tool === 'sites') && <div className="site-heading" data-tour="site-facts"><span className="eyebrow">YOUR SELECTED SITE</span><h2>{props.address || 'Unnamed parcel'}</h2><p>{props.neighborhood} · {fmt(props.lot_sqft)} sq ft</p><SiteZoning properties={props} zoning={zoning} option={option} showHousing={inspectorTab === 'rankings' || tool === 'housing' || tool === 'compare'}/></div>}
           {evaluation.error && <p role="alert" className="planner-warning">Calculation failed: {evaluation.error}</p>}
           {(inspectorTab === 'edit' || inspectorTab === 'rankings') && (scenario.buildings || []).length > 0 && <section className="area-plan"><div className="section-heading"><h3>Placed plan</h3><span>{scenario.buildings.length} buildings · {scenario.buildings.reduce((n, b) => n + housingSpec(b.option).units, 0)} homes</span></div>{result?.placedPlan && !evaluation.pending && <p className="placed-plan-score"><span>{result.placedPlan.proposal.parcels} parcel(s) · current plan</span><strong>{fmt(result.placedPlan.baseline.total)} → {fmt(result.placedPlan.proposal.total)}</strong><small>Score with existing → proposed infrastructure</small></p>}{inspectorTab === 'edit' && <><p className="compact-help">Placed buildings stay fixed. Rankings compare this plan plus the next building.</p><ul>{scenario.buildings.map((b, i) => <li key={b.id}><button onClick={() => select(b.pin)}><strong>{i + 1}. {housingSpec(b.option).label}</strong><small>{byPin.get(b.pin)?.properties.address || b.pin}</small></button><button aria-label={`Remove placed building ${i + 1}`} onClick={() => dispatch({ type: 'removeBuilding', id: b.id })}>×</button></li>)}</ul></>}</section>}
           {inspectorTab === 'rankings' && <HousingComparison comparison={result?.comparison} draft={option} selectedTypes={scenario.comparisonTypes} onSelection={types => set('comparisonTypes', types)} proposed={proposed} pending={evaluation.pending} expanded={tool === 'compare'} onExpand={() => setTool('compare')} onBack={() => setTool('housing')} area={!!scenario.buildings?.length} onUse={previewTemplate} onAssumptions={() => setInspectorTab('assumptions')}/>}
@@ -446,7 +462,11 @@ function Studio({ data }) {
         <footer className="inspector-footer"><span className="live-dot"/>Local scenario · public data · human review</footer>
       </aside>
     </StudioWorkspace>
-    <StudioTour startRequest={tourRequest} onStep={showTourStep} onFinish={finishTour} triggerRef={tourButton}/>
+    <StudioTour startRequest={tourRequest} onStep={showTourStep} onFinish={finishTour} triggerRef={tourButton}
+      ready={!!tourStep && tourApplied === tourStep.id && scenario.pin === TOUR_PIN && !evaluation.pending && !!network}
+      error={tourStep ? loaded.error || networkError || evaluation.error : null}
+      evidence={tourStep && scenario.pin === TOUR_PIN ? tourEvidence(tourStep.id, selected, result, stop) : ''}
+      onRetry={() => { loaded.retry(); setNetworkAttempt(n => n + 1) }}/>
     <div className={notice ? 'network-notice' : 'planner-announcement'} role="status" aria-live="polite">{notice}{notice && <button aria-label="Dismiss notification" onClick={() => setNotice('')}>×</button>}</div>
   </main>
 }
