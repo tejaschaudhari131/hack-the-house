@@ -19,7 +19,7 @@ export default function ScenarioShare({ shareUrl, state, onLoadState }) {
   }
 
   function download() {
-    const blob = new Blob([JSON.stringify({ app: "Hack the House", ...state }, null, 2)], { type: "application/json" })
+    const blob = new Blob([JSON.stringify({ app: "Playhouse", ...state }, null, 2)], { type: "application/json" })
     const url = URL.createObjectURL(blob)
     const link = document.createElement("a")
     link.href = url

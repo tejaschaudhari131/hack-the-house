@@ -106,7 +106,7 @@ export default function Planner() {
       .catch(error => { if (error.name !== 'AbortError') setError(error.message) })
     return () => controller.abort()
   }, [attempt])
-  if (!data) return <main className="planner-loading"><div className="planner-brandmark"><Icon name="building" size={30}/></div><h1>Hack the House</h1><p>{error ? `The study data could not load: ${error}` : 'Opening the Pittsburgh planning studio…'}</p>{error ? <button onClick={() => setAttempt(n => n + 1)}>Try again</button> : <span className="planner-loading-bar"/>}<small>Hazelwood + Lawrenceville · committed regional data</small></main>
+  if (!data) return <main className="planner-loading"><div className="planner-brandmark"><Icon name="building" size={30}/></div><h1>Playhouse</h1><p>{error ? `The study data could not load: ${error}` : 'Opening the Pittsburgh planning studio…'}</p>{error ? <button onClick={() => setAttempt(n => n + 1)}>Try again</button> : <span className="planner-loading-bar"/>}<small>Hazelwood + Lawrenceville · committed regional data</small></main>
   return <Studio data={data}/>
 }
 
@@ -258,7 +258,7 @@ function Studio({ data }) {
   return <main className="studio">
     <a className="skip-link" href="#planner-inspector">Skip to planning controls</a>
     <header className="studio-header">
-      <div className="studio-brand"><span className="planner-brandmark"><Icon name="building"/></span><div><strong>Hack the House<span className="studio-beta">LAB</span></strong><small>Housing + infrastructure studio</small></div></div>
+      <div className="studio-brand"><span className="planner-brandmark"><Icon name="building"/></span><div><strong>Playhouse<span className="studio-beta">LAB</span></strong><small>Housing + infrastructure studio</small></div></div>
       <nav className="study-switch" aria-label="Study examples">{EXAMPLES.map((example, i) => <button key={example.id} className={props.area === example.label ? 'active' : ''} onClick={() => select(example.pin)}><span>0{i + 1}</span>{example.label}</button>)}</nav>
       <div className="studio-header-actions"><button className="find-sites-button" onClick={() => { setTool('sites'); setInspectorTab('edit') }}>Find sites</button><button className="studio-export" onClick={download} disabled={!result || evaluation.pending}>Export scenario <span aria-hidden="true">↓</span></button></div>
     </header>

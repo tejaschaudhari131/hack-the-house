@@ -46,7 +46,7 @@ export default function DecisionBrief({ compare, weights, featureA, featureB, zo
 
   return (
     <article className="print-brief">
-      <p className="report-kicker">Hack the House · Housing decision brief · Hazelwood and Lawrenceville, Pittsburgh</p>
+      <p className="report-kicker">Playhouse · Housing decision brief · Hazelwood and Lawrenceville, Pittsburgh</p>
       <h1>
         {result.sameParcel
           ? `Two housing options for ${result.a.address || result.a.pin}`

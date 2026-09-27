@@ -135,7 +135,7 @@ export default function ParcelReport({ feature, weights, whatIf, zoning, summary
     <article className="print-report">
       <header className="report-head">
         <div>
-          <p className="report-kicker">Housing Typology, Equity &amp; Climate Matchmaker · Parcel screening report</p>
+          <p className="report-kicker">Playhouse · Parcel screening report</p>
           <h1>{props.address || `Parcel ${props.pin}`}</h1>
           <p>
             {props.neighborhood} · PIN {props.pin} · {fmt(props.land_use)} · lot {fmt(props.lot_sqft, " sq ft")} · zoning{" "}

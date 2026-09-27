@@ -312,7 +312,7 @@ export default function App() {
       </a>
       <header className="banner">
         <div className="banner-main">
-          <h1 className="banner-title">Hack the House</h1>
+          <h1 className="banner-title">Playhouse</h1>
           <p className="banner-sub">
             Compare housing options for real Pittsburgh sites: {summary?.parcel_count ? summary.parcel_count.toLocaleString() : "…"}{" "}
             parcels in Hazelwood and Lawrenceville, scored on six factors with the zoning use table shown separately. For

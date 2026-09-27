@@ -1,18 +1,29 @@
-# Web app (YY)
+# Playhouse web app
 
-Next.js map for the MVP parcels. The pipeline writes static files into `public/data/`. This folder does not score parcels and does not decide zoning. It reads `public/data/zoning.json`, which is a copy of `/zoning/districts.json`.
+Next.js, React and MapLibre. `/` opens Studio; `/explore` opens the original Explorer.
+
+Use Node.js 22 or newer:
 
 ```bash
 cd web
-npm install
-npm test
+npm ci
 npm run dev
 ```
 
-Open http://localhost:3000.
+Open http://localhost:3000. Run `npm test` and `npm run build` before releasing; `npm start` serves the production build.
 
-Explanations go through the Vercel AI Gateway with the AI SDK (`lib/explainHandler.js`). The default model is `anthropic/claude-haiku-4.5`; set `AI_MODEL` to another gateway `provider/model` string to change it. Locally, copy `.env.example` to `.env.local` and set `AI_GATEWAY_API_KEY`, or run `vercel env pull .env.local` for an OIDC token. With no credentials, on error, on timeout, or past the rate limit, Explain returns the template in `lib/explainTemplate.js` and the UI says which one you got.
+## Deploy
 
-The server rebuilds every number it sends to the model from `public/data/` (see `lib/explainFacts.js`). The browser only sends parcel PINs, housing types, weights, and the what-if toggle.
+Vercel: select **Next.js**, root directory **web**, and use the default build settings. The existing project deploys from `main`. All required data is committed in `public/data/`; no Python pipeline or database is needed for hosting.
 
-Vercel: set the project root to `web`. No `vercel.json` is needed. `next.config.mjs` traces `public/data/*` into the explain function. Do not put API keys in the repo.
+The build prepares the MapLibre worker files automatically. Keep `outputFileTracingIncludes` in `next.config.mjs`: the Explorer explanation endpoint needs those data files on the server.
+
+## Optional explanations
+
+Studio does not need a model. Explorer's explanation endpoint uses an AI provider when configured, with a labeled template fallback. Set `AI_EXPLANATIONS=off` for template-only explanations.
+
+For local model use, copy `.env.example` to `.env.local` and configure `AI_GATEWAY_API_KEY`, or the `LLM_API_KEY`, `LLM_BASE_URL` and `LLM_MODEL` fallback. Set production values in Vercel's environment settings. Never commit credentials.
+
+The server rebuilds explanation facts from committed data. A model writes prose; it does not calculate housing scores.
+
+See the [main README](../README.md) for features and the [Studio guide](../docs/PLANNER.md) for model details.
