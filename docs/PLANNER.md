@@ -1,5 +1,15 @@
 # Planning studio
 
+## Two-point road and path routing (planner-screen-1.9)
+
+In **Infra**, choose **Route between two points**, then click a start and destination along the blue roads/paths. Each click snaps within 35 m to a mapped ground-level segment, including between its original vertices. The line follows connected geometry and walking permissions. Disconnected points show an explanation, never a straight-line substitute. **Enter map coordinates** provides the same operation from the keyboard. Up to 12 routes can be saved, removed, undone and exported.
+
+Saved routes trace existing infrastructure: they reserve no land, add no capacity and do not change housing scores. These are walking routes along mapped roads/paths, not driving or bus-navigation directions. Foot-specific direction, stairs and barriers follow the existing source rules; traffic and schedules are not simulated.
+
+**New walking connection** and **New street + sidewalks** draw hypothetical direct links, 2–500 m long. Their endpoints now join anywhere along eligible existing segments. The graph splits those segments while retaining their original direction and proportional walking costs. Only the genuinely new link adds access and reserves space. Geometric crossings do not create extra junctions. Bridges and tunnels can be traversed when mapped as walkable, but their interiors cannot be new ground-level junctions. Park entry connectors retain their separate 50 m node-snap assumption.
+
+Snapping and route search run in the existing worker. A spatial grid bounds snapping work; stale results are discarded when the tool, site or graph changes. The source network is immutable. Network schema 2 adds an edge-level ground flag; Studio export schema 6 retains saved routes and fractional endpoint references. Older node-based connections remain evaluable.
+
 ## Transit capacity correction (planner-screen-1.8)
 
 New Studio scenarios use the selected stop's PRT GTFS weekday departures multiplied by **one assumed spare boarding per departure**. This deliberately small starting reserve is a scenario choice, not a measurement of occupancy. Added departures retain the editable 20 available places/departure assumption; each home assumes two new daily boardings. Scores compare this reserve with proposed housing demand, capped at 100. More scheduled service can support more homes under the same assumptions; a small plan may already score 100, so extra service need not change its rank.
@@ -148,7 +158,7 @@ The studio now uses the same OSM walking graph for both baseline and proposal. T
 
 `pipeline/build_network.py` reproducibly prepares nine buffered source-query tiles around the city. `walking-network.sources.json` retains query, snapshot, hashes, license, coverage and assumptions. The graph has 371,689 nodes, 845,872 directed edges and 311 closed-way parks with mapped walking access; 94 other candidate park ways lack valid polygons or access. Relation-only parks are omitted. OSM park geometry is a mapped inventory, not confirmation of current opening or public entrance access. Graph and displayed network are © OpenStreetMap contributors, ODbL 1.0; see https://www.openstreetmap.org/copyright.
 
-The **Infra** tool supports hypothetical pedestrian paths (3 m width), streets with sidewalks (12 m width; walking effects only), and 20 × 20 m park zones. Connections snap within 35 m to existing ground nodes, have two endpoint junctions and must be 2–500 m long. Crossings create no intermediate junctions. Parks use an assumed connector to a node within 50 m. Existing-building intersections are rejected by the editor; river crossings, ownership, grades, road safety, engineering and cost remain unverified. These are scenario assumptions, not approved projects. Up to 12 connections and 12 parks are supported per local scenario. Cancel leaves no edit; remove/undo/redo recalculate outputs.
+The **Infra** tool supports hypothetical pedestrian paths (3 m width), streets with sidewalks (12 m width; walking effects only), and 20 × 20 m park zones. Connections snap within 35 m to existing ground-level segments, have two endpoint junctions and must be 2–500 m long. Crossings create no intermediate junctions. Parks use an assumed connector to a node within 50 m. Existing-building intersections are rejected by the editor; river crossings, ownership, grades, road safety, engineering and cost remain unverified. These are scenario assumptions, not approved projects. Up to 12 connections and 12 parks are supported per local scenario. Cancel leaves no edit; remove/undo/redo recalculate outputs.
 
 Infrastructure corridors and park zones reserve land in the **proposal** only, and participate in housing containment/overlap checks without modifying official parcels. Both housing alternatives retain their requested dimensions. The network calculates routed walking to the selected scheduled stop and the nearest mapped/proposed park. The selected stop still has an aggregate frequency assumption, not a timetable, route or transfer model. Adding a park does not add bus service.
 
@@ -162,9 +172,9 @@ Edits persist when selecting another parcel in the same study area, so subsequen
 
 The browser now downloads full-evidence neighborhood chunks, not the old combined study file. No parcel properties were discarded to make the chunks smaller. The old study file survives in `web/testdata/study` for regression tests and is not served to users.
 
-The separate 2.9 MB network display geometry loads on the first visit to Infra. The calculation graph loads independently for routed comparisons, initializes once per worker, and is not copied on each edit. Baseline map geometry is not resent during scenario edits.
+The active region’s network display geometry loads on the first visit to Infra and changes with the selected region. The calculation graph loads independently for routed comparisons, initializes once per worker, and is not copied on each edit. Baseline map geometry is not resent during scenario edits.
 
-Run `npm run benchmark:planner` to measure JSON parsing, graph preparation and full evaluations. The output identifies CPU/runtime and reports 20 measured runs after three warmups. These are CPU observations, not browser FPS or download promises; browser rendering, worker transfer, thermal state and other devices are outside this measurement. Repeat after significant model/data changes. Citywide delivery would require tiled geometry and regional graph/data partitioning.
+Run `npm run benchmark:planner` to measure JSON parsing, graph preparation and full evaluations. The output identifies CPU/runtime and reports 20 measured runs after three warmups. These are CPU observations, not browser FPS or download promises; browser rendering, worker transfer, thermal state and other devices are outside this measurement. Repeat after significant model/data changes. Citywide delivery now uses neighborhood geometry chunks and buffered regional graphs.
 
 ## Recommendation audit (planner-screen-1.3)
 

@@ -1,5 +1,6 @@
 "use client"
 
+import { endpointCoordinates } from '../lib/networkRouting.js'
 import { PITTSBURGH_BOUNDS } from '../lib/pittsburgh.js'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -17,7 +18,7 @@ const fc = features => ({ type: 'FeatureCollection', features })
 // Official neighborhood union extent: navigation bounds, not a polygon mask.
 
 
-export default function PlannerMap({ parcels, neighborhoods, stops, existingBuildings, showExisting, selected, buildingPreview, stop, proposed, additionalDepartures, view3d, onSelect, onStop, tool, placing, onPlace, onHover, placedBuildings = [], network, roadsFile, networkResult, reservations, connections, drawing, draftNode, onDraw, discoveryPins = [], onViewport }) {
+export default function PlannerMap({ parcels, neighborhoods, stops, existingBuildings, showExisting, selected, buildingPreview, stop, proposed, additionalDepartures, view3d, onSelect, onStop, tool, placing, onPlace, onHover, placedBuildings = [], network, roadsFile, networkResult, reservations, connections, routes = [], drawing, draftNode, onDraw, discoveryPins = [], onViewport }) {
   const container = useRef(null), mapRef = useRef(null), callbacks = useRef({ onSelect, onStop, tool, placing, onPlace })
   const [ready, setReady] = useState(false), [error, setError] = useState(null)
   const [viewport, setViewport] = useState(null)
@@ -54,7 +55,7 @@ export default function PlannerMap({ parcels, neighborhoods, stops, existingBuil
       map.addSource('districts', { type: 'geojson', data: neighborhoods })
       map.addSource('stops', { type: 'geojson', data: stops || empty() })
       map.addSource('existing-buildings', { type: 'geojson', data: empty(), promoteId: 'id', attribution: '<a href="https://mapservices.pasda.psu.edu/server/rest/services/pasda/AlleghenyCounty/MapServer/11">Allegheny County / PASDA buildings</a> · Heights: County / <a href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors, ODbL</a>' })
-      for (const id of ['discovery', 'placed-buildings', 'building', 'selected', 'service', 'network-nodes', 'parks', 'reservations', 'connections', 'draft-node']) map.addSource(id, { type: 'geojson', data: empty() })
+      for (const id of ['discovery', 'placed-buildings', 'building', 'selected', 'service', 'network-nodes', 'parks', 'reservations', 'connections', 'saved-routes', 'draft-node']) map.addSource(id, { type: 'geojson', data: empty() })
       map.addSource('walking-network', { type: 'geojson', data: empty(), attribution: '<a href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors · ODbL</a>' })
       map.addLayer({ id: 'district-line', type: 'line', source: 'districts', paint: { 'line-color': '#78978c', 'line-width': 2, 'line-dasharray': [3, 3] } })
       map.addLayer({ id: 'district-fill', type: 'fill', source: 'districts', maxzoom: DETAIL_ZOOM, paint: { 'fill-color': '#78978c', 'fill-opacity': .12 } }, 'district-line')
@@ -68,6 +69,7 @@ export default function PlannerMap({ parcels, neighborhoods, stops, existingBuil
       map.addLayer({ id: 'network-nodes', type: 'circle', source: 'network-nodes', minzoom: 16, paint: { 'circle-color': '#fff', 'circle-radius': 3, 'circle-stroke-color': '#467a9c', 'circle-stroke-width': 1.5 } })
       map.addLayer({ id: 'reservation-fill', type: 'fill', source: 'reservations', paint: { 'fill-color': ['case', ['==', ['get', 'kind'], 'park'], '#70aa53', '#bd8d55'], 'fill-opacity': .6 } })
       map.addLayer({ id: 'connection-line', type: 'line', source: 'connections', paint: { 'line-color': '#a16736', 'line-width': 4 } })
+      map.addLayer({ id: 'saved-route-line', type: 'line', source: 'saved-routes', paint: { 'line-color': '#137bd1', 'line-width': 5 } })
       map.addLayer({ id: 'draft-point', type: 'circle', source: 'draft-node', paint: { 'circle-color': '#f3b45b', 'circle-radius': 7, 'circle-stroke-color': '#fff', 'circle-stroke-width': 2 } })
       map.addLayer({ id: 'existing-buildings-overview', type: 'fill', source: 'existing-buildings', minzoom: DETAIL_ZOOM, maxzoom: 16, paint: { 'fill-color': ['coalesce', ['get', 'use_color'], '#cbd5e1'], 'fill-opacity': .8 } })
       map.addLayer({ id: 'existing-buildings-fill', type: 'fill-extrusion', source: 'existing-buildings', minzoom: 16, paint: { 'fill-extrusion-height': ['get', 'height_m'], 'fill-extrusion-color': ['coalesce', ['get', 'use_color'], '#cbd5e1'], 'fill-extrusion-opacity': .8 } })
@@ -78,7 +80,7 @@ export default function PlannerMap({ parcels, neighborhoods, stops, existingBuil
       map.addLayer({ id: 'placed-buildings-outline', type: 'line', source: 'placed-buildings', paint: { 'line-color': ['case', ['get', 'valid'], '#fff', '#dc2626'], 'line-width': 2, 'line-dasharray': [2, 1] } })
       map.addLayer({ id: 'building-fill', type: 'fill-extrusion', source: 'building', paint: { 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-color': ['get', 'color'], 'fill-extrusion-opacity': .6 } })
       map.addLayer({ id: 'building-outline', type: 'line', source: 'building', paint: { 'line-color': ['get', 'color'], 'line-width': 2.5, 'line-dasharray': [2, 1] } })
-      for (const id of ['discovery-outline', 'selected-fill', 'selected-line', 'park-fill', 'reservation-fill', 'connection-line', 'draft-point', 'service-link', 'service-zone', 'placed-buildings-fill', 'placed-buildings-outline', 'building-fill', 'building-outline']) map.setLayerZoomRange(id, DETAIL_ZOOM, 24)
+      for (const id of ['discovery-outline', 'selected-fill', 'selected-line', 'park-fill', 'reservation-fill', 'connection-line', 'saved-route-line', 'draft-point', 'service-link', 'service-zone', 'placed-buildings-fill', 'placed-buildings-outline', 'building-fill', 'building-outline']) map.setLayerZoomRange(id, DETAIL_ZOOM, 24)
       let hoverFrame = null
       map.on('mousemove', event => {
         if (!callbacks.current.placing || hoverFrame) return
@@ -164,10 +166,11 @@ export default function PlannerMap({ parcels, neighborhoods, stops, existingBuil
   useEffect(() => {
     if (!ready) return
     mapRef.current.getSource('reservations').setData(proposed ? fc(reservations || []) : empty())
-    mapRef.current.getSource('connections').setData(proposed && network ? fc((connections || []).filter(c => network.nodes[c.from] && network.nodes[c.to]).map(c => ({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [network.nodes[c.from], network.nodes[c.to]] } }))) : empty())
-  }, [ready, proposed, reservations, connections, network])
+    mapRef.current.getSource('connections').setData(proposed && network ? fc((connections || []).filter(c => endpointCoordinates(network,c.from) && endpointCoordinates(network,c.to)).map(c => ({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [endpointCoordinates(network,c.from), endpointCoordinates(network,c.to)] } }))) : empty())
+    mapRef.current.getSource('saved-routes').setData(fc(routes.map(r => ({type:'Feature',properties:{},geometry:{type:'LineString',coordinates:r.coordinates}}))))
+  }, [ready, proposed, reservations, connections, routes, network])
   useEffect(() => {
-    if (ready) mapRef.current.getSource('draft-node').setData(drawing && network && draftNode !== null ? fc([{ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: network.nodes[draftNode] } }]) : empty())
+    if (ready) mapRef.current.getSource('draft-node').setData(drawing && network && draftNode !== null ? fc([{ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: draftNode.coordinates } }]) : empty())
   }, [ready, drawing, network, draftNode])
 
   useEffect(() => {

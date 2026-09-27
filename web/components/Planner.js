@@ -10,6 +10,7 @@ import NeighborhoodPicker from './NeighborhoodPicker.js'
 import { locateNeighborhood } from '../lib/neighborhoodLoader.js'
 import useNeighborhoodData, { fetchNeighborhood } from './useNeighborhoodData.js'
 import { nearestNode, validateConnection, validatePark, connectionGeometry, prepareNetwork } from '../lib/networkModel.js'
+import { snapToEdge, routeBetween } from '../lib/networkRouting.js'
 import InfrastructurePanel from './InfrastructurePanel.js'
 import RecommendationAudit from './RecommendationAudit.js'
 import StudioPriorities from './StudioPriorities.js'
@@ -60,7 +61,7 @@ function Numeric({ label, value, onChange, min = 0, max = 100000, step = 1, hint
 
 function useEvaluation(input, network) {
   const worker = useRef(null), latest = useRef(0), current = useRef(input)
-  const networkRef = useRef(network), fallback = useRef(null)
+  const networkRef = useRef(network), fallback = useRef(null), editRequests = useRef(new Map()), editId = useRef(0)
   networkRef.current = network
   function compute(input) {
     if (fallback.current?.source !== networkRef.current) fallback.current = { source: networkRef.current, prepared: networkRef.current ? prepareNetwork(networkRef.current) : null }
@@ -74,16 +75,19 @@ function useEvaluation(input, network) {
       w = new Worker(new URL('../workers/planner.worker.js', import.meta.url), { type: 'module' })
       worker.current = w
       w.onmessage = ({ data }) => {
+        if (data.type === 'edit') { const pending = editRequests.current.get(data.id); editRequests.current.delete(data.id); if (data.error) pending?.reject(new Error(data.error)); else pending?.resolve(data.result); return }
         if (data.revision !== latest.current) return
         setState({ result: data.result || null, pending: false, error: data.error || null, pin: data.pin, input: current.current })
       }
       w.onerror = () => {
         w.terminate(); worker.current = null
+        for (const pending of editRequests.current.values()) pending.reject(new Error('Routing worker stopped; try again.'))
+        editRequests.current.clear()
         try { setState({ result: compute(current.current), pending: false, error: null, pin: current.current.feature.properties.pin, input: current.current }) }
         catch (error) { setState({ result: null, pending: false, error: error.message }) }
       }
     } catch { worker.current = null }
-    return () => { w?.terminate(); worker.current = null }
+    return () => { w?.terminate(); worker.current = null; for (const pending of editRequests.current.values()) pending.reject(new Error('Routing cancelled')); editRequests.current.clear() }
   }, [])
   useEffect(() => { worker.current?.postMessage({ type: 'network', network }) }, [network])
   useEffect(() => {
@@ -98,7 +102,12 @@ function useEvaluation(input, network) {
     }, 60)
     return () => clearTimeout(timer)
   }, [input, network])
-  return { ...state, pending: state.pending || state.input !== input }
+  function networkEdit(action, ...args) {
+    if (worker.current) return new Promise((resolve, reject) => { const id = ++editId.current; editRequests.current.set(id, { resolve, reject }); worker.current.postMessage({ type: 'edit', id, action, args }) })
+    if (fallback.current?.source !== networkRef.current) fallback.current = { source: networkRef.current, prepared: networkRef.current ? prepareNetwork(networkRef.current) : null }
+    return Promise.resolve(action === 'snap' ? snapToEdge(networkRef.current, ...args) : routeBetween(fallback.current.prepared, ...args))
+  }
+  return { ...state, pending: state.pending || state.input !== input, networkEdit }
 }
 
 export default function Planner() {
@@ -195,8 +204,9 @@ function Studio({ data }) {
   const [hoverPoint, setHoverPoint] = useState(null)
   useEffect(() => { if (!placing) setHoverPoint(null) }, [placing])
   const [drawing, setDrawing] = useState(null), [draftNode, setDraftNode] = useState(null)
+  const drawingRevision = useRef(0), drawingBusy = useRef(false)
   useEffect(() => { setPlacing(false) }, [tool, scenario.pin, scenario.draft.typeId])
-  useEffect(() => { setDrawing(null); setDraftNode(null) }, [tool, scenario.pin])
+  useEffect(() => { drawingRevision.current++; drawingBusy.current = false; setDrawing(null); setDraftNode(null) }, [tool, scenario.pin, networkFile])
   useEffect(() => { if (!placing) setHoverPoint(null) }, [scenario.pin])
   const [query, setQuery] = useState(''), [notice, setNotice] = useState(''), [inspectorTab, setInspectorTab] = useState('rankings')
   const [tourRequest, setTourRequest] = useState(0)
@@ -259,7 +269,7 @@ function Studio({ data }) {
     if (pin === scenario.pin) { setTool('housing'); setInspectorTab('edit'); setQuery(''); return }
     const sameArea = byPin.get(pin).properties.area === props.area
     const next = makeScenario(pin)
-    if (sameArea) Object.assign(next, { zoningInputsByPin: scenario.zoningInputsByPin, projectInputs: scenario.projectInputs, connections: scenario.connections, parks: scenario.parks, parkAccessShare: scenario.parkAccessShare, weights: scenario.weights, comparisonTypes: scenario.comparisonTypes, buildings: scenario.buildings || [], additionalDepartures: scenario.additionalDepartures, serviceHours: scenario.serviceHours, serviceStopId: scenario.serviceStopId || scenario.stopId, capacityStopId: scenario.capacityStopId || scenario.stopId, spareBoardings: scenario.spareBoardings, capacityMode: scenario.capacityMode, baselinePlacesPerDeparture: scenario.baselinePlacesPerDeparture, availablePlacesPerDeparture: scenario.availablePlacesPerDeparture, boardingsPerHome: scenario.boardingsPerHome })
+    if (sameArea) Object.assign(next, { zoningInputsByPin: scenario.zoningInputsByPin, projectInputs: scenario.projectInputs, connections: scenario.connections, routes: scenario.routes, parks: scenario.parks, parkAccessShare: scenario.parkAccessShare, weights: scenario.weights, comparisonTypes: scenario.comparisonTypes, buildings: scenario.buildings || [], additionalDepartures: scenario.additionalDepartures, serviceHours: scenario.serviceHours, serviceStopId: scenario.serviceStopId || scenario.stopId, capacityStopId: scenario.capacityStopId || scenario.stopId, spareBoardings: scenario.spareBoardings, capacityMode: scenario.capacityMode, baselinePlacesPerDeparture: scenario.baselinePlacesPerDeparture, availablePlacesPerDeparture: scenario.availablePlacesPerDeparture, boardingsPerHome: scenario.boardingsPerHome })
     if (sameArea && nearbyStops(byPin.get(pin), stops).some(s => String(s.stop_id) === next.serviceStopId)) next.stopId = next.serviceStopId
     dispatch({ type: 'reset', scenario: next }); setQuery(''); setTool('housing'); setInspectorTab('rankings')
     setNotice(sameArea ? 'Placed buildings retained. Site changed. Local infrastructure and priorities retained; housing and stop assumptions reset for this parcel.' : 'Study area changed. A new local scenario starts here.')
@@ -299,15 +309,29 @@ function Studio({ data }) {
   function placeProposal(coordinates) {
     addBuilding(fitMassing(selected.geometry, option.width, option.depth, placementAt(selected.geometry, coordinates, placement.bearing), proposalObstacles))
   }
-  function beginDrawing(kind) { setPlacing(false); setDrawing(kind); setDraftNode(null); setNotice('') }
-  function cancelDrawing() { setDrawing(null); setDraftNode(null) }
-  function drawInfrastructure(coordinates) {
+  function beginDrawing(kind) { drawingRevision.current++; drawingBusy.current = false; setPlacing(false); setDrawing(kind); setDraftNode(null); setNotice('') }
+  function cancelDrawing() { drawingRevision.current++; drawingBusy.current = false; setDrawing(null); setDraftNode(null) }
+  async function drawInfrastructure(coordinates) {
     if (!network || !drawing || !context) { setNotice('Wait for network and building context to load before drawing.'); return }
-    const snapped = nearestNode(network, coordinates, drawing === 'park' ? 50 : 35)
-    if (!snapped) { setNotice('No eligible ground-level node nearby. Choose a point closer to the blue walking network.'); return }
-    if (drawing !== 'park' && draftNode === null) { setDraftNode(snapped.node); setNotice('First endpoint selected. Choose the second endpoint.'); return }
+    if (drawingBusy.current) return
+    const revision = drawingRevision.current
+    drawingBusy.current = true
+    try {
+    const snapped = drawing === 'park' ? nearestNode(network, coordinates, 50) : await evaluation.networkEdit('snap', coordinates)
+    if (revision !== drawingRevision.current) return
+    if (!snapped) { setNotice('Click within 35 m of a blue road or path (50 m for a park entrance). Bridges and tunnels cannot be new junctions.'); return }
+    if (drawing !== 'park' && draftNode === null) { setDraftNode(snapped); setNotice('Start snapped to the network. Choose the destination.'); return }
     const id = crypto.randomUUID()
-    const operation = drawing === 'park' ? { id, name: `Proposed park ${scenario.parks.length + 1}`, coordinates, node: snapped.node, width: 20, depth: 20 } : { id, kind: drawing, from: draftNode, to: snapped.node, width: drawing === 'path' ? 3 : 12 }
+    if (drawing === 'route') {
+      const route = await evaluation.networkEdit('route', draftNode.endpoint, snapped.endpoint)
+      if (revision !== drawingRevision.current) return
+      if (!route || route.meters < 2) { setNotice('No connected walking route between these points. Choose another destination; no straight-line substitute is drawn.'); return }
+      if ((scenario.routes || []).length >= 12) { setNotice('This plan supports 12 saved routes. Remove one to add another.'); return }
+      set('routes', [...(scenario.routes || []), { id, ...route }]); cancelDrawing()
+      setNotice(`Mapped route saved: ${Math.round(route.meters)} m, ${route.minutes.toFixed(1)} min walking. Existing routes do not add infrastructure or change housing scores.`)
+      return
+    }
+    const operation = drawing === 'park' ? { id, name: `Proposed park ${scenario.parks.length + 1}`, coordinates, node: snapped.node, width: 20, depth: 20 } : { id, kind: drawing, from: draftNode.endpoint, to: snapped.endpoint, width: drawing === 'path' ? 3 : 12 }
     const error = drawing === 'park' ? validatePark(network, operation) : validateConnection(network, operation)
     if (error) { setNotice(error); return }
     const geometry = drawing === 'park' ? rectangleAt(coordinates, 20, 20) : connectionGeometry(network, operation)
@@ -316,7 +340,9 @@ function Studio({ data }) {
     if (loadedBuildingIndex.query(bounds).some(b => geometriesOverlap(geometry, b.geometry))) { setNotice('This reservation overlaps a recorded building. Choose a clear location; demolition is not modeled.'); return }
     const key = drawing === 'park' ? 'parks' : 'connections'
     if (scenario[key].length >= 12) { setNotice('This local scenario supports up to 12 edits of each kind.'); return }
-    set(key, [...scenario[key], operation]); setProposed(true); cancelDrawing(); setNotice('Hypothetical infrastructure added. Access and reserved land are recalculated; buildability remains unverified.')
+    set(key, [...scenario[key], operation]); setProposed(true); cancelDrawing(); setNotice('New connection joined to the mapped network. Access and reserved land are recalculated; buildability remains unverified.')
+    } catch (error) { if (revision === drawingRevision.current) setNotice(`Route could not be prepared: ${error.message}`) }
+    finally { if (revision === drawingRevision.current) drawingBusy.current = false }
   }
   function download() {
     const payload = { ...scenarioExport(scenario, summary), results: result, networkContext: networkData?.manifest.sha256 || null, buildingContext: context ? { sha256: context.manifest.sha256, retrievedAt: context.manifest.retrieved_at } : null, sources: { parcels: networkDescriptor.parcelFiles, dataManifest: '/data/studio/manifest.json', zoning: '/data/zoning.json', stops: '/data/stops.geojson', buildings: '/data/existing-buildings.sources.json', network: '/data/walking-network.sources.json' } }
@@ -335,7 +361,7 @@ function Studio({ data }) {
     </header>
     <StudioWorkspace sidebarOpen={sidebarOpen} expanded={tool === 'compare'} map={
       <section className="studio-canvas" aria-label="Planning map">
-        <PlannerMap parcels={mapParcels} neighborhoods={neighborhoods} stops={stops} existingBuildings={loaded.mapBuildings} showExisting={showExisting} selected={selected} buildingPreview={buildingPreview} stop={stop} proposed={proposed} additionalDepartures={scenario.additionalDepartures} view3d={view3d} onSelect={select} onStop={selectStop} tool={tool} placing={placing} onPlace={placeProposal} onHover={setHoverPoint} placedBuildings={result?.committed?.[proposed ? 'proposal' : 'baseline'] || []} network={network} roadsFile={networkDescriptor.roadsFile} networkResult={evaluated?.access} reservations={result?.reservations} connections={scenario.connections} drawing={drawing} draftNode={draftNode} onDraw={drawInfrastructure} discoveryPins={discoveryPins} onViewport={setViewport}/>
+        <PlannerMap parcels={mapParcels} neighborhoods={neighborhoods} stops={stops} existingBuildings={loaded.mapBuildings} showExisting={showExisting} selected={selected} buildingPreview={buildingPreview} stop={stop} proposed={proposed} additionalDepartures={scenario.additionalDepartures} view3d={view3d} onSelect={select} onStop={selectStop} tool={tool} placing={placing} onPlace={placeProposal} onHover={setHoverPoint} placedBuildings={result?.committed?.[proposed ? 'proposal' : 'baseline'] || []} network={network} roadsFile={networkDescriptor.roadsFile} networkResult={evaluated?.access} reservations={result?.reservations} connections={scenario.connections} routes={scenario.routes || []} drawing={drawing} draftNode={draftNode} onDraw={drawInfrastructure} discoveryPins={discoveryPins} onViewport={setViewport}/>
         <div className="map-detail-status" role="status">{loaded.error ? <button onClick={loaded.retry}>Neighborhood data unavailable · Retry</button> : pendingPin || pendingHistory || loaded.pending ? 'Loading neighborhood…' : viewport && viewport.zoom < DETAIL_ZOOM ? 'Zoom in for buildings and parcels' : null}</div>
         {placing && <div className="placement-banner" role="status">Click to add {housingSpec(option).label}. Green: passes placement screen · red: needs review. <button onClick={() => setPlacing(false)}>Cancel placement</button></div>}
         <nav data-tour="tools" className="studio-tools" aria-label="Planning tools">{[['sites', 'pin', 'Sites'], ['housing', 'building', 'Housing'], ['service', 'bus', 'Transit'], ['network', 'network', 'Infra'], ['compare', 'chart', 'Compare']].map(([id, icon, label]) => <button key={id} className={tool === id ? 'active' : ''} aria-pressed={tool === id} onClick={() => { setTool(id); setInspectorTab(id === 'compare' ? 'rankings' : 'edit') }}><Icon name={icon}/><span>{label}</span></button>)}<div className="tool-divider"/><button onClick={() => setView3d(!view3d)} aria-pressed={view3d}><Icon name="layers"/><span>{view3d ? '3D' : '2D'}</span></button></nav>
@@ -378,7 +404,7 @@ function Studio({ data }) {
             <button className="assumptions-link" onClick={() => setInspectorTab('assumptions')}>Service & capacity assumptions →</button>
             <button className="next-tool" onClick={() => { setTool('compare'); setInspectorTab('rankings') }}>Compare the housing outcomes <Icon name="arrow" size={18}/></button>
           </>}
-          {inspectorTab === 'edit' && tool === 'network' && <InfrastructurePanel network={network} manifest={networkData?.manifest} error={networkError} retry={() => setNetworkAttempt(n => n + 1)} scenario={scenario} set={set} result={result} drawing={drawing} begin={beginDrawing} cancel={cancelDrawing} draftNode={draftNode} remove={(key, id) => set(key, scenario[key].filter(edit => edit.id !== id))} numeric={Numeric} onAssumptions={() => setInspectorTab('assumptions')}/>}
+          {inspectorTab === 'edit' && tool === 'network' && <InfrastructurePanel network={network} manifest={networkData?.manifest} error={networkError} retry={() => setNetworkAttempt(n => n + 1)} scenario={scenario} set={set} result={result} drawing={drawing} begin={beginDrawing} cancel={cancelDrawing} draftNode={draftNode} remove={(key, id) => set(key, scenario[key].filter(edit => edit.id !== id))} numeric={Numeric} onPoint={drawInfrastructure} onAssumptions={() => setInspectorTab('assumptions')}/>}
           {inspectorTab === 'assumptions' && <>
             <div className="section-heading"><h3>Assumptions & advanced options</h3></div>
             <p className="compact-help">Proposed values are editable. Sources, model choices and limits are below.</p>

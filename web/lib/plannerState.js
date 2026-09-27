@@ -1,6 +1,6 @@
 import { BUILDINGS } from './buildings.js'
 
-export const MODEL_VERSION = 'planner-screen-1.8'
+export const MODEL_VERSION = 'planner-screen-1.9'
 export const EXAMPLES = [
   { id: 'hazelwood', label: 'Hazelwood', pin: '0056F00338000000', caption: 'City inventory · Hazelwood Ave' },
   { id: 'lawrenceville', label: 'Lawrenceville', pin: '0049N00010000000', caption: 'City inventory · 3480 Butler St' },
@@ -35,7 +35,7 @@ export function initialScenario(pin, props = {}, stopId = '') {
     targetIncome: Math.round(props.median_income || 40000),
     additionalDepartures: 0, serviceHours: 15, availablePlacesPerDeparture: 20,
     spareBoardings: null, boardingsPerHome: 2,
-    connections: [], parks: [], parkAccessShare: 0, buildings: [],
+    connections: [], routes: [], parks: [], parkAccessShare: 0, buildings: [],
     zoningInputsByPin: {}, projectInputs: {},
     weights: { ...INITIAL_WEIGHTS },
   }
@@ -78,5 +78,5 @@ export function scenarioReducer(state, action) {
 }
 
 export function scenarioExport(scenario, summary) {
-  return { schemaVersion: scenario.draft ? 5 : 3, modelVersion: MODEL_VERSION, dataVersion: summary?.pulled_at || null, exportedAt: new Date().toISOString(), scenario, limitations: ['Dimensions, access connectors and infrastructure buildability are user/model assumptions.', 'Title Nine checks without sufficient evidence are excluded, not passed. A score is not zoning approval.', 'This model does not evaluate utilities, engineering, route schedules, travel to jobs or marginal tonnes of CO2.'] }
+  return { schemaVersion: scenario.draft ? 6 : 3, modelVersion: MODEL_VERSION, dataVersion: summary?.pulled_at || null, exportedAt: new Date().toISOString(), scenario, limitations: ['Dimensions, access connectors and infrastructure buildability are user/model assumptions.', 'Title Nine checks without sufficient evidence are excluded, not passed. A score is not zoning approval.', 'This model does not evaluate utilities, engineering, route schedules, travel to jobs or marginal tonnes of CO2.'] }
 }

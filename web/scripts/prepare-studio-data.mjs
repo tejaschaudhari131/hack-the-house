@@ -44,7 +44,7 @@ export function regionalNetwork(network, bounds, buffer = .036) {
   const edges = network.edges.filter(e => inside(network.nodes[e[0]]) || inside(network.nodes[e[1]]))
   const used = new Set(edges.flatMap(e => e.slice(0, 2))), indices = new Map([...used].sort((a,b) => a-b).map((id,i) => [id,i]))
   const parks = network.parks.map(p => ({ ...p, nodes: p.nodes.filter(n => indices.has(n)).map(n => indices.get(n)) })).filter(p => p.nodes.length)
-  return { schemaVersion: network.schemaVersion, nodes: [...indices.keys()].map(i => network.nodes[i]), ground: [...indices.keys()].map(i => network.ground[i]), edges: edges.map(([a,b,c]) => [indices.get(a),indices.get(b),c]), parks }
+  return { schemaVersion: network.schemaVersion, nodes: [...indices.keys()].map(i => network.nodes[i]), ground: [...indices.keys()].map(i => network.ground[i]), edges: edges.map(([a,b,...attributes]) => [indices.get(a),indices.get(b),...attributes]), parks }
 }
 
 export async function prepareStudioData() {

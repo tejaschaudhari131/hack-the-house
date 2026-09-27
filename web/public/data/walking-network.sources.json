@@ -15,9 +15,26 @@
   "attribution": "\u00a9 OpenStreetMap contributors",
   "license_url": "https://www.openstreetmap.org/copyright",
   "osm_base_timestamp": "2026-09-27T21:56:00Z",
+  "tile_timestamps": [
+    "2026-09-27T21:54:06Z",
+    "2026-09-27T21:54:06Z",
+    "2026-09-27T21:54:06Z",
+    "2026-09-27T21:55:06Z",
+    "2026-09-27T21:55:06Z",
+    "2026-09-27T21:55:06Z",
+    "2026-09-27T21:55:06Z",
+    "2026-09-27T21:56:00Z",
+    "2026-09-27T21:56:00Z"
+  ],
+  "edge_fields": [
+    "from",
+    "to",
+    "walking_minutes",
+    "at_ground_level"
+  ],
   "retrieved_at": "2026-09-27T21:57:18.165559+00:00",
   "input_sha256": "4a8a2b6909bbb660b5c8581ef2f38736bbbfbfb06714d4e75371e4455a15a89c",
-  "sha256": "f8bc4784860286ae435885b37c504b64f1a3e2cd8efdac6496c3be255d64e51d",
+  "sha256": "cb7a9c1670715c3c5f73ad5e7f6ed3c9c47b90fed5949fa850864b962a39ebc6",
   "counts": {
     "nodes": 371689,
     "directed_edges": 845872,

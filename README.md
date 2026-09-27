@@ -10,7 +10,8 @@ Explore housing and infrastructure decisions on a 3D map of Pittsburgh.
 - Lets you place several proposed buildings across selected parcels.
 - Lets you cycle one housing draft and compare selected housing types side by side.
 - Previews the draft automatically, with green/red placement status, before adding it to the plan.
-- Tests walking connections, streets with sidewalks, parks and added service at existing bus stops.
+- Routes between two points along existing roads and paths. New walking/street connections snap into that network.
+- Tests new connections, parks and added service at existing bus stops.
 - Shows factor scores, tradeoffs, adjustable priorities and the assumptions behind them.
 - Checks supported Title Nine rules. A zoning conflict or failed physical fit removes the housing score; rules without enough evidence are marked **Not assessed**.
 - Keeps exact income, rent, utilities and building dimensions under **Assumptions → Advanced options**.

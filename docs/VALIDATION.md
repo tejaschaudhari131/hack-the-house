@@ -11,8 +11,8 @@ cd web && npm ci && npm test && npm run build
 
 - **Coverage:** all 90 Pittsburgh neighborhoods; 142,865 mapped records (142,571 identified parcels plus 294 anonymous/shared-ground polygons with internal map IDs). No neighborhood omitted. 140,983 records match assessment evidence. Unknown parcel-ID-based property flags stay unknown.
 - **Buildings/network:** 116,502 recorded outlines; 371,689 walking nodes, 845,872 directed edges, 311 mapped parks with walking access. 94 park ways lacked a valid polygon or mapped access; relation-only parks remain out of scope. Recorded outlines and estimated heights are not a verified current dwelling inventory.
-- **Automated checks:** 49 Python tests pass. Web tests cover original study regressions plus all 90 canonical-to-browser parcel round trips, unique IDs, lookup, hashes, chunk failures/aborts, graph remapping and cache behavior. Build succeeds. Final branch timings, routing checks and preview verification are recorded below after deployment.
-- **Transport:** no citywide parcel/building/graph download on entry. Hashed parcel/building parts target 12 MiB, with one buffered routing region per active site. The manifest is about 50 KB. Each file is below 50 MB. Canonical compressed sources total about 46.5 MB; the original study files are test fixtures outside the public directory. Map assets are excluded from the explanation function, which reads only requested compressed neighborhoods.
+- **Automated checks:** 49 Python tests pass. **29 web test files pass**. They cover original study regressions plus all 90 canonical-to-browser parcel round trips, unique IDs, lookup, hashes, chunk failures/aborts, graph remapping and cache behavior. Build succeeds in **44.11 seconds**, including data preparation. Routing tests cover curved/same-edge routes, disconnected crossings, foot direction, bridge snapping exclusions, fractional new junctions, immutable baselines and no score/land effect from saving existing routes. Preview verification is recorded below after deployment.
+- **Transport:** no citywide parcel/building/graph download on entry. Hashed parcel/building parts target 12 MiB, with one buffered routing region per active site. The manifest is **49,619 bytes** (10,193 gzip). The largest individual file is a regional graph at **15,460,400 bytes**. Static public assets total **828,121,643 bytes**; the explanation function trace totals **34,895,542 bytes**, below the ordinary 250 MB function limit. This is CDN storage, not a per-visit download. Each file is below 50 MB. Canonical compressed sources total about 46.5 MB; the original study files are test fixtures outside the public directory. Map assets are excluded from the explanation function, which reads only requested compressed neighborhoods.
 
 ### Original-study parity and explicit source corrections
 
@@ -28,6 +28,8 @@ cd web && npm ci && npm test && npm run build
 ### Remaining limits
 
 Regional routing buffers can omit long detours; unmapped/disconnected access stays unknown. PRT schedules do not establish actual occupancy or utility capacity. Expert zoning, engineering, current occupancy, practitioner validation, mobile frame-rate and 30-user load testing remain unverified. No new paid services or secrets were added.
+
+The initial Studio data for the default Hazelwood site is about **4.77 MB gzip**; the five new-neighborhood examples range from 3.80 to 5.68 MB gzip. These are local file measurements assuming compressed delivery, excluding JS/CSS, basemap tiles and adjacent neighborhoods fetched after camera movement. The benchmark script reproduces them. The largest tracked Git file is the old 27.85 MB regression fixture; no tracked file exceeds 50 MB. Derived browser chunks are generated at build time rather than stored in Git.
 
 ## Historical checkpoints
 
