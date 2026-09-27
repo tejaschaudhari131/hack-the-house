@@ -6,19 +6,20 @@ import 'maplibre-gl/dist/maplibre-gl.css'
 import { geometryCenter, rectangleAt } from '../lib/plannerGeometry.js'
 import { configureMapWorkers } from '../lib/maplibreSetup.js'
 import { haversineMeters } from '../lib/geo.js'
+import { simulatedColor, PLACEMENT_COLORS } from '../lib/buildingUses.js'
 import { buildingHeightDescription, buildingHeightSource } from '../lib/buildingHeights.js'
 
 const empty = () => ({ type: 'FeatureCollection', features: [] })
 const fc = features => ({ type: 'FeatureCollection', features })
 
-export default function PlannerMap({ parcels, neighborhoods, stops, existingBuildings, showExisting, selected, option, slot, stop, proposed, additionalDepartures, view3d, onSelect, onStop, tool, placing, onPlace, network, networkResult, reservations, connections, drawing, draftNode, onDraw }) {
+export default function PlannerMap({ parcels, neighborhoods, stops, existingBuildings, showExisting, selected, option, slot, stop, proposed, additionalDepartures, view3d, onSelect, onStop, tool, placing, onPlace, onHover, placedBuildings = [], network, networkResult, reservations, connections, drawing, draftNode, onDraw }) {
   const container = useRef(null), mapRef = useRef(null), callbacks = useRef({ onSelect, onStop, tool, placing, onPlace })
   const [ready, setReady] = useState(false), [error, setError] = useState(null)
   const lastPin = useRef(null)
   const marker = useRef(null)
   const popup = useRef(null)
   const networkDisplayed = useRef(false)
-  callbacks.current = { onSelect, onStop, tool, placing, onPlace, drawing, onDraw }
+  callbacks.current = { onSelect, onStop, tool, placing, onPlace, onHover, drawing, onDraw }
 
   useEffect(() => {
     let map
@@ -42,7 +43,7 @@ export default function PlannerMap({ parcels, neighborhoods, stops, existingBuil
       map.addSource('districts', { type: 'geojson', data: neighborhoods })
       map.addSource('stops', { type: 'geojson', data: stops || empty() })
       map.addSource('existing-buildings', { type: 'geojson', data: empty(), promoteId: 'id', attribution: '<a href="https://mapservices.pasda.psu.edu/server/rest/services/pasda/AlleghenyCounty/MapServer/11">Allegheny County / PASDA buildings</a> · Heights: County / <a href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors, ODbL</a>' })
-      for (const id of ['building', 'selected', 'service', 'network-nodes', 'parks', 'reservations', 'connections', 'draft-node']) map.addSource(id, { type: 'geojson', data: empty() })
+      for (const id of ['placed-buildings', 'building', 'selected', 'service', 'network-nodes', 'parks', 'reservations', 'connections', 'draft-node']) map.addSource(id, { type: 'geojson', data: empty() })
       map.addSource('walking-network', { type: 'geojson', data: empty(), attribution: '<a href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors · ODbL</a>' })
       map.addLayer({ id: 'district-line', type: 'line', source: 'districts', paint: { 'line-color': '#78978c', 'line-width': 2, 'line-dasharray': [3, 3] } })
       map.addLayer({ id: 'parcel-fill', type: 'fill', source: 'parcels', paint: { 'fill-color': ['case', ['get', 'vacant'], '#81b99c', '#e6e9e3'], 'fill-opacity': .28 } })
@@ -59,8 +60,15 @@ export default function PlannerMap({ parcels, neighborhoods, stops, existingBuil
       map.addLayer({ id: 'service-link', type: 'line', source: 'service', filter: ['==', ['geometry-type'], 'LineString'], paint: { 'line-color': '#386da3', 'line-width': 3 } })
       map.addLayer({ id: 'stops-points', type: 'circle', source: 'stops', minzoom: 14, paint: { 'circle-radius': 4, 'circle-color': '#fff', 'circle-stroke-color': '#587693', 'circle-stroke-width': 1.5 } })
       map.addLayer({ id: 'service-zone', type: 'fill-extrusion', source: 'service', filter: ['==', ['geometry-type'], 'Polygon'], paint: { 'fill-extrusion-height': 1.5, 'fill-extrusion-color': ['get', 'color'], 'fill-extrusion-opacity': .95 } })
+      map.addLayer({ id: 'placed-buildings-fill', type: 'fill-extrusion', source: 'placed-buildings', paint: { 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-color': ['get', 'color'], 'fill-extrusion-opacity': .96 } })
+      map.addLayer({ id: 'placed-buildings-outline', type: 'line', source: 'placed-buildings', paint: { 'line-color': ['case', ['get', 'valid'], '#fff', '#dc2626'], 'line-width': 2, 'line-dasharray': [2, 1] } })
       map.addLayer({ id: 'building-fill', type: 'fill-extrusion', source: 'building', paint: { 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-color': ['get', 'color'], 'fill-extrusion-opacity': .88 } })
       map.addLayer({ id: 'building-outline', type: 'line', source: 'building', paint: { 'line-color': '#243e33', 'line-width': 1.5 } })
+      let hoverFrame = null
+      map.on('mousemove', event => {
+        if (!callbacks.current.placing || hoverFrame) return
+        hoverFrame = requestAnimationFrame(() => { hoverFrame = null; callbacks.current.onHover?.([event.lngLat.lng, event.lngLat.lat]) })
+      })
       map.on('click', event => {
         if (callbacks.current.drawing) { callbacks.current.onDraw([event.lngLat.lng, event.lngLat.lat]); return }
         if (callbacks.current.placing) { callbacks.current.onPlace([event.lngLat.lng, event.lngLat.lat]); return }
@@ -139,9 +147,14 @@ export default function PlannerMap({ parcels, neighborhoods, stops, existingBuil
 
   useEffect(() => {
     if (!ready || !mapRef.current) return
-    const building = option?.massing.geometry ? [{ type: 'Feature', geometry: option.massing.geometry, properties: { height: option.height, color: !option.massing.fits || option.massing.collisions > 0 ? '#c96961' : slot === 'A' ? '#50856e' : '#cc9948' } }] : []
+    const building = option?.massing.geometry ? [{ type: 'Feature', geometry: option.massing.geometry, properties: { height: option.height, color: placing ? (option.eligible ? PLACEMENT_COLORS.valid : PLACEMENT_COLORS.invalid) : slot === 'A' ? '#0891b2' : '#eab308' } }] : []
     mapRef.current.getSource('building').setData(fc(building))
-  }, [ready, option, slot])
+  }, [ready, option, slot, placing])
+
+  useEffect(() => {
+    if (!ready) return
+    mapRef.current.getSource('placed-buildings').setData(fc(placedBuildings.filter(b => b.massing.geometry).map(b => ({ type: 'Feature', geometry: b.massing.geometry, properties: { id: b.id, pin: b.pin, height: b.height, color: simulatedColor(b.typeId), valid: b.eligible } }))))
+  }, [ready, placedBuildings])
 
   useEffect(() => {
     if (!ready || !mapRef.current) return

@@ -142,3 +142,9 @@ Validation covers both real examples, no-op equality, shared transit gains witho
 ## Recorded building-use colours
 
 Studio colours existing footprints from the matched parcel assessment use, never from housing recommendations or inferred heights. Four housing bands share the Explorer palette; mixed/other residential and commercial/other nonresidential uses have separate colours. Unknown or contradictory vacant-use records stay neutral. Auxiliary footprints are not labelled as standalone homes. These are parcel-use classifications, not independently verified footprint occupancy. Explorer is unchanged.
+
+## Area plans (planner-screen-1.5)
+
+Up to 40 fixed housing placements can be added across parcels in one study area. Map placement previews are green/red for the outline, overlap and use screen; committed proposals use a lighter shade of their housing band. Plans persist across parcel selection, with undo/redo, removal and JSON export. Changing study areas starts a new plan and can be undone. Existing buildings are retained; demolition is not assumed.
+
+After placement, A/B and the five-template shortlist compare the whole placed plan plus each next-building alternative. Factor scores are averages weighted by declared proposed homes (a normative aggregation choice), with common evidence coverage across candidates and infrastructure states. Transit reserve is shared once across proposed homes using the same stop, rather than granted to every building separately. Service increases and optional capacity assumptions remain attached to named stops. Unknown capacity stays unknown. All buildings must pass the geometry/use screen for an area alternative to rank; infrastructure can invalidate earlier placements. Existing residents are not added to modeled boarding demand; the spare-capacity input must already allow for existing users. No neighborhood demand, price, displacement or carbon causal forecast is introduced.

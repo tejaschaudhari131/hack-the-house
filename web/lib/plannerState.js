@@ -1,6 +1,6 @@
 import { BUILDINGS } from './buildings.js'
 
-export const MODEL_VERSION = 'planner-screen-1.4'
+export const MODEL_VERSION = 'planner-screen-1.5'
 export const EXAMPLES = [
   { id: 'hazelwood', label: 'Hazelwood', pin: '0056F00338000000', caption: 'City inventory · Hazelwood Ave' },
   { id: 'lawrenceville', label: 'Lawrenceville', pin: '0049N00010000000', caption: 'City inventory · 3480 Butler St' },
@@ -35,7 +35,7 @@ export function initialScenario(pin, props = {}, stopId = '') {
     targetIncome: Math.round(props.median_income || 40000),
     additionalDepartures: 0, serviceHours: 15, availablePlacesPerDeparture: 20,
     spareBoardings: null, boardingsPerHome: 2,
-    connections: [], parks: [], parkAccessShare: 0,
+    connections: [], parks: [], parkAccessShare: 0, buildings: [],
     weights: { ...INITIAL_WEIGHTS },
   }
 }
@@ -51,7 +51,10 @@ export function scenarioReducer(state, action) {
     return { past: [...state.past, state.present], present: state.future[0], future: state.future.slice(1) }
   }
   let next = state.present
+  if (action.type === 'addBuilding' && (next.buildings || []).length < 40 && !(next.buildings || []).some(b => b.id === action.building.id)) next = { ...next, buildings: [...(next.buildings || []), action.building], ...(action.slot ? { options: { ...next.options, [action.slot]: { ...next.options[action.slot], placement: null } } } : {}) }
+  if (action.type === 'removeBuilding') next = { ...next, buildings: (next.buildings || []).filter(b => b.id !== action.id) }
   if (action.type === 'reset') next = action.scenario
+  if (action.type === 'patch') next = { ...next, ...action.value }
   if (action.type === 'set') next = { ...next, [action.key]: action.value }
   if (action.type === 'option') next = { ...next, options: { ...next.options, [action.slot]: { ...next.options[action.slot], ...action.value } } }
   if (action.type === 'weight') next = { ...next, weights: { ...next.weights, [action.key]: action.value } }
@@ -60,5 +63,5 @@ export function scenarioReducer(state, action) {
 }
 
 export function scenarioExport(scenario, summary) {
-  return { schemaVersion: 2, modelVersion: MODEL_VERSION, dataVersion: summary?.pulled_at || null, exportedAt: new Date().toISOString(), scenario, limitations: ['Dimensions, access connectors and infrastructure buildability are user/model assumptions.', 'This model does not evaluate utilities, engineering, route schedules, travel to jobs or marginal tonnes of CO2.'] }
+  return { schemaVersion: 3, modelVersion: MODEL_VERSION, dataVersion: summary?.pulled_at || null, exportedAt: new Date().toISOString(), scenario, limitations: ['Dimensions, access connectors and infrastructure buildability are user/model assumptions.', 'This model does not evaluate utilities, engineering, route schedules, travel to jobs or marginal tonnes of CO2.'] }
 }

@@ -26,7 +26,7 @@ export function preferredStop(stops) { return stops.find(s => s.weekday_trips >=
 export function serviceMetrics(stop, scenario, proposed, networkMetric = undefined) {
   if (!stop || !numeric(stop.weekday_trips) || stop.weekday_trips <= 0) return null
   if (networkMetric !== undefined && !numeric(networkMetric.walkMinutes)) return null
-  const added = proposed ? Math.max(0, scenario.additionalDepartures) : 0
+  const added = proposed && (!scenario.serviceStopId || String(stop.stop_id) === scenario.serviceStopId) ? Math.max(0, scenario.additionalDepartures) : 0
   const departures = stop.weekday_trips + added
   const headway = scenario.serviceHours * 60 / departures
   const walk = networkMetric === undefined ? stop.distance / 80 : networkMetric.walkMinutes
@@ -46,21 +46,22 @@ function evaluateOption(option, feature, zoning, state, stop, proposed, massing,
   const monthly = option.rent + option.utilities
   const burden = state.targetIncome > 0 ? monthly * 12 / state.targetIncome : null
   const demandBoardings = spec.units * state.boardingsPerHome
-  const spare = numeric(state.spareBoardings) ? state.spareBoardings : null
+  const spare = numeric(state.spareBoardings) && (!state.capacityStopId || String(stop?.stop_id) === state.capacityStopId) ? state.spareBoardings : null
   // Additional places are a user assumption about available boarding capacity, not vehicle occupancy data.
   const addedPlaces = service ? service.added * state.availablePlacesPerDeparture : 0
   const supply = spare === null ? null : spare + addedPlaces
+  const groupBoardings = ((state.committedUnitsByStop?.[String(stop?.stop_id)] || 0) + spec.units) * state.boardingsPerHome
   const scores = {
     demand: numeric(raw.demand) ? raw.demand : null,
     physical: !massing.fits || massing.collisions > 0 ? 0 : massing.collisions === null ? null : 100,
     affordability: burden === null ? null : clamp(100 * (.5 - burden) / .3),
     displacement: numeric(raw.displacement_risk) ? 100 - raw.displacement_risk : null,
-    capacity: supply === null || !service ? null : demandBoardings > 0 ? clamp(100 * supply / demandBoardings) : 100,
+    capacity: supply === null || !service ? null : groupBoardings > 0 ? clamp(100 * supply / groupBoardings) : 100,
     access: accessScore,
     carbon: numeric(raw.carbon_index) ? 100 - raw.carbon_index : null,
   }
   const eligible = massing.fits && massing.collisions === 0 && permission.category === 'permitted'
-  return { ...option, label: spec.label, units: spec.units, floors: spec.floors, permission, massing, scores, eligible, service, access, monthly, burden, demandBoardings, addedPlaces, supply, raw,
+  return { ...option, label: spec.label, units: spec.units, floors: spec.floors, permission, massing, scores, eligible, service, access, monthly, burden, demandBoardings, groupBoardings, addedPlaces, supply, raw,
     gate: !massing.fits ? 'Footprint needs review' : massing.collisions > 0 ? 'Building or infrastructure overlap — review required' : massing.collisions === null ? 'Building overlap check unavailable' : permission.category !== 'permitted' ? permission.label : 'Passes outline + mapped-building + use screen',
   }
 }
@@ -70,7 +71,7 @@ function weighted(option, weights, included) {
   return denominator > 0 ? included.reduce((sum, id) => sum + option.scores[id] * weights[id], 0) / denominator : null
 }
 
-function screenOptions(options, { feature, zoning, scenario, stop, existingBuildings, reservations, infrastructureErrors, accessBefore, accessAfter }) {
+function screenOptions(options, { feature, zoning, scenario, stop, existingBuildings, reservations, infrastructureErrors, accessBefore, accessAfter, committed = { baseline: [], proposal: [] } }) {
   const baseline = {}, proposal = {}
   const ids = Object.keys(options)
   for (const slot of ids) {
@@ -85,6 +86,26 @@ function screenOptions(options, { feature, zoning, scenario, stop, existingBuild
       proposal[slot].gate = 'Infrastructure validation unavailable or failed — review required'
     }
   }
+  if (committed.baseline.length) {
+    for (const [state, values] of Object.entries({ baseline, proposal })) for (const slot of ids) {
+      const candidate = values[slot]
+      const members = committed[state].map(member => {
+        const sameStop = member.stopId === String(stop?.stop_id)
+        const groupUnits = (scenario.committedUnitsByStop?.[member.stopId] || 0) + (sameStop ? candidate.units : 0)
+        const demand = groupUnits * scenario.boardingsPerHome
+        const capacity = member.supply === null || !member.service ? null : demand > 0 ? clamp(100 * member.supply / demand) : 100
+        return { ...member, scores: { ...member.scores, capacity } }
+      })
+      const portfolio = [...members, candidate], units = portfolio.reduce((n, member) => n + member.units, 0)
+      candidate.siteScores = candidate.scores
+      candidate.siteEligible = candidate.eligible
+      candidate.area = { units, buildings: portfolio.length, parcels: new Set([...members.map(m => m.pin), feature.properties.pin]).size,
+        invalid: members.filter(m => !m.eligible).map(m => ({ id: m.id, pin: m.pin, gate: m.gate })) }
+      candidate.scores = Object.fromEntries(PLANNER_FACTORS.map(f => [f.id, portfolio.every(m => numeric(m.scores[f.id])) ? portfolio.reduce((n, m) => n + m.scores[f.id] * m.units, 0) / units : null]))
+      candidate.eligible = portfolio.every(m => m.eligible)
+      if (candidate.area.invalid.length) candidate.gate = `${candidate.area.invalid.length} placed building(s) need review`
+    }
+  }
   // One evidence denominator across every candidate AND both infrastructure states.
   const included = PLANNER_FACTORS.map(f => f.id).filter(id => numeric(scenario.weights[id]) && scenario.weights[id] > 0 && [...Object.values(baseline), ...Object.values(proposal)].every(o => numeric(o.scores[id])))
   const excluded = PLANNER_FACTORS.map(f => f.id).filter(id => !included.includes(id))
@@ -92,14 +113,39 @@ function screenOptions(options, { feature, zoning, scenario, stop, existingBuild
   return { baseline, proposal, included, excluded }
 }
 
-export function evaluatePlanner({ feature, zoning, scenario, stop, existingBuildings = null, networkContext = null, shortlistSlot = 'B' }) {
+export function evaluatePlanner({ feature, zoning, scenario, stop, existingBuildings = null, networkContext = null, shortlistSlot = 'B', areaSites = [] }) {
   const routed = scenario.accessMode === 'network'
   const infrastructureErrors = [...(scenario.connections || []).map(c => validateConnection(networkContext?.network, c)), ...(scenario.parks || []).map(p => validatePark(networkContext?.network, p))].filter(Boolean)
   // Route each infrastructure state once; A/B and all five templates reuse it.
   const accessBefore = routed ? networkAccess(networkContext, feature, stop, scenario, false) : undefined
   const accessAfter = routed ? networkAccess(infrastructureErrors.length ? null : networkContext, feature, stop, scenario, true) : undefined
   const reservations = infrastructureReservations(networkContext?.network, scenario)
-  const context = { feature, zoning, scenario, stop, existingBuildings, reservations, infrastructureErrors, accessBefore, accessAfter }
+  // Explicit, fixed placements survive changes in infrastructure. All proposed buildings
+  // share the same per-stop boarding pool; reserve is not multiplied by building count.
+  const committedUnitsByStop = {}
+  for (const site of areaSites) committedUnitsByStop[String(site.stop?.stop_id)] = (committedUnitsByStop[String(site.stop?.stop_id)] || 0) + BUILDINGS[site.option.typeId].units
+  const areaScenario = { ...scenario, committedUnitsByStop }
+  const geometries = areaSites.map(site => ({ type: 'Feature', properties: { id: site.id }, geometry: fitMassing(site.feature.geometry, site.option.width, site.option.depth, site.option.placement, []).geometry })).filter(f => f.geometry)
+  const committed = { baseline: [], proposal: [] }, routeCache = new Map()
+  for (const site of areaSites) {
+    const otherBuildings = site.existingBuildings === null ? null : [...site.existingBuildings, ...geometries.filter(f => f.properties.id !== site.id)]
+    const stopId = String(site.stop?.stop_id)
+    const ownUnits = BUILDINGS[site.option.typeId].units
+    const siteScenario = { ...areaScenario, targetIncome: site.targetIncome, committedUnitsByStop: { ...committedUnitsByStop, [stopId]: committedUnitsByStop[stopId] - ownUnits } }
+    for (const state of ['baseline', 'proposal']) {
+      const isProposal = state === 'proposal'
+      const key = `${site.feature.properties.pin}:${stopId}:${state}`
+      if (!routeCache.has(key)) routeCache.set(key, routed ? networkAccess(isProposal && infrastructureErrors.length ? null : networkContext, site.feature, site.stop, scenario, isProposal) : undefined)
+      const obstacles = otherBuildings === null ? null : [...otherBuildings, ...(isProposal ? reservations : [])]
+      const massing = fitMassing(site.feature.geometry, site.option.width, site.option.depth, site.option.placement, obstacles)
+      const member = evaluateOption(site.option, site.feature, zoning, siteScenario, site.stop, isProposal, massing, routeCache.get(key))
+      Object.assign(member, { id: site.id, pin: site.feature.properties.pin, stopId })
+      if (isProposal && infrastructureErrors.length) { member.eligible = false; member.scores.physical = null; member.gate = 'Infrastructure validation unavailable or failed' }
+      committed[state].push(member)
+    }
+  }
+  const allBuildings = existingBuildings === null ? null : [...existingBuildings, ...geometries]
+  const context = { feature, zoning, scenario: areaScenario, stop, existingBuildings: allBuildings, reservations, infrastructureErrors, accessBefore, accessAfter, committed }
   const { baseline, proposal, included, excluded } = screenOptions(scenario.options, context)
   const sourceSlot = shortlistSlot === 'A' ? 'A' : 'B'
   const templates = shortlistTemplates(scenario, sourceSlot)
@@ -108,7 +154,7 @@ export function evaluatePlanner({ feature, zoning, scenario, stop, existingBuild
   const changed = before !== after
   const accessDelta = baseline.A.service && proposal.A.service ? baseline.A.service.minutes - proposal.A.service.minutes : null
   const infrastructureEdited = (scenario.connections?.length || 0) + (scenario.parks?.length || 0) > 0
-  const result = { baseline, proposal, included, excluded, before, after, changed, accessDelta, reservations, infrastructureErrors,
+  const result = { baseline, proposal, included, excluded, before, after, changed, accessDelta, reservations, infrastructureErrors, committed, scope: areaSites.length ? 'area' : 'parcel',
     explanation: infrastructureErrors.length ? `Proposal ranking is withheld: ${[...new Set(infrastructureErrors)].join(' ')}`
       : infrastructureEdited ? `${scenario.connections?.length || 0} connection(s) and ${scenario.parks?.length || 0} park(s) are proposed. ${accessDelta === null ? 'Stop access could not be compared on this network.' : `Modeled walk + wait changes by ${round(-accessDelta)} minutes.`} ${changed ? 'The preferred option changes under these assumptions.' : 'The housing preference stays the same.'} Access benefits are shared; reserved land can change housing fit. Park access has a ${scenario.parkAccessShare || 0}% share of the access factor. Demand, rents, displacement and carbon are held unchanged.`
       : !stop ? 'No scheduled stop is available. Transit access and capacity are excluded.'

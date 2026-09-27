@@ -7,7 +7,7 @@ const cash = value => Number(value).toLocaleString('en-US', { style: 'currency',
 const leaders = values => values.length ? values.map(id => BUILDINGS[id].label).join(' / ') : 'No ranked template'
 const total = option => option.eligible && Number.isFinite(option.total) ? number(option.total) : 'Not ranked'
 
-export default function HousingShortlist({ shortlist, slot, proposed, pending, showExpanded, onUse }) {
+export default function HousingShortlist({ shortlist, slot, proposed, pending, showExpanded, area, onUse }) {
   const [expanded, setExpanded] = useState(false)
   useEffect(() => { if (showExpanded) setExpanded(true) }, [showExpanded])
   if (!shortlist) return null
@@ -20,10 +20,10 @@ export default function HousingShortlist({ shortlist, slot, proposed, pending, s
   })
   return <section className="housing-shortlist" aria-label="Housing shortlist" aria-busy={waiting}>
     <button className="shortlist-toggle" aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>
-      <span><strong>Housing shortlist</strong><small>{waiting ? 'Updating all five templates…' : `${shortlist[state].order.length} of 5 templates ranked · ${proposed ? 'proposal' : 'baseline'}`}</small></span><span aria-hidden="true">{expanded ? '−' : '+'}</span>
+      <span><strong>{area ? 'Area plan + next building' : 'Housing shortlist'}</strong><small>{waiting ? 'Updating all five templates…' : `${shortlist[state].order.length} of 5 templates ranked · ${proposed ? 'proposal' : 'baseline'}`}</small></span><span aria-hidden="true">{expanded ? '−' : '+'}</span>
     </button>
     {expanded && <div className="shortlist-content">
-      <p>All five standard housing templates, screened after each scenario edit. Preview one in option {slot} to examine or customize it.</p>
+      <p>{area ? 'Compares your placed plan plus each next-building template. Factor scores are averages per proposed home, with shared transit capacity.' : 'All five standard housing templates, screened after each scenario edit.'} Preview one in option {slot} to examine or customize it.</p>
       <p className="shortlist-assumptions"><strong>Common assumptions:</strong> option {shortlist.sourceSlot}’s {cash(shortlist.assumptions.rent)} rent + {cash(shortlist.assumptions.utilities)} utilities per home/month; {cash(shortlist.assumptions.targetIncome)} target annual income. Standard dimensions and automatic placement replace any custom size or position when previewed. These are assumptions, not rent forecasts or calculated dwelling capacity.</p>
       <div className="shortlist-leaders"><p><span>Baseline lead</span><strong>{leaders(shortlist.baseline.leaders)}</strong></p><p><span>Proposal lead</span><strong>{leaders(shortlist.proposal.leaders)}</strong></p></div>
       <p>{shortlist.explanation}</p>
