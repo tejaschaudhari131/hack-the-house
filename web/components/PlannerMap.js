@@ -9,13 +9,13 @@ import { configureMapWorkers } from '../lib/maplibreSetup.js'
 const empty = () => ({ type: 'FeatureCollection', features: [] })
 const fc = features => ({ type: 'FeatureCollection', features })
 
-export default function PlannerMap({ parcels, neighborhoods, stops, existingBuildings, showExisting, selected, option, slot, stop, proposed, additionalDepartures, view3d, onSelect, onStop, tool }) {
-  const container = useRef(null), mapRef = useRef(null), callbacks = useRef({ onSelect, onStop, tool })
+export default function PlannerMap({ parcels, neighborhoods, stops, existingBuildings, showExisting, selected, option, slot, stop, proposed, additionalDepartures, view3d, onSelect, onStop, tool, placing, onPlace }) {
+  const container = useRef(null), mapRef = useRef(null), callbacks = useRef({ onSelect, onStop, tool, placing, onPlace })
   const [ready, setReady] = useState(false), [error, setError] = useState(null)
   const lastPin = useRef(null)
   const marker = useRef(null)
   const popup = useRef(null)
-  callbacks.current = { onSelect, onStop, tool }
+  callbacks.current = { onSelect, onStop, tool, placing, onPlace }
 
   useEffect(() => {
     let map
@@ -52,6 +52,7 @@ export default function PlannerMap({ parcels, neighborhoods, stops, existingBuil
       map.addLayer({ id: 'building-fill', type: 'fill-extrusion', source: 'building', paint: { 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-color': ['get', 'color'], 'fill-extrusion-opacity': .88 } })
       map.addLayer({ id: 'building-outline', type: 'line', source: 'building', paint: { 'line-color': '#243e33', 'line-width': 1.5 } })
       map.on('click', event => {
+        if (callbacks.current.placing) { callbacks.current.onPlace([event.lngLat.lng, event.lngLat.lat]); return }
         const stopHit = map.queryRenderedFeatures(event.point, { layers: ['stops-points'] })[0]
         if (stopHit && callbacks.current.tool === 'service') { callbacks.current.onStop(String(stopHit.properties.stop_id)); return }
         const buildingHit = map.queryRenderedFeatures(event.point, { layers: ['existing-buildings-fill'] })[0]
@@ -71,8 +72,8 @@ export default function PlannerMap({ parcels, neighborhoods, stops, existingBuil
         const hit = map.queryRenderedFeatures(event.point, { layers: ['parcel-fill'] })[0]
         if (hit) callbacks.current.onSelect(hit.properties.pin)
       })
-      map.on('mouseenter', 'parcel-fill', () => { map.getCanvas().style.cursor = 'pointer' })
-      map.on('mouseleave', 'parcel-fill', () => { map.getCanvas().style.cursor = '' })
+      map.on('mouseenter', 'parcel-fill', () => { map.getCanvas().style.cursor = callbacks.current.placing ? 'crosshair' : 'pointer' })
+      map.on('mouseleave', 'parcel-fill', () => { map.getCanvas().style.cursor = callbacks.current.placing ? 'crosshair' : '' })
       setReady(true)
     })
     const observer = new ResizeObserver(() => map.resize())
@@ -86,6 +87,7 @@ export default function PlannerMap({ parcels, neighborhoods, stops, existingBuil
     mapRef.current.setLayoutProperty('existing-buildings-fill', 'visibility', showExisting ? 'visible' : 'none')
     if (!showExisting) popup.current?.remove()
   }, [ready, showExisting])
+  useEffect(() => { if (ready) mapRef.current.getCanvas().style.cursor = placing ? 'crosshair' : '' }, [ready, placing])
 
   useEffect(() => {
     const map = mapRef.current
@@ -107,7 +109,7 @@ export default function PlannerMap({ parcels, neighborhoods, stops, existingBuil
 
   useEffect(() => {
     if (!ready || !mapRef.current) return
-    const building = option?.massing.geometry ? [{ type: 'Feature', geometry: option.massing.geometry, properties: { height: option.height, color: !option.massing.fits ? '#c96961' : slot === 'A' ? '#50856e' : '#cc9948' } }] : []
+    const building = option?.massing.geometry ? [{ type: 'Feature', geometry: option.massing.geometry, properties: { height: option.height, color: !option.massing.fits || option.massing.collisions > 0 ? '#c96961' : slot === 'A' ? '#50856e' : '#cc9948' } }] : []
     mapRef.current.getSource('building').setData(fc(building))
   }, [ready, option, slot])
 

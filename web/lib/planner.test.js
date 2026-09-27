@@ -1,17 +1,19 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { rectangleAt, rectangleInside, fitMassing, slimParcels } from './plannerGeometry.js'
+import { rectangleAt, rectangleInside, fitMassing, slimParcels, geometryBounds, boundsOverlap, placementAt, geometriesOverlap } from './plannerGeometry.js'
 import { evaluatePlanner, nearbyStops, preferredStop, serviceMetrics } from './plannerModel.js'
 import { initialScenario, scenarioReducer, historyFor, EXAMPLES, scenarioExport } from './plannerState.js'
 
 const parcels = JSON.parse(readFileSync(new URL('../public/data/parcels.geojson', import.meta.url)))
 const zoning = JSON.parse(readFileSync(new URL('../public/data/zoning.json', import.meta.url)))
 const stops = JSON.parse(readFileSync(new URL('../public/data/stops.geojson', import.meta.url)))
+const buildings = JSON.parse(readFileSync(new URL('../public/data/existing-buildings.geojson', import.meta.url)))
 function inputFor(pin = EXAMPLES[0].pin) {
   const feature = parcels.features.find(f => f.properties.pin === pin)
   const stop = preferredStop(nearbyStops(feature, stops))
-  return { feature, zoning, stop, scenario: initialScenario(pin, feature.properties, String(stop.stop_id)) }
+  const existingBuildings = buildings.features.filter(f => boundsOverlap(geometryBounds(feature.geometry), geometryBounds(f.geometry)))
+  return { feature, zoning, stop, existingBuildings, scenario: initialScenario(pin, feature.properties, String(stop.stop_id)) }
 }
 
 test('both real examples have valid baselines and fixed-size proposal footprints', () => {
@@ -136,4 +138,54 @@ test('map properties are slim and exports preserve model, baseline and assumptio
   assert.equal(output.dataVersion, '2026-09-27')
   assert.ok(output.modelVersion)
   assert.deepEqual(output.scenario, input.scenario)
+})
+
+test('automatic alignment follows a rotated parcel and manual rotation preserves the exact position', () => {
+  const site = rectangleAt([-79.94, 40.41], 40, 60)
+  const rotated = fitMassing(site, 20, 40, { east: 0, north: 0, bearing: 27 }, [])
+  const automatic = fitMassing(rotated.geometry, 8, 16, null, [])
+  assert.ok(automatic.fits)
+  assert.ok(Math.abs(automatic.placement.bearing % 180 - 27) < .01)
+  const placement = { ...automatic.placement, east: 2, north: -3, bearing: 42 }
+  const manual = fitMassing(site, 8, 16, placement, [])
+  assert.deepEqual(manual.placement, placement)
+  assert.equal(manual.mode, 'manual')
+  assert.ok(manual.fits)
+  const outside = fitMassing(site, 8, 16, { ...placement, east: 100 }, [])
+  assert.equal(outside.fits, false)
+  assert.equal(outside.placement.east, 100)
+  assert.ok(outside.geometry)
+  const clicked = placementAt(site, [-79.94, 40.41], 42)
+  assert.ok(Math.abs(clicked.east) < 1e-6 && Math.abs(clicked.north) < 1e-6)
+  assert.equal(clicked.bearing, 42)
+})
+
+test('overlap checks detect containment and crossing but respect holes and disjoint polygons', () => {
+  const outer = rectangleAt([-79.94, 40.41], 40, 40)
+  const inner = rectangleAt([-79.94, 40.41], 10, 10)
+  assert.equal(geometriesOverlap(outer, inner), true)
+  assert.equal(geometriesOverlap(inner, outer), true)
+  const hole = rectangleAt([-79.94, 40.41], 20, 20)
+  assert.equal(geometriesOverlap({ type: 'Polygon', coordinates: [outer.coordinates[0], hole.coordinates[0]] }, inner), false)
+  assert.equal(geometriesOverlap(outer, rectangleAt([-79.95, 40.42], 10, 10)), false)
+  assert.equal(geometriesOverlap(rectangleAt([-79.94, 40.41], 4, 40), rectangleAt([-79.94, 40.41], 40, 4)), true)
+})
+
+test('mapped overlap or missing context withholds ranking, and placement history is reversible', () => {
+  const input = inputFor()
+  const obstacle = { type: 'Feature', properties: {}, geometry: input.feature.geometry }
+  let result = evaluatePlanner({ ...input, existingBuildings: [obstacle] })
+  assert.ok(result.proposal.A.massing.collisions > 0)
+  assert.equal(result.proposal.A.scores.physical, 0)
+  assert.equal(result.after, null)
+  result = evaluatePlanner({ ...input, existingBuildings: null })
+  assert.equal(result.proposal.A.scores.physical, null)
+  assert.equal(result.after, null)
+  let history = historyFor(input.scenario)
+  history = scenarioReducer(history, { type: 'option', slot: 'B', value: { placement: { east: 100, north: 0, bearing: 15 } } })
+  assert.equal(evaluatePlanner({ ...input, scenario: history.present }).proposal.B.massing.fits, false)
+  history = scenarioReducer(history, { type: 'undo' })
+  assert.equal(history.present.options.B.placement, null)
+  history = scenarioReducer(history, { type: 'redo' })
+  assert.equal(scenarioExport(history.present).scenario.options.B.placement.east, 100)
 })

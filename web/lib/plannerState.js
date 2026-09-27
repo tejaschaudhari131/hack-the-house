@@ -1,6 +1,6 @@
 import { BUILDINGS } from './buildings.js'
 
-export const MODEL_VERSION = 'planner-screen-1.0'
+export const MODEL_VERSION = 'planner-screen-1.1'
 export const EXAMPLES = [
   { id: 'hazelwood', label: 'Hazelwood', pin: '0056F00338000000', caption: 'City inventory · Hazelwood Ave' },
   { id: 'lawrenceville', label: 'Lawrenceville', pin: '0049N00010000000', caption: 'City inventory · 3480 Butler St' },
@@ -24,7 +24,7 @@ export const PLANNER_FACTORS = [
 export const INITIAL_WEIGHTS = { demand: 20, physical: 15, affordability: 20, displacement: 10, capacity: 10, access: 15, carbon: 10 }
 
 export function optionFor(typeId, rent) {
-  return { typeId, ...MASSING_DEFAULTS[typeId], height: BUILDINGS[typeId].heightM, rent, utilities: 150 }
+  return { typeId, ...MASSING_DEFAULTS[typeId], height: BUILDINGS[typeId].heightM, rent, utilities: 150, placement: null }
 }
 export function initialScenario(pin, props = {}, stopId = '') {
   // ACS gross rent includes utilities; subtract the explicit utility assumption once.

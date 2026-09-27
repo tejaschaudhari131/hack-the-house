@@ -16,20 +16,20 @@ npm run dev
 
 1. Open the studio. Hazelwood selects PIN `0056F00338000000`; Lawrenceville selects `0049N00010000000`. Both come from the committed dataset. City inventory is not availability.
 2. Compare A (townhouse/duplex) and B (triplex), or cycle through the housing palette. Only the active alternative is drawn on the same parcel, to avoid overlapping incompatible proposals.
-3. Change dimensions or proposed rent. Geometric placement never silently shrinks the building. A failed sampled fit or a non-permitted use cannot win the screen.
+3. Change dimensions or proposed rent. Geometric placement never silently shrinks the building. A failed fit, recorded-building overlap, missing building context or non-permitted use cannot win the screen.
 4. Open Transit and add 60 departures per weekday at the selected existing stop. The baseline and proposal share the selected stop and service-span assumption. Inspect before/after aggregate walk + wait.
 5. Open Compare. Inspect all seven factors and their priority weights. A common access benefit can leave the housing order unchanged.
 6. Optionally enter hypothetical spare daily boarding capacity under Capacity assumptions. Unknown reserve stays null, not zero. Utility capacity is not supplied by this field.
 7. Undo/redo, switch baseline/proposal, or export the versioned scenario and computed results as JSON.
 
-## Model boundary: planner-screen-1.0
+## Model boundary: planner-screen-1.1
 
 This is a new, explicit screening comparison alongside the original six-factor explorer; its totals are not comparable with the explorer's totals. It is not a validated development forecast.
 
 | Dimension | Calculation |
 | --- | --- |
 | Demand | Existing precomputed market-activity/lot-fit score for the chosen type; no household-demand forecast. |
-| Physical feasibility | 100 if the fixed-size rectangular template passes an outline search, otherwise 0. Use-table permission is a separate eligibility gate. Setbacks, height restrictions, access and engineering are unreviewed. |
+| Physical feasibility | 100 if the fixed-size rectangle fits the parcel without touching a recorded building; otherwise 0. Missing building context excludes this factor and withholds ranking. Use-table permission is a separate eligibility gate. Setbacks, height restrictions, access and engineering are unreviewed. |
 | Affordability | `(rent + utilities) × 12 / target income`. A chosen preference curve maps 20% burden to 100 and 50% to 0, clamped. Target income starts with the local Census estimate; assumed net rent starts at gross rent minus the utility assumption, avoiding double counting. Neither is a proposed-market forecast. |
 | Displacement | 100 minus the committed tract risk screen. Unchanged by interventions. |
 | Infrastructure capacity | `100 × assumed available daily boardings / assumed new daily housing boardings`, capped at 100. Supply is entered baseline reserve plus extra departures times entered available boarding places. Only evaluated if reserve and a scheduled stop are present. No peak, occupancy, utility or funding model. |
@@ -47,7 +47,7 @@ Massing dimensions and heights are **proposal assumptions**. County building foo
 - `Planner.js`: loading, accessible controls, two examples, source/assumption display, worker lifecycle, revision checks, export.
 - `PlannerMap.js`: one MapLibre instance; slim parcel geometry and independent small proposal/service sources. Scoring edits do not resend parcel scores to the renderer.
 - `plannerState.js`: immutable scenario/history snapshots and model version.
-- `plannerGeometry.js`: fixed-size rotated footprint search with polygon/hole containment checks. No exact maximum-capacity guarantee.
+- `plannerGeometry.js`: parcel-edge alignment and exact manual placement, with polygon/hole containment and recorded-building overlap checks. No exact maximum-capacity guarantee.
 - `plannerModel.js`: pure baseline/proposal evaluator, shared evidence coverage and deterministic explanations.
 - `planner.worker.js`: asynchronous evaluator; stale revisions are discarded by the client. A JavaScript fallback retains controls if worker creation is unavailable.
 
@@ -70,3 +70,13 @@ The assessment query selects only parcel IDs and `STORIES`. A story count is use
 `existing-buildings.sources.json` records source URLs, coordinate systems, input hashes/retrieval times, output hash and counts. Raw responses are cached in ignored `pipeline/data/raw/building_context`; remove that directory to refresh. The source layer does not declare explicit redistribution terms; resolve these before external publication. Layer/catalog dates do not guarantee that every structure is current.
 
 The layer loads separately from the planner and can be hidden or retried if unavailable. Its geometry is uploaded once per load, not on housing/service edits. It appears from zoom 14; citywide expansion should tile this geometry rather than extend the whole-file download. It does not change baseline scores or silently remove structures under proposals.
+
+## Proposal placement
+
+Automatic placement tries the parcel's longest edge first, aligning the longer building dimension with it, then other parcel-edge/perpendicular orientations and sampled centres. It retains the requested dimensions and prefers placements without recorded-building overlap. This is **parcel alignment, not inferred street frontage**. A failed search is not proof no feasible design exists.
+
+Each housing option can store a manual placement: east/north metre offsets from the parcel bounding-box centre and a bearing for the building depth axis, clockwise from north. Users can rotate, enter offsets, or click **Place on map** and choose a centre. Manual placements are never moved or resized automatically. Boundary contact, holes and building overlap remain visible review failures. **Reset alignment** returns that option to the automatic search. Undo/redo and JSON exports retain placement; exports also identify the building-context dataset hash.
+
+Only nearby building geometries intersecting the selected parcel's bounding box are passed to the calculation worker. A hidden context layer still participates in overlap checks. If the data cannot load, unknown overlap evidence is not treated as an empty site: ranking is withheld. A mapped overlap requires review of redevelopment/demolition; there is no removal tool or assumption that demolition is permitted. No overlap is not proof of vacancy.
+
+The extract currently contains 6,624 footprints: 2,328 in Hazelwood and 4,296 in Lawrenceville. 2,235 heights use story-based estimates and 4,389 use placeholders. The additional uncompressed geometry payload is approximately 3.5 MB for both examples. These are extract counts, not verified dwelling counts or a performance guarantee.

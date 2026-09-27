@@ -45,16 +45,16 @@ function evaluateOption(option, feature, zoning, state, stop, proposed, massing)
   const supply = spare === null ? null : spare + addedPlaces
   const scores = {
     demand: numeric(raw.demand) ? raw.demand : null,
-    physical: massing.fits ? 100 : 0,
+    physical: !massing.fits || massing.collisions > 0 ? 0 : massing.collisions === null ? null : 100,
     affordability: burden === null ? null : clamp(100 * (.5 - burden) / .3),
     displacement: numeric(raw.displacement_risk) ? 100 - raw.displacement_risk : null,
     capacity: supply === null || !stop ? null : demandBoardings > 0 ? clamp(100 * supply / demandBoardings) : 100,
     access: service?.score ?? null,
     carbon: numeric(raw.carbon_index) ? 100 - raw.carbon_index : null,
   }
-  const eligible = massing.fits && permission.category === 'permitted'
+  const eligible = massing.fits && massing.collisions === 0 && permission.category === 'permitted'
   return { ...option, label: spec.label, units: spec.units, floors: spec.floors, permission, massing, scores, eligible, service, monthly, burden, demandBoardings, addedPlaces, supply, raw,
-    gate: !massing.fits ? 'Footprint needs review' : permission.category !== 'permitted' ? permission.label : 'Passes outline + use-table screen',
+    gate: !massing.fits ? 'Footprint needs review' : massing.collisions > 0 ? 'Existing building overlap — review required' : massing.collisions === null ? 'Building overlap check unavailable' : permission.category !== 'permitted' ? permission.label : 'Passes outline + mapped-building + use screen',
   }
 }
 
@@ -63,8 +63,8 @@ function weighted(option, weights, included) {
   return denominator > 0 ? included.reduce((sum, id) => sum + option.scores[id] * weights[id], 0) / denominator : null
 }
 
-export function evaluatePlanner({ feature, zoning, scenario, stop }) {
-  const massing = Object.fromEntries(['A', 'B'].map(slot => [slot, fitMassing(feature.geometry, scenario.options[slot].width, scenario.options[slot].depth)]))
+export function evaluatePlanner({ feature, zoning, scenario, stop, existingBuildings = null }) {
+  const massing = Object.fromEntries(['A', 'B'].map(slot => [slot, fitMassing(feature.geometry, scenario.options[slot].width, scenario.options[slot].depth, scenario.options[slot].placement, existingBuildings)]))
   const baseline = {}, proposal = {}
   for (const slot of ['A', 'B']) {
     baseline[slot] = evaluateOption(scenario.options[slot], feature, zoning, scenario, stop, false, massing[slot])

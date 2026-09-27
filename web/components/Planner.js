@@ -3,7 +3,7 @@
 import dynamic from 'next/dynamic'
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import { BUILDINGS, BUILDING_IDS } from '../lib/buildings.js'
-import { slimParcels } from '../lib/plannerGeometry.js'
+import { slimParcels, geometryBounds, boundsOverlap, placementAt } from '../lib/plannerGeometry.js'
 import { evaluatePlanner, nearbyStops, preferredStop, round } from '../lib/plannerModel.js'
 import { EXAMPLES, MODEL_VERSION, PLANNER_FACTORS, MASSING_DEFAULTS, initialScenario, historyFor, scenarioReducer, scenarioExport } from '../lib/plannerState.js'
 
@@ -26,14 +26,17 @@ function Icon({ name, size = 20 }) {
 
 function Numeric({ label, value, onChange, min = 0, max = 100000, step = 1, hint, nullable = false }) {
   const [draft, setDraft] = useState(value ?? '')
-  useEffect(() => setDraft(value ?? ''), [value])
+  const dirty = useRef(false)
+  useEffect(() => { setDraft(value ?? ''); dirty.current = false }, [value])
   function commit() {
+    if (!dirty.current) return
+    dirty.current = false
     if (draft === '' && nullable) { onChange(null); return }
     const n = Number(draft)
     if (draft !== '' && Number.isFinite(n)) { const next = Math.min(max, Math.max(min, n)); setDraft(next); onChange(next) }
     else setDraft(value ?? '')
   }
-  return <label className="planner-field"><span>{label}</span><input type="number" min={min} max={max} step={step} value={draft} onChange={e => setDraft(e.target.value)} onBlur={commit} onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur() }} placeholder={nullable ? 'Unknown' : undefined} />{hint && <small>{hint}</small>}</label>
+  return <label className="planner-field"><span>{label}</span><input type="number" min={min} max={max} step={step} value={draft} onChange={e => { dirty.current = true; setDraft(e.target.value) }} onBlur={commit} onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur() }} placeholder={nullable ? 'Unknown' : undefined} />{hint && <small>{hint}</small>}</label>
 }
 
 function useEvaluation(input) {
@@ -122,10 +125,18 @@ function Studio({ data }) {
   }, [scenario.pin])
   const selected = byPin.get(scenario.pin), props = selected.properties
   const [slot, setSlot] = useState('B'), [tool, setTool] = useState('housing'), [proposed, setProposed] = useState(true), [view3d, setView3d] = useState(true)
+  const [placing, setPlacing] = useState(false)
+  useEffect(() => { setPlacing(false) }, [slot, tool, scenario.pin])
   const [query, setQuery] = useState(''), [notice, setNotice] = useState(''), [evidence, setEvidence] = useState(false)
   const nearby = useMemo(() => nearbyStops(selected, stops), [selected, stops])
   const stop = nearby.find(s => String(s.stop_id) === scenario.stopId) || null
-  const input = useMemo(() => ({ feature: selected, zoning, scenario, stop }), [selected, zoning, scenario, stop])
+  const buildingIndex = useMemo(() => context?.buildings.features.map(feature => ({ feature, bounds: geometryBounds(feature.geometry) })), [context])
+  const nearbyBuildings = useMemo(() => {
+    if (!buildingIndex) return null
+    const bounds = geometryBounds(selected.geometry)
+    return buildingIndex.filter(b => boundsOverlap(bounds, b.bounds)).map(b => b.feature)
+  }, [buildingIndex, selected])
+  const input = useMemo(() => ({ feature: selected, zoning, scenario, stop, existingBuildings: nearbyBuildings }), [selected, zoning, scenario, stop, nearbyBuildings])
   const evaluation = useEvaluation(input)
   const result = evaluation.pin === scenario.pin ? evaluation.result : null
   const options = result ? (proposed ? result.proposal : result.baseline) : null
@@ -142,8 +153,11 @@ function Studio({ data }) {
   function cycle(direction) { changeType(BUILDING_IDS[(BUILDING_IDS.indexOf(option.typeId) + direction + BUILDING_IDS.length) % BUILDING_IDS.length]) }
   function set(key, value) { dispatch({ type: 'set', key, value }) }
   function setOption(key, value) { dispatch({ type: 'option', slot, value: { [key]: value } }) }
+  const placement = option.placement || evaluated?.massing.placement || { east: 0, north: 0, bearing: 0 }
+  function moveProposal(changes) { setOption('placement', { ...placement, ...changes }) }
+  function placeProposal(coordinates) { setOption('placement', placementAt(selected.geometry, coordinates, placement.bearing)); setPlacing(false); setNotice('Proposal moved to the clicked location. Check the boundary and existing-building review below.') }
   function download() {
-    const payload = { ...scenarioExport(scenario, summary), results: result, sources: { parcels: '/data/parcels.geojson', zoning: '/data/zoning.json', stops: '/data/stops.geojson' } }
+    const payload = { ...scenarioExport(scenario, summary), results: result, buildingContext: context ? { sha256: context.manifest.sha256, retrievedAt: context.manifest.retrieved_at } : null, sources: { parcels: '/data/parcels.geojson', zoning: '/data/zoning.json', stops: '/data/stops.geojson', buildings: '/data/existing-buildings.sources.json' } }
     const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }))
     const link = document.createElement('a'); link.href = url; link.download = `housing-scenario-${scenario.pin}.json`; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000)
     setNotice('Scenario exported with model version, assumptions and comparison results.')
@@ -158,7 +172,8 @@ function Studio({ data }) {
     </header>
     <div className="studio-workspace">
       <section className="studio-canvas" aria-label="Planning map">
-        <PlannerMap parcels={mapParcels} neighborhoods={neighborhoods} stops={stops} existingBuildings={context?.buildings} showExisting={showExisting} selected={selected} option={evaluated} slot={slot} stop={stop} proposed={proposed} additionalDepartures={scenario.additionalDepartures} view3d={view3d} onSelect={select} onStop={selectStop} tool={tool}/>
+        <PlannerMap parcels={mapParcels} neighborhoods={neighborhoods} stops={stops} existingBuildings={context?.buildings} showExisting={showExisting} selected={selected} option={evaluated} slot={slot} stop={stop} proposed={proposed} additionalDepartures={scenario.additionalDepartures} view3d={view3d} onSelect={select} onStop={selectStop} tool={tool} placing={placing} onPlace={placeProposal}/>
+        {placing && <div className="placement-banner" role="status">Click the map to place option {slot}. <button onClick={() => setPlacing(false)}>Cancel placement</button></div>}
         <nav className="studio-tools" aria-label="Planning tools">{[['housing', 'building', 'Housing'], ['service', 'bus', 'Transit'], ['compare', 'chart', 'Compare']].map(([id, icon, label]) => <button key={id} className={tool === id ? 'active' : ''} aria-pressed={tool === id} onClick={() => setTool(id)}><Icon name={icon}/><span>{label}</span></button>)}<div className="tool-divider"/><button onClick={() => setView3d(!view3d)} aria-pressed={view3d}><Icon name="layers"/><span>{view3d ? '3D' : '2D'}</span></button></nav>
         <div className="canvas-heading"><span className="eyebrow">PITTSBURGH / {props.area?.toUpperCase()}</span><h1>What could we build here?</h1><p>Test a place. Compare the possibilities.</p></div>
         <div className="canvas-mode"><div className="segmented" aria-label="Infrastructure view"><button className={!proposed ? 'active' : ''} aria-pressed={!proposed} onClick={() => setProposed(false)}>Baseline</button><button className={proposed ? 'active' : ''} aria-pressed={proposed} onClick={() => setProposed(true)}>Proposal {scenario.additionalDepartures > 0 && <i/>}</button></div><div className="history-controls"><button aria-label="Undo scenario edit" disabled={!history.past.length} onClick={() => dispatch({ type: 'undo' })}>↶</button><button aria-label="Redo scenario edit" disabled={!history.future.length} onClick={() => dispatch({ type: 'redo' })}>↷</button></div></div>
@@ -176,7 +191,17 @@ function Studio({ data }) {
             <div className="section-heading"><h3>Shape the proposal</h3><span className="data-badge">Assumed</span></div><p className="section-help">These are editable massing templates, not measured buildings or an approved design.</p>
             <label className="planner-field"><span>Housing type · option {slot}</span><select value={option.typeId} onChange={e => changeType(e.target.value)}>{BUILDING_IDS.map(id => <option key={id} value={id}>{BUILDINGS[id].label}</option>)}</select></label>
             <div className="field-grid three"><Numeric label="Width (m)" value={option.width} min={2} max={100} onChange={v => setOption('width', v)}/><Numeric label="Depth (m)" value={option.depth} min={2} max={100} onChange={v => setOption('depth', v)}/><Numeric label="Height (m)" value={option.height} min={3} max={100} onChange={v => setOption('height', v)}/></div>
+            <details className="planner-details placement-controls" open>
+              <summary>Position & orientation <span>{option.placement ? 'Manual placement' : 'Automatic parcel alignment'}</span></summary>
+              <p>Automatic placement follows parcel edges; street frontage is not identified. Manual moves preserve your chosen size and position.</p>
+              <fieldset disabled={evaluation.pending || !evaluated}>
+              <div className="field-grid three"><Numeric label="Bearing (°)" value={round(placement.bearing)} min={0} max={359.9} step={5} onChange={v => moveProposal({ bearing: v })}/><Numeric label="East offset (m)" value={round(placement.east)} min={-2000} max={2000} step={1} onChange={v => moveProposal({ east: v })}/><Numeric label="North offset (m)" value={round(placement.north)} min={-2000} max={2000} step={1} onChange={v => moveProposal({ north: v })}/></div>
+              <small>Bearing: depth axis clockwise from north. Offsets: from parcel bounding-box centre.</small>
+              <div className="placement-actions"><button onClick={() => moveProposal({ bearing: (placement.bearing + 345) % 360 })}>Rotate −15°</button><button onClick={() => moveProposal({ bearing: (placement.bearing + 15) % 360 })}>Rotate +15°</button><button aria-pressed={placing} onClick={() => setPlacing(!placing)}>{placing ? 'Cancel placement' : 'Place on map'}</button><button onClick={() => { setOption('placement', null); setPlacing(false) }}>Reset alignment</button></div>
+              </fieldset>
+            </details>
             {evaluated && <div className={`fit-note ${evaluated.eligible ? 'fits' : 'review'}`}><strong>{evaluated.gate}</strong><p>{evaluated.massing.reason}</p><small>{evaluated.permission.label} · §911.02. Unit count remains {evaluated.units}; dimensions do not calculate dwelling capacity.</small></div>}
+            {evaluated && <p className="section-help">{evaluated.massing.collisions === null ? 'Recorded-building overlap check unavailable; no option is ranked until the building layer loads.' : evaluated.massing.collisions > 0 ? `${evaluated.massing.collisions} recorded building outline(s) touch or overlap this proposal. Redevelopment or demolition needs review; existing structures are not removed.` : 'No overlap with the loaded recorded building outlines. This is not proof of vacancy.'}</p>}
             <div className="section-heading"><h3>Affordability assumptions</h3><span className="data-badge">Editable</span></div><p className="section-help">Starting income and gross rent come from the selected Census geography as context. Proposed rent and utilities are independent assumptions, not a forecast.</p>
             <Numeric label="Target household income / year ($)" value={scenario.targetIncome} min={1000} max={500000} step={1000} onChange={v => set('targetIncome', v)}/>
             <div className="field-grid"><Numeric label={`Rent / month · ${slot} ($)`} value={option.rent} max={10000} step={50} onChange={v => setOption('rent', v)}/><Numeric label="Utilities / month ($)" value={option.utilities} max={2000} step={25} onChange={v => setOption('utilities', v)}/></div>
@@ -211,7 +236,7 @@ function Factor({ factor, options, result, scenario, onWeight }) {
   const a = options.A, b = options.B
   const details = {
     demand: 'Existing neighborhood sales activity and team-chosen lot-fit curve. Not a forecast of household or typology demand. Infrastructure edits leave it unchanged.',
-    physical: '100 if the fixed-size rectangular footprint passes the sampled outline search, otherwise 0. Zoning permission separately gates ranking. Setbacks, building access, height limits and engineering remain unchecked.',
+    physical: '100 if the fixed-size footprint fits inside the parcel without touching recorded buildings; otherwise 0. Missing building context excludes this factor and withholds ranking. Zoning permission separately gates ranking. Setbacks, street frontage, height limits, occupancy, demolition and engineering remain unchecked.',
     affordability: 'Monthly proposed rent + utilities divided by target monthly household income. Score falls linearly from 100 at 20% burden to 0 at 50%; these anchors are value judgments.',
     displacement: '100 minus the existing tract displacement screen. Same for both types. New service does not predict or rewrite displacement.',
     capacity: 'Available daily boardings divided by assumed new housing boardings, capped at 100. Baseline reserve + added departures × available places. Unknown reserve excludes this factor in both comparisons. Utilities not assessed.',
@@ -222,7 +247,7 @@ function Factor({ factor, options, result, scenario, onWeight }) {
     if (factor.id === 'affordability') return `${fmt(o.burden === null ? null : o.burden * 100, '%')} cost burden`
     if (factor.id === 'capacity') return `${fmt(o.supply)} available / ${fmt(o.demandBoardings)} assumed boardings`
     if (factor.id === 'access') return `${fmt(o.service?.minutes, ' min')} walk + wait`
-    if (factor.id === 'physical') return o.massing.fits ? 'Outline fits' : 'No sampled fit'
+    if (factor.id === 'physical') return !o.massing.fits ? 'Outline does not fit' : o.massing.collisions === null ? 'Building context unavailable' : o.massing.collisions ? 'Recorded building overlap' : 'Outline + overlap pass'
     if (factor.id === 'carbon') return `${fmt(o.raw.carbon_index)} relative index / home`
     if (factor.id === 'displacement') return `${fmt(o.raw.displacement_risk)} tract risk`
     return `${fmt(o.raw.demand)} market/lot proxy`
