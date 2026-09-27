@@ -1909,6 +1909,32 @@ def main(refresh=False):
                 },
             ),
             _source(
+                "EIA Residential Energy Consumption Survey 2020, Table CE1.2",
+                "https://www.eia.gov/consumption/residential/data/2020/c&e/xls/ce1.2.xlsx",
+                "U.S. Energy Information Administration",
+                "Public domain, U.S. federal work",
+                "published_reference",
+                "Northeast census region, average annual site energy per household: single-family detached 120.7, single-family attached 85.4, apartments in 2-4 unit buildings 68.0, apartments in 5+ unit buildings 36.2 million Btu. Used as ratios in the marginal-carbon estimate. Existing homes of all ages; site energy, not emissions.",
+                {
+                    "catalog_name": "EIA RECS 2020 (not on the organizers' list)",
+                    "catalog_url": "https://www.eia.gov/consumption/residential/data/2020/",
+                    "caveat": "Existing-stock averages; new construction under current codes uses less energy.",
+                },
+            ),
+            _source(
+                "Embodied carbon by residential building form",
+                "https://doi.org/10.1088/2634-4505/adfc95",
+                "Zuluaga & Saxe 2025 (Environ. Res.: Infrastruct. Sustain. 5 035015); Rankin, Arceo, Isin & Saxe 2024 (J. Industrial Ecology 28(3):455-468, https://doi.org/10.1111/jiec.13461)",
+                "Journal articles",
+                "published_reference",
+                "Only the direction is used: new single-unit dwellings carry more embodied GHG per home than new multi-unit homes (city medians about 79,000-102,000 versus 39,000-60,000 kgCO2e per dwelling in Zuluaga & Saxe). The carbon estimate turns that into a coarse tier (1.0 single-family, 0.6 multi-unit), which is a choice, not a measurement.",
+                {
+                    "catalog_name": "Embodied carbon studies (not on the organizers' list)",
+                    "catalog_url": "https://doi.org/10.1088/2634-4505/adfc95",
+                    "caveat": "Canadian and U.S. city samples; variation within a building form is larger than between forms.",
+                },
+            ),
+            _source(
                 "EPA EJScreen",
                 "https://www.epa.gov/ejscreen/download-ejscreen-data",
                 "U.S. EPA",

@@ -36,6 +36,9 @@ const SITE_SOURCE_NAMES = new Set([
   "ACS 2024 5-year table B25003 (tenure)",
   "ACS 2015-2019 5-year table B25064 (median gross rent)",
   "Comprehensive Housing Affordability Strategy (CHAS)",
+  "Census 2020 to 2010 tract relationship file, Pennsylvania",
+  "EIA Residential Energy Consumption Survey 2020, Table CE1.2",
+  "Embodied carbon by residential building form",
 ])
 
 function typeLabel(typeId) {
