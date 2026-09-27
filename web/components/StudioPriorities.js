@@ -1,0 +1,5 @@
+import { STUDIO_PRESETS, FACTOR_LABELS } from '../lib/studioPresentation.js'
+import { PLANNER_FACTORS } from '../lib/plannerState.js'
+export default function StudioPriorities({weights,onChange,included=[]}) {
+ return <section className="studio-priorities"><div className="section-heading"><h3>What matters most?</h3></div><p className="compact-help">These are your priorities. They change the ranking, not the underlying evidence.</p><div className="priority-presets">{STUDIO_PRESETS.map(p=><button key={p.id} aria-pressed={PLANNER_FACTORS.every(f=>weights[f.id]===p.weights[f.id])} onClick={()=>onChange({...p.weights})}>{p.label}</button>)}</div>{PLANNER_FACTORS.map(f=><label className="priority-slider" key={f.id}><span>{FACTOR_LABELS[f.id]} <b>{weights[f.id]}</b></span><input aria-label={`${FACTOR_LABELS[f.id]} priority`} type="range" min="0" max="100" step="5" value={weights[f.id]} onChange={e=>onChange({...weights,[f.id]:Number(e.target.value)})}/>{!included.includes(f.id)&&<small>{weights[f.id]===0?'Switched off':'Missing shared evidence — excluded'}</small>}</label>)}</section>
+}

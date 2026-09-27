@@ -7,7 +7,7 @@ import { rectangleAt } from './plannerGeometry.js'
 function fixture() {
  const scores=Object.fromEntries(['single_family','townhouse_duplex','small_apartment','large_apartment'].map(id=>[id,{demand:60,displacement_risk:30,carbon_index:20}]))
  const feature={type:'Feature',properties:{pin:'one',zoning_code:'TEST',scores},geometry:rectangleAt([-79.94,40.41],150,150)}
- const zoning={districts:{TEST:{use_table_read:true,allowed:['single_family','townhouse_duplex','small_apartment','large_apartment'],use_rows:{'Single-Unit Detached':'P','Three-Unit':'P','Multi-Unit':'P'}}}}
+ const zoning={districts:{TEST:{use_table_read:true,code_section:'Synthetic test fixture',allowed:['single_family','townhouse_duplex','small_apartment','large_apartment'],use_rows:{'Single-Unit Detached':'P','Three-Unit':'P','Multi-Unit':'P'}}}}
  const stop={stop_id:'bus',coordinates:[-79.94,40.41],distance:0,weekday_trips:80}
  const scenario=initialScenario('one',feature.properties,'bus')
  scenario.options={A:optionFor('single_family',1000),B:optionFor('small_apartment',1000)}
@@ -18,6 +18,8 @@ function fixture() {
 test('shared transit reserve is counted once and area factors use proposed-home weights',()=>{
  const input=fixture(), r=evaluatePlanner(input)
  assert.equal(r.scope,'area')
+ assert.equal(r.proposal.A.eligible,true)
+ assert.equal(r.proposal.B.eligible,true)
  assert.equal(r.proposal.A.area.units,4)
  assert.equal(r.proposal.A.scores.capacity,100)
  assert.ok(Math.abs(r.proposal.B.scores.capacity-100*8/30)<1e-9)
@@ -62,4 +64,15 @@ test('add/remove are atomic, reversible, and retain complete placement in export
  h=scenarioReducer(h,{type:'redo'});assert.deepEqual(h.present,added)
  h=scenarioReducer(h,{type:'removeBuilding',id:site.id});assert.equal(h.present.buildings.length,0)
  h=scenarioReducer(h,{type:'undo'});assert.deepEqual(h.present,added)
+})
+
+test('placed-plan totals exclude the draft and use the shared pool only once',()=>{
+ const input=fixture(), r=evaluatePlanner(input)
+ assert.equal(r.placedPlan.proposal.units,3)
+ assert.equal(r.placedPlan.proposal.buildings,1)
+ assert.equal(r.placedPlan.proposal.total,100)
+ input.scenario.options.A=optionFor('large_apartment',9000)
+ const changed=evaluatePlanner(input)
+ assert.deepEqual(changed.placedPlan,r.placedPlan)
+ assert.equal(evaluatePlanner({...input,areaSites:[]}).placedPlan,null)
 })

@@ -12,7 +12,7 @@ import { buildingHeightDescription, buildingHeightSource } from '../lib/building
 const empty = () => ({ type: 'FeatureCollection', features: [] })
 const fc = features => ({ type: 'FeatureCollection', features })
 
-export default function PlannerMap({ parcels, neighborhoods, stops, existingBuildings, showExisting, selected, option, slot, stop, proposed, additionalDepartures, view3d, onSelect, onStop, tool, placing, onPlace, onHover, placedBuildings = [], network, networkResult, reservations, connections, drawing, draftNode, onDraw }) {
+export default function PlannerMap({ parcels, neighborhoods, stops, existingBuildings, showExisting, selected, option, slot, stop, proposed, additionalDepartures, view3d, onSelect, onStop, tool, placing, onPlace, onHover, placedBuildings = [], network, networkResult, reservations, connections, drawing, draftNode, onDraw, discoveryPins = [] }) {
   const container = useRef(null), mapRef = useRef(null), callbacks = useRef({ onSelect, onStop, tool, placing, onPlace })
   const [ready, setReady] = useState(false), [error, setError] = useState(null)
   const lastPin = useRef(null)
@@ -43,11 +43,12 @@ export default function PlannerMap({ parcels, neighborhoods, stops, existingBuil
       map.addSource('districts', { type: 'geojson', data: neighborhoods })
       map.addSource('stops', { type: 'geojson', data: stops || empty() })
       map.addSource('existing-buildings', { type: 'geojson', data: empty(), promoteId: 'id', attribution: '<a href="https://mapservices.pasda.psu.edu/server/rest/services/pasda/AlleghenyCounty/MapServer/11">Allegheny County / PASDA buildings</a> · Heights: County / <a href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors, ODbL</a>' })
-      for (const id of ['placed-buildings', 'building', 'selected', 'service', 'network-nodes', 'parks', 'reservations', 'connections', 'draft-node']) map.addSource(id, { type: 'geojson', data: empty() })
+      for (const id of ['discovery', 'placed-buildings', 'building', 'selected', 'service', 'network-nodes', 'parks', 'reservations', 'connections', 'draft-node']) map.addSource(id, { type: 'geojson', data: empty() })
       map.addSource('walking-network', { type: 'geojson', data: empty(), attribution: '<a href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors · ODbL</a>' })
       map.addLayer({ id: 'district-line', type: 'line', source: 'districts', paint: { 'line-color': '#78978c', 'line-width': 2, 'line-dasharray': [3, 3] } })
       map.addLayer({ id: 'parcel-fill', type: 'fill', source: 'parcels', paint: { 'fill-color': ['case', ['get', 'vacant'], '#81b99c', '#e6e9e3'], 'fill-opacity': .28 } })
       map.addLayer({ id: 'parcel-line', type: 'line', source: 'parcels', minzoom: 14, paint: { 'line-color': '#788f84', 'line-width': .6, 'line-opacity': .55 } })
+      map.addLayer({ id: 'discovery-outline', type: 'line', source: 'discovery', paint: { 'line-color': '#0891b2', 'line-width': 2 } })
       map.addLayer({ id: 'selected-fill', type: 'fill', source: 'selected', paint: { 'fill-color': '#2b8061', 'fill-opacity': .12 } })
       map.addLayer({ id: 'selected-line', type: 'line', source: 'selected', paint: { 'line-color': '#23694f', 'line-width': 2.5 } })
       map.addLayer({ id: 'park-fill', type: 'fill', source: 'parks', paint: { 'fill-color': '#87af67', 'fill-opacity': .35 } })
@@ -105,6 +106,7 @@ export default function PlannerMap({ parcels, neighborhoods, stops, existingBuil
     return () => { observer.disconnect(); marker.current?.remove(); marker.current = null; popup.current?.remove(); map.remove(); mapRef.current = null; networkDisplayed.current = false }
   }, [parcels, neighborhoods, stops])
 
+  useEffect(() => { if (ready) { const pins = new Set(discoveryPins); mapRef.current.getSource('discovery').setData(fc(parcels.features.filter(f => pins.has(f.properties.pin)))) } }, [ready, discoveryPins, parcels])
   useEffect(() => { if (ready) mapRef.current.getSource('existing-buildings').setData(existingBuildings || empty()) }, [ready, existingBuildings])
   useEffect(() => {
     if (!ready) return
@@ -147,9 +149,9 @@ export default function PlannerMap({ parcels, neighborhoods, stops, existingBuil
 
   useEffect(() => {
     if (!ready || !mapRef.current) return
-    const building = option?.massing.geometry ? [{ type: 'Feature', geometry: option.massing.geometry, properties: { height: option.height, color: placing ? (option.eligible ? PLACEMENT_COLORS.valid : PLACEMENT_COLORS.invalid) : slot === 'A' ? '#0891b2' : '#eab308' } }] : []
+    const building = tool !== 'sites' && option?.massing.geometry && (placing || (option.massing.fits && option.massing.collisions === 0)) ? [{ type: 'Feature', geometry: option.massing.geometry, properties: { height: option.height, color: placing ? (option.eligible ? PLACEMENT_COLORS.valid : PLACEMENT_COLORS.invalid) : slot === 'A' ? '#0891b2' : '#eab308' } }] : []
     mapRef.current.getSource('building').setData(fc(building))
-  }, [ready, option, slot, placing])
+  }, [ready, option, slot, placing, tool])
 
   useEffect(() => {
     if (!ready) return

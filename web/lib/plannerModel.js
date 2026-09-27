@@ -113,6 +113,21 @@ function screenOptions(options, { feature, zoning, scenario, stop, existingBuild
   return { baseline, proposal, included, excluded }
 }
 
+
+/** The placed plan alone, separate from the next-building alternatives. */
+export function summarizePlacedPlan(committed, weights) {
+  if (!committed.baseline.length) return null
+  const members = [...committed.baseline, ...committed.proposal]
+  const included = PLANNER_FACTORS.map(f => f.id).filter(id => weights[id] > 0 && members.every(m => numeric(m.scores[id])))
+  const summaries = Object.fromEntries(['baseline', 'proposal'].map(state => {
+    const options = committed[state], units = options.reduce((n, o) => n + o.units, 0)
+    const scores = Object.fromEntries(PLANNER_FACTORS.map(f => [f.id, options.every(o => numeric(o.scores[f.id])) ? options.reduce((n, o) => n + o.scores[f.id] * o.units, 0) / units : null]))
+    const eligible = options.every(o => o.eligible)
+    return [state, { scores, units, buildings: options.length, parcels: new Set(options.map(o => o.pin)).size, eligible, total: eligible ? weighted({ scores }, weights, included) : null }]
+  }))
+  return { ...summaries, included }
+}
+
 export function evaluatePlanner({ feature, zoning, scenario, stop, existingBuildings = null, networkContext = null, shortlistSlot = 'B', areaSites = [] }) {
   const routed = scenario.accessMode === 'network'
   const infrastructureErrors = [...(scenario.connections || []).map(c => validateConnection(networkContext?.network, c)), ...(scenario.parks || []).map(p => validatePark(networkContext?.network, p))].filter(Boolean)
@@ -154,7 +169,7 @@ export function evaluatePlanner({ feature, zoning, scenario, stop, existingBuild
   const changed = before !== after
   const accessDelta = baseline.A.service && proposal.A.service ? baseline.A.service.minutes - proposal.A.service.minutes : null
   const infrastructureEdited = (scenario.connections?.length || 0) + (scenario.parks?.length || 0) > 0
-  const result = { baseline, proposal, included, excluded, before, after, changed, accessDelta, reservations, infrastructureErrors, committed, scope: areaSites.length ? 'area' : 'parcel',
+  const result = { baseline, proposal, included, excluded, before, after, changed, accessDelta, reservations, infrastructureErrors, committed, placedPlan: summarizePlacedPlan(committed, scenario.weights), scope: areaSites.length ? 'area' : 'parcel',
     explanation: infrastructureErrors.length ? `Proposal ranking is withheld: ${[...new Set(infrastructureErrors)].join(' ')}`
       : infrastructureEdited ? `${scenario.connections?.length || 0} connection(s) and ${scenario.parks?.length || 0} park(s) are proposed. ${accessDelta === null ? 'Stop access could not be compared on this network.' : `Modeled walk + wait changes by ${round(-accessDelta)} minutes.`} ${changed ? 'The preferred option changes under these assumptions.' : 'The housing preference stays the same.'} Access benefits are shared; reserved land can change housing fit. Park access has a ${scenario.parkAccessShare || 0}% share of the access factor. Demand, rents, displacement and carbon are held unchanged.`
       : !stop ? 'No scheduled stop is available. Transit access and capacity are excluded.'

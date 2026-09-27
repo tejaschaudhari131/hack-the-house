@@ -251,3 +251,81 @@
 .area-plan li strong, .area-plan li small { display: block; font-size: 11px; }
 .area-plan .section-heading span { font-size: 10px; }
 .area-plan li small { color: #637463; padding-top: 3px; }
+/* Compact discovery, decisions and assumptions share one map. Scoped to Studio. */
+.studio-workspace { grid-template-columns: minmax(0, 1fr) 440px; }
+.inspector-tabs { display: flex; padding: 0 16px; border-bottom: 1px solid var(--line); gap: 4px; }
+.studio .inspector-tabs button { flex: 1; border: 0; border-radius: 0; padding: 12px 3px; background: transparent; font-size: 12px; border-bottom: 3px solid transparent; }
+.studio .inspector-tabs button[aria-pressed=true] { color: #214f40; border-bottom-color: #306b55; font-weight: 650; }
+.compact-help { font-size: 12px; color: #617465; line-height: 1.5; margin: 8px 0 14px; }
+.studio-rankings .section-heading span { font-size: 11px; color: #637463; }
+.coverage-pill { display: flex; align-items: center; justify-content: space-between; font-size: 11px; padding: 8px; background: #edf2e9; border-radius: 6px; }
+.studio .coverage-pill button { border: 0; background: none; text-decoration: underline; font-size: 11px; }
+.housing-cards { list-style: none; padding: 0; display: grid; gap: 14px; }
+.housing-card { padding: 13px; border: 1px solid #d7e1d2; border-left: 4px solid var(--housing-color); border-radius: 8px; background: #fffefa; }
+.housing-card.unranked { background: #f5f5f0; }
+.housing-card-heading, .housing-card-heading > div { display: flex; align-items: flex-start; gap: 8px; }
+.housing-card-heading { justify-content: space-between; }
+.housing-card-heading h4 { font-size: 14px; font-weight: 650; margin: 0; line-height: 1.4; }
+.housing-card-heading > strong { font-size: 23px; font-weight: 650; line-height: 1; font-variant-numeric: tabular-nums; }
+.housing-card.unranked .housing-card-heading > strong { font-size: 13px; }
+.rank-number { font-size: 13px; color: #74836b; }
+.card-meta { display: flex; justify-content: space-between; gap: 8px; font-size: 10px; margin: 9px 0 12px; color: #5a715b; }
+.card-meta > span:last-child { text-align: right; max-width: 65%; }
+.mini-factors { display: grid; gap: 7px; }
+.mini-factors > div { display: grid; grid-template-columns: minmax(0, 1fr) 57px 32px; gap: 6px; align-items: center; font-size: 11px; position: relative; }
+.mini-factors small { font-size: 8px; color: #75816e; margin-left: 3px; }
+.mini-factors b { text-align: right; font-weight: 550; font-variant-numeric: tabular-nums; }
+.mini-factors em { grid-column: 1 / -1; font-size: 9px; color: #8b7752; margin-top: -6px; font-style: normal; }
+.factor-track { height: 5px; border-radius: 4px; background: #e9ede4; overflow: hidden; }
+.factor-track i { display: block; height: 100%; background: var(--housing-color); }
+.mini-factors .excluded .factor-track { opacity: .3; }
+.card-tradeoffs { border-top: 1px solid #e5eadd; margin-top: 12px; padding-top: 8px; }
+.card-tradeoffs small { font-size: 9px; color: #708169; }
+.card-tradeoffs p { font-size: 10px; line-height: 1.5; margin: 4px 0; }
+.card-tradeoffs .pro { color: #27664e; }
+.card-tradeoffs .con { color: #945b39; }
+.card-action { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-top: 10px; }
+.card-action small { font-size: 9px; color: #6d7f62; }
+.studio .card-action button { white-space: nowrap; font-size: 11px; padding: 7px 10px; }
+.compact-checks { font-size: 11px; line-height: 1.5; margin-top: 10px; }
+.compact-checks summary { cursor: pointer; }
+.priority-presets { display: flex; flex-wrap: wrap; gap: 6px; margin: 20px 0; }
+.studio .priority-presets button { font-size: 11px; padding: 7px 10px; }
+.studio .priority-presets button[aria-pressed=true] { background: #315b46; color: white; }
+.priority-slider { display: block; margin: 20px 0; }
+.priority-slider > span { display: flex; justify-content: space-between; font-size: 13px; }
+.priority-slider input { width: 100%; margin: 10px 0 0; accent-color: #38785b; }
+.priority-slider small { color: #8e6b37; font-size: 10px; }
+.studio .assumptions-link { width: 100%; border: 0; border-top: 1px solid #dce5d8; padding: 14px 0; text-align: left; background: transparent; font-size: 12px; }
+.site-filter-checks { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; padding: 12px 0; }
+.site-filter-checks label { display: flex; gap: 5px; align-items: center; }
+.studio-site-results { list-style: none; padding: 0; }
+.studio-site-results li { border-bottom: 1px solid #e0e5da; }
+.studio .studio-site-results button { display: block; width: 100%; text-align: left; padding: 12px 0; border: 0; background: transparent; }
+.studio-site-results strong, .studio-site-results small { display: block; font-size: 12px; }
+.studio-site-results small { color: #6a7c61; font-size: 10px; padding-top: 4px; line-height: 1.5; }
+.studio .studio-site-results button[aria-pressed=true] { color: #176342; }
+.studio .find-sites-button { border: 0; font-size: 12px; padding: 10px; }
+.studio .evidence-panel summary { cursor: pointer; font-size: 12px; }
+.network-notice { max-width: min(600px, calc(100vw - 32px)); z-index: 10; }
+.network-notice button { margin-left: 12px; border: 0; background: transparent; font-size: 18px; }
+.canvas-legend { max-width: 520px; font-size: 9px; gap: 6px 12px; }
+.massing-tray { bottom: 147px; }
+.studio-rankings[aria-busy=true] .housing-cards { opacity: .6; }
+.studio .planner-field > span { font-size: 12px; }
+.studio .section-heading h3 { font-size: 14px; }
+@media (max-width: 1150px) and (min-width: 761px) { .studio-workspace { grid-template-columns: minmax(0,1fr) 390px; } .canvas-legend { max-width: calc(100% - 100px); } .canvas-heading h1 { font-size: 22px; } .massing-tray { bottom: 180px; } }
+@media (max-width: 760px) { .canvas-legend { max-width: calc(100% - 30px); } .massing-tray { bottom: 170px; } .inspector-tabs { position: sticky; top: 0; z-index: 2; background: #fafcf5; } }
+.studio .inspector-top { padding: 10px 18px; }
+.studio .inspector-scroll { padding: 12px 18px 24px; }
+.studio .site-heading h2 { font-size: 19px; margin: 5px 0; }
+.studio .site-tags { margin-top: 8px; }
+.studio .option-tabs { margin: 12px 0; }
+.studio .option-tabs button { padding: 8px; }
+.studio .section-heading { margin-top: 14px; }
+.studio .studio-rankings > .compact-help { font-size: 11px; margin: 5px 0 8px; }
+.studio .coverage-pill { margin: 7px 0 10px; padding: 6px; }
+.advanced-options > summary { font-weight: 600; font-size: 13px; }
+.placed-plan-score { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 5px; font-size: 11px; margin-bottom: 0; }
+.placed-plan-score strong { font-size: 18px; font-variant-numeric: tabular-nums; }
+.placed-plan-score small { grid-column: 1 / -1; color: #6c7e62; font-size: 10px; }
