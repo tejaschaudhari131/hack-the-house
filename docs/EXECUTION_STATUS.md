@@ -96,6 +96,18 @@ Screenshots and the brief PDF are in the agent artifacts (`/opt/cursor/artifacts
 
 Recovery: the last known-good production commit is `8ff2989` (Checkpoint 2). Roll back in Vercel to that deployment if a later merge misbehaves.
 
+## Presentation pass (after Checkpoint 3)
+
+- Branch `cursor/ui-friendly-navigation-ded8` from `bd9e866`. No change to scoring, comparison math, permission logic, data, or tests; 66/66 JS and all Python tests still pass.
+- Three-step navigation (Find sites · Compare options · Get the brief) with the current step marked (`aria-current="step"`), a next-step bar, **Start guided example** as the primary button, **How it works**, and **Browse the parcel map** as the fallback view. The app now opens on step 1.
+- Answer first: the comparison and parcel views open with a headline result (which option scores higher, scores out of 100, allowed / needs special approval / not allowed / check with the City, shown with a text mark and a word, not color alone) and one plain sentence of why (`plainSummary()` restates the computed comparison). The points table, sweep, evidence, option details, data coverage, not-evaluated list, share and JSON, and flag box are behind labeled expanders.
+- Plain labels on primary surfaces (for example "Market & lot fit", "Housing need", "Allowed"); precise terms stay in tooltips and details.
+- "What matters most to you?": priority buttons first, sliders folded under "Fine-tune with sliders", and a live "Ranking changed: …" message in compare, parcel, and Find Sites views.
+- Step 3 shows the decision brief on screen with Print / save as PDF (the print-only copy is unchanged).
+- Shorter three-screen intro; closing it returns keyboard focus to the skip link (it only appears on keyboard focus).
+- Checks (headless Chrome, local production build): Tab order skip link → Start guided example → How it works → steps 1–3 → Browse, all with visible outlines; 0 px horizontal overflow at 390 px; guided flow works end to end; the "Ranking changed" cue appears when Housing-need emphasis reverses the demo comparison. The MapLibre "Worker failed to load" console error also appears on production in this headless setup (pre-existing).
+- Screenshots in `/opt/cursor/artifacts/ui/` (before and after first screen, each step, details expanded, narrow). `docs/DEMO_SCRIPT.md` is updated for the new navigation; the re-recording waits for the owner's go.
+
 ## Next action
 
 Owner's assistant: merge PR #2 once CI and build pass, then check the production deploy. Owner: merge the Checkpoint 3 PR, fill the TODO fields in `docs/SUBMISSION.md`, upload the recording, add a model key if available (then re-record the explanation segment), and submit the form. The agent does not submit.

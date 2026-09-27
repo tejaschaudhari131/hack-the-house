@@ -76,6 +76,7 @@ export default function Onboarding({ open, onClose, onExample }) {
     } catch {}
     onClose()
     if (next === "example") onExample()
+    else setTimeout(() => document.querySelector(".skip-link")?.focus(), 0)
   }
 
   const current = STEPS[step]
