@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from 'react'
-import { Map as GLMap, Marker, NavigationControl, ScaleControl } from 'maplibre-gl'
+import { Map as GLMap, Marker, Popup, NavigationControl, ScaleControl } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { geometryCenter, rectangleAt } from '../lib/plannerGeometry.js'
 import { configureMapWorkers } from '../lib/maplibreSetup.js'
@@ -9,11 +9,12 @@ import { configureMapWorkers } from '../lib/maplibreSetup.js'
 const empty = () => ({ type: 'FeatureCollection', features: [] })
 const fc = features => ({ type: 'FeatureCollection', features })
 
-export default function PlannerMap({ parcels, neighborhoods, stops, selected, option, slot, stop, proposed, additionalDepartures, view3d, onSelect, onStop, tool }) {
+export default function PlannerMap({ parcels, neighborhoods, stops, existingBuildings, showExisting, selected, option, slot, stop, proposed, additionalDepartures, view3d, onSelect, onStop, tool }) {
   const container = useRef(null), mapRef = useRef(null), callbacks = useRef({ onSelect, onStop, tool })
   const [ready, setReady] = useState(false), [error, setError] = useState(null)
   const lastPin = useRef(null)
   const marker = useRef(null)
+  const popup = useRef(null)
   callbacks.current = { onSelect, onStop, tool }
 
   useEffect(() => {
@@ -37,12 +38,14 @@ export default function PlannerMap({ parcels, neighborhoods, stops, selected, op
       map.addSource('parcels', { type: 'geojson', data: parcels, promoteId: 'pin' })
       map.addSource('districts', { type: 'geojson', data: neighborhoods })
       map.addSource('stops', { type: 'geojson', data: stops || empty() })
+      map.addSource('existing-buildings', { type: 'geojson', data: empty(), promoteId: 'id', attribution: '<a href="https://mapservices.pasda.psu.edu/server/rest/services/pasda/AlleghenyCounty/MapServer/11">Allegheny County / PASDA buildings</a>' })
       for (const id of ['building', 'selected', 'service']) map.addSource(id, { type: 'geojson', data: empty() })
       map.addLayer({ id: 'district-line', type: 'line', source: 'districts', paint: { 'line-color': '#78978c', 'line-width': 2, 'line-dasharray': [3, 3] } })
       map.addLayer({ id: 'parcel-fill', type: 'fill', source: 'parcels', paint: { 'fill-color': ['case', ['get', 'vacant'], '#81b99c', '#e6e9e3'], 'fill-opacity': .28 } })
       map.addLayer({ id: 'parcel-line', type: 'line', source: 'parcels', minzoom: 14, paint: { 'line-color': '#788f84', 'line-width': .6, 'line-opacity': .55 } })
       map.addLayer({ id: 'selected-fill', type: 'fill', source: 'selected', paint: { 'fill-color': '#2b8061', 'fill-opacity': .12 } })
       map.addLayer({ id: 'selected-line', type: 'line', source: 'selected', paint: { 'line-color': '#23694f', 'line-width': 2.5 } })
+      map.addLayer({ id: 'existing-buildings-fill', type: 'fill-extrusion', source: 'existing-buildings', minzoom: 14, paint: { 'fill-extrusion-height': ['get', 'height_m'], 'fill-extrusion-color': ['case', ['==', ['get', 'height_method'], 'stories_estimate'], '#aab4af', '#c1c5bd'], 'fill-extrusion-opacity': .8 } })
       map.addLayer({ id: 'service-link', type: 'line', source: 'service', filter: ['==', ['geometry-type'], 'LineString'], paint: { 'line-color': '#386da3', 'line-width': 2.5, 'line-dasharray': [2, 2] } })
       map.addLayer({ id: 'stops-points', type: 'circle', source: 'stops', minzoom: 14, paint: { 'circle-radius': 4, 'circle-color': '#fff', 'circle-stroke-color': '#587693', 'circle-stroke-width': 1.5 } })
       map.addLayer({ id: 'service-zone', type: 'fill-extrusion', source: 'service', filter: ['==', ['geometry-type'], 'Polygon'], paint: { 'fill-extrusion-height': 1.5, 'fill-extrusion-color': ['get', 'color'], 'fill-extrusion-opacity': .95 } })
@@ -51,6 +54,20 @@ export default function PlannerMap({ parcels, neighborhoods, stops, selected, op
       map.on('click', event => {
         const stopHit = map.queryRenderedFeatures(event.point, { layers: ['stops-points'] })[0]
         if (stopHit && callbacks.current.tool === 'service') { callbacks.current.onStop(String(stopHit.properties.stop_id)); return }
+        const buildingHit = map.queryRenderedFeatures(event.point, { layers: ['existing-buildings-fill'] })[0]
+        if (buildingHit && !map.queryRenderedFeatures(event.point, { layers: ['building-fill'] }).length) {
+          const p = buildingHit.properties
+          const content = document.createElement('div')
+          content.className = 'building-popup'
+          const title = document.createElement('strong'); title.textContent = 'Recorded building footprint'
+          const detail = document.createElement('p'); detail.textContent = p.height_method === 'stories_estimate' ? `${p.height_m} m estimated from ${p.stories} recorded stories (3 m/story + 1.5 m assumed roof).` : '9 m placeholder. No usable building-height evidence is available.'
+          const note = document.createElement('small'); note.textContent = 'County footprint · height is not measured · occupancy unverified'
+          content.append(title, detail, note)
+          popup.current?.remove()
+          popup.current = new Popup({ maxWidth: '260px' }).setLngLat(event.lngLat).setDOMContent(content).addTo(map)
+          if (p.pin) callbacks.current.onSelect(p.pin)
+          return
+        }
         const hit = map.queryRenderedFeatures(event.point, { layers: ['parcel-fill'] })[0]
         if (hit) callbacks.current.onSelect(hit.properties.pin)
       })
@@ -60,8 +77,15 @@ export default function PlannerMap({ parcels, neighborhoods, stops, selected, op
     })
     const observer = new ResizeObserver(() => map.resize())
     observer.observe(container.current)
-    return () => { observer.disconnect(); marker.current?.remove(); marker.current = null; map.remove(); mapRef.current = null }
+    return () => { observer.disconnect(); marker.current?.remove(); marker.current = null; popup.current?.remove(); map.remove(); mapRef.current = null }
   }, [parcels, neighborhoods, stops])
+
+  useEffect(() => { if (ready) mapRef.current.getSource('existing-buildings').setData(existingBuildings || empty()) }, [ready, existingBuildings])
+  useEffect(() => {
+    if (!ready) return
+    mapRef.current.setLayoutProperty('existing-buildings-fill', 'visibility', showExisting ? 'visible' : 'none')
+    if (!showExisting) popup.current?.remove()
+  }, [ready, showExisting])
 
   useEffect(() => {
     const map = mapRef.current

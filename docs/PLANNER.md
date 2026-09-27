@@ -40,7 +40,7 @@ Only factors available in **both housing alternatives and both infrastructure st
 
 The service tool uses one stop's aggregate departures; it does not sum identical trips at neighboring stops. Added departures are user-authored assumptions. It does not modify source feeds or create a feasible operating timetable. It does not predict changes in prices, observed demographics, displacement, utility headroom or emissions.
 
-Massing dimensions and heights are **proposal assumptions**. Public footprint/LiDAR research has not been ingested into this release. Building units remain the selected template's count even when dimensions change; a larger volume does not automatically imply more feasible homes.
+Massing dimensions and heights are **proposal assumptions**. County building footprints now provide existing context. Their heights are assessment-based estimates or labelled placeholders; LiDAR has not been ingested. Building units remain the selected template's count even when dimensions change; a larger volume does not automatically imply more feasible homes.
 
 ## Code and growth path
 
@@ -60,3 +60,13 @@ The original AI endpoint reconstructs baseline facts. The new studio deliberatel
 `npm test` includes planner tests for both real examples, no-op equality, shared transit gains, unchanged carbon/displacement, unknown capacity, unserved stops, all-zero weights, geometry/permission gates, history replay, holes/concave shapes and versioned exports. `npm run build` checks both routes and worker bundling. Browser verification must also confirm vector/extrusion rendering; a basemap alone does not prove MapLibre's worker loaded.
 
 Before expanding analytical claims: ingest/validate building dimensions, add an audited pedestrian graph and actual destinations, obtain reviewed capacity inputs, and validate scenario-specific emissions and costs. Keep those unknowns visible until supported.
+
+## Existing building context
+
+Run `python pipeline/build_context.py` with `pipeline/requirements.txt` installed. The script reads only the two study-area bounding boxes from the County/PASDA building layer, verifies every requested source ID was returned, deduplicates, repairs polygonal geometry where possible, and retains complete footprints intersecting the neighborhood boundaries. It requests WGS84 coordinates (`outSR=4326`); the source is NAD83. No manual pixel alignment or parcel-wide extrusion is used.
+
+The assessment query selects only parcel IDs and `STORIES`. A story count is used only with one assessment row, at least 80% footprint overlap with the named parcel, and one footprint predominantly on that parcel. The display-height estimate is **stories × assumed 3 m + assumed 1.5 m roof allowance**. Other buildings have a **9 m visual placeholder**. Neither is a measured height. A building click exposes the method; the legend and evidence panel explain coverage. No unit counts or occupancy are inferred. Nonresidential buildings are included.
+
+`existing-buildings.sources.json` records source URLs, coordinate systems, input hashes/retrieval times, output hash and counts. Raw responses are cached in ignored `pipeline/data/raw/building_context`; remove that directory to refresh. The source layer does not declare explicit redistribution terms; resolve these before external publication. Layer/catalog dates do not guarantee that every structure is current.
+
+The layer loads separately from the planner and can be hidden or retried if unavailable. Its geometry is uploaded once per load, not on housing/service edits. It appears from zoom 14; citywide expansion should tile this geometry rather than extend the whole-file download. It does not change baseline scores or silently remove structures under proposals.
