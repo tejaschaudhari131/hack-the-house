@@ -8,6 +8,8 @@ const GAPS = [
   ["transit", "transit access"],
   ["equity", "equity"],
   ["climate_suitability", "lower climate hazard"],
+  ["displacement_suitability", "lower displacement risk"],
+  ["carbon_suitability", "lower estimated carbon"],
 ]
 
 /** One sentence on why two dropped buildings rank differently. Screening language only. */

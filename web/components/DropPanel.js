@@ -8,7 +8,7 @@ import { compareDrops } from "../lib/compare.js"
 import { explainTemplate } from "../lib/explainTemplate.js"
 import { clearFlag, loadFlags, saveFlag } from "../lib/flags.js"
 import { featurePoint, stopsWithin } from "../lib/geo.js"
-import { TYPE_LABELS, rankTypes } from "../lib/rank.js"
+import { TYPE_LABELS, WEIGHT_LABELS, inverted, rankTypes } from "../lib/rank.js"
 import { dropZoningBadge, resolveZoning } from "../lib/zoning.js"
 
 const CODE_URL = "https://ecode360.com/45474054"
@@ -202,6 +202,8 @@ function DropCard({ drop, feature, weights, zoning, stops, summary, onClear }) {
       <ScoreLine label="Transit" value={row?.transit} {...SCORE_TAGS.transit} />
       <ScoreLine label="Equity" value={row?.equity} {...SCORE_TAGS.equity} />
       <ScoreLine label="Climate risk" value={row?.climate_risk} {...SCORE_TAGS.climate_risk} />
+      <ScoreLine label="Displacement risk (screen)" value={row?.displacement_risk} {...SCORE_TAGS.displacement_risk} />
+      <ScoreLine label="Marginal carbon (estimate)" value={row?.carbon_index} {...SCORE_TAGS.carbon_index} />
       <ScoreLine label="Weighted total" value={row?.composite} {...SCORE_TAGS.composite} />
       <button type="button" className="explain" onClick={onExplain} disabled={explaining}>
         {explaining ? "Writing explanation…" : "Explain this parcel"}
@@ -259,6 +261,8 @@ export default function DropPanel({
         transit: row?.transit ?? null,
         equity: row?.equity ?? null,
         climate_suitability: row?.climate_suitability ?? null,
+        displacement_suitability: inverted(row?.displacement_risk),
+        carbon_suitability: inverted(row?.carbon_index),
       }
     })
   }, [byPin, drops, weights, zoning])
@@ -321,7 +325,7 @@ export default function DropPanel({
         {Object.entries(weights).map(([key, value]) => (
           <label key={key} className="slider">
             <span>
-              {key === "climate" ? "Climate (prefer lower hazard)" : key[0].toUpperCase() + key.slice(1)}{" "}
+              {WEIGHT_LABELS[key] || key}{" "}
               <strong>{value}</strong>
             </span>
             <input

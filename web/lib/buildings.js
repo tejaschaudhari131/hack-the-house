@@ -27,8 +27,17 @@ export const SCORE_TAGS = {
     measured: "FEMA flood overlap, 25%+ slope as a landslide-risk proxy, and undermined area.",
     choice: "The 50/30/20 blend and the climate weight. The total uses 100 minus this risk.",
   },
+  displacement_risk: {
+    measured:
+      "Tract renter share (ACS 2020–2024), CHAS 2018–2022 low-income renter cost burden, and median rent growth versus the county (ACS 2015–2019 to 2020–2024).",
+    choice: "Anchors, the 50/50 vulnerability and pressure blend, and the displacement weight. Same for every type. A screening signal, not a prediction.",
+  },
+  carbon_index: {
+    measured: "EIA RECS 2020 Northeast site energy per household by building type, and this place's transit score.",
+    choice: "The embodied-carbon tier, the 60/40 building and transport split, and the carbon weight. A relative estimate, not tonnes.",
+  },
   composite: {
-    measured: "Only the measured pieces of the four scores above.",
-    choice: "The four weights. Missing scores are skipped, not treated as zero.",
+    measured: "Only the measured pieces of the six scores above.",
+    choice: "The six weights. Risk, displacement, and carbon count as 100 minus the value. Missing scores are skipped, not treated as zero.",
   },
 }
