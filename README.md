@@ -68,7 +68,7 @@ Comparison-layer decisions are deferred for the policy teammate: planning bounda
 - [Data pipeline](pipeline/README.md) and [zoning rules](zoning/README.md)
 - [AI tools used](docs/AI_TOOLS.md)
 
-`web/` contains the Next.js app. `pipeline/` prepares the data. `zoning/` contains the reviewed-use-table work. Runtime datasets and source manifests live in `web/public/data/`.
+`web/` contains the Next.js app. `pipeline/` prepares the data. `zoning/` contains the zoning use-table rules. Runtime datasets and source manifests live in `web/public/data/`.
 
 ## Team
 

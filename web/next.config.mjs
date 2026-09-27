@@ -12,6 +12,10 @@ function commitSha() {
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  async redirects() {
+    // Explorer links created before Studio became the home page keep their scenario.
+    return [{ source: "/", has: [{ type: "query", key: "s" }], destination: "/explore", permanent: false }]
+  },
   env: {
     NEXT_PUBLIC_COMMIT_SHA: commitSha().slice(0, 12),
     NEXT_PUBLIC_BUILT_AT: new Date().toISOString(),

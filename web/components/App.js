@@ -298,7 +298,7 @@ export default function App() {
     modelVersion: model?.version,
     dataVersion: summary?.pulled_at,
   })
-  const shareUrl = typeof window === "undefined" ? "" : `${window.location.origin}/?s=${encodeState(scenarioState)}`
+  const shareUrl = typeof window === "undefined" ? "" : `${window.location.origin}/explore?s=${encodeState(scenarioState)}`
   const shareControls = <ScenarioShare shareUrl={shareUrl} state={scenarioState} onLoadState={(raw) => applyState(raw, "scenario file")} />
 
   const guideBanner = guide ? (
