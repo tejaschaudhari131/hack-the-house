@@ -205,7 +205,7 @@ export default function ParcelPanel({
           <input
             value={query}
             onChange={(event) => onQuery(event.target.value)}
-            placeholder="Try a street name"
+            name="address-search" placeholder="Try a street name"
           />
         </label>
         {query.trim() && matches.length === 0 ? <p className="hint">No address match in the MVP area.</p> : null}
@@ -399,7 +399,7 @@ export default function ParcelPanel({
                   <input
                     value={flagNote}
                     onChange={(event) => setFlagNote(event.target.value)}
-                    placeholder="What looks wrong? Optional."
+                    name="flag-note" placeholder="What looks wrong? Optional."
                   />
                 </label>
                 <button type="submit">Save flag on this browser</button>

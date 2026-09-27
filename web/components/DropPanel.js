@@ -72,7 +72,7 @@ function FlagBox({ flagId, address }) {
     >
       <label>
         Flag this result as wrong
-        <input value={note} onChange={(event) => setNote(event.target.value)} placeholder="What looks wrong? Optional." />
+        <input value={note} onChange={(event) => setNote(event.target.value)} name="flag-note" placeholder="What looks wrong? Optional." />
       </label>
       <button type="submit">Save flag on this browser</button>
     </form>
@@ -358,7 +358,7 @@ export default function DropPanel({
         <h2>Find a parcel</h2>
         <label>
           Address search
-          <input value={query} onChange={(event) => onQuery(event.target.value)} placeholder="Try a street name" />
+          <input value={query} onChange={(event) => onQuery(event.target.value)} name="address-search" placeholder="Try a street name" />
         </label>
         {query.trim() && matches.length === 0 ? <p className="hint">No address match in the MVP area.</p> : null}
         {matchTotal > matches.length ? (
