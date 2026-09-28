@@ -1,6 +1,6 @@
 import { useMemo, useRef } from 'react'
 import { preparedEmptySiteIndex } from '../lib/emptySiteData.js'
-import { DETAIL_ZOOM } from '../lib/studioData.js'
+import { hasMapDetail } from '../lib/studioData.js'
 
 const EMPTY = { matches: [], pending: false, error: null }
 
@@ -8,7 +8,7 @@ export default function useEmptySites(enabled, chunks, visibleIds, viewport) {
   const indexes = useRef(new WeakMap())
   const scope = visibleIds.join('|')
   return useMemo(() => {
-    if (!enabled || !viewport || viewport.zoom < DETAIL_ZOOM) return EMPTY
+    if (!enabled || !hasMapDetail(viewport)) return EMPTY
     const matches = [], seen = new Set()
     try {
       for (const id of scope.split('|').filter(Boolean)) {

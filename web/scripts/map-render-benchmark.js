@@ -72,6 +72,38 @@ export function attachMapBenchmark(map) {
     button.textContent = label; button.style.cssText = 'padding:6px;margin:2px;border:1px solid #777'
     button.onclick = () => run(zoom); panel.append(button)
   }
+  const zoomCheck = document.createElement('button')
+  zoomCheck.textContent = 'Check zoom restoration'
+  zoomCheck.onclick = async () => {
+    const wait = async ms => { await new Promise(resolve => setTimeout(resolve, ms)); if (disposed) throw new Error('Benchmark cancelled') }
+    const snapshot = async () => {
+      await wait(400)
+      for (let i = 0; i < 100 && (!map.loaded() || map.isMoving()); i++) await wait(100)
+      if (!map.loaded() || map.isMoving()) throw new Error('Map did not settle')
+      const data = await map.getSource('existing-buildings').getData()
+      const rendered = [...new Set(map.queryRenderedFeatures({ layers: ['existing-buildings-fill', 'existing-buildings-overview'] }).map(f => f.properties.id))].sort()
+      return { zoom: map.getZoom(), counts: counts(), sourceIds: data.features.map(f => f.properties.id).sort(), renderedIds: rendered }
+    }
+    const buttons = [...panel.querySelectorAll('button')]
+    buttons.forEach(button => { button.disabled = true })
+    try {
+      const center = map.getCenter(), snapshots = [], overviews = []
+      map.jumpTo({ center, zoom: 17.6, pitch: 55, bearing: -25 })
+      snapshots.push(await snapshot())
+      for (let cycle = 0; cycle < 4; cycle++) {
+        output.textContent = JSON.stringify({ status: `Zoom cycle ${cycle + 1}/4…` })
+        for (const zoom of [16.05, 15.95, 14.05, cycle % 2 ? 13 : 13.95, 15.95, 16.05, 17.6]) {
+          map.jumpTo({ center, zoom, pitch: 55, bearing: -25 })
+          await wait(180)
+          if (zoom === 13) overviews.push(await snapshot())
+        }
+        snapshots.push(await snapshot())
+      }
+      output.textContent = JSON.stringify({ status: 'Zoom check complete', snapshots, overviews }, null, 2)
+    } catch (error) { if (!disposed) output.textContent = error.message }
+    finally { buttons.forEach(button => { button.disabled = false }) }
+  }
+  panel.append(zoomCheck)
   output.textContent = JSON.stringify({ context, status: 'Ready: finish loading, dismiss the tour, then run. Keep the tab active.' }, null, 2)
   panel.append(output); document.body.append(panel)
   return () => { disposed = true; cancelLeg?.(); if (activeRender) map.off('render', activeRender); taskObserver?.disconnect(); panel.remove() }

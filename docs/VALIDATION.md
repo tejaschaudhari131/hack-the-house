@@ -92,6 +92,20 @@ npm run start -- --port 3001
 
 Open `http://localhost:3001/?pin=0056F00338000000&renderBenchmark=1&antialias=off`, dismiss the tour if present, wait for the map and scores, then press **Run close camera benchmark**. Repeat with `antialias=on`. Use PIN `0083F00297000000` and **Run wide camera benchmark** for East Liberty. Keep the tab active, canvas size unchanged and avoid other GPU/CPU-heavy work during measurement. The diagnostic prints context attributes, sample count, render intervals, long tasks and visible-feature counts. It is absent from ordinary builds; rebuild without the environment variable for normal use. Antialiasing is isolated in its own feature commit for rollback.
 
+## Building zoom stability — September 27, 2026
+
+Repeated zoom changes in East Liberty reproduced disappearing buildings: all 486 selected building records remained in the source, but 8 previously rendered IDs disappeared and a rendered feature had no ID. A render buffer alone did not resolve that mismatch. The installed `@maplibre/geojson-vt` 6.1.1 returns immediately when an update includes `removeAllProperties`, ignoring the replacement properties. Overlapping neighborhood chunks can supply new object copies of the same building; those updates then lose height, colour and promoted ID in worker tiles even though the main-thread source remains correct.
+
+Map patches now remove only obsolete property keys before setting the current values. The regression test runs against the actual installed tiler: it fails with the old patch and passes with the corrected patch, retaining IDs, fractional heights and colours while removing obsolete properties. No dependency update or full-source replacement is required.
+
+Studio also retains a 25% geographic margin around each camera edge, reuses it through small movements, shrinks it on substantial zoom-in, and restores cached neighborhood display during movement independently of settled-camera downloads. Detail enters at zoom 14 and exits below 13.5; 3D still starts at 16. The active-neighborhood-plus-immediate-neighbors limit remains in force. Tests cover buffered pan/zoom selection, cutoff hysteresis, cached restoration, neighborhood limits and exact feature retention.
+
+In the corrected production build, four rapid East Liberty zoom cycles (crossing 16, 14 and alternating 13.95/13) returned all **309 originally rendered building IDs** each time, with no unidentified rendered features. The buffered source contained 975 buildings at rest, including offscreen context. Both full overview stops cleared the detailed source to zero. These checks use MapLibre's rendered-feature queries and source data at the same camera pose; they do not compare a rendered count directly with the larger buffered source count.
+
+Hazelwood also restored all **94 originally rendered IDs** on each of four cycles, with 289 buffered source buildings and zero detailed features at both overview stops. No browser console errors were observed. The wider East Liberty camera benchmark used the same desktop, canvas and three-run orbit protocol as the antialiasing trial: median **57.53 FPS** and **26.2 ms p95** versus the earlier 56.69 FPS / 28.3 ms. This is comparable performance, not a demonstrated speed increase. One run still had a 107.7 ms interval; mobile and larger canvases remain unmeasured. [Counts, ID hashes and frame timings](benchmarks/zoom-stability.json) retain both the failing and corrected observations.
+
+All **35 web test files pass**, including citywide coordinate/height preservation and score parity; the production build passes. To repeat the browser check, use the opt-in benchmark build described above and press **Check zoom restoration** after loading the site. This diagnostic is omitted from ordinary builds.
+
 ## Historical checkpoints
 
 At the Checkpoint 3 commit: JS 66/66 pass; Python `test_score` 18, `test_pii` 5, `test_sites` 5 pass; `next build` succeeds.

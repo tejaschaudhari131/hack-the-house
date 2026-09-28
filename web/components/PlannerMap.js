@@ -11,7 +11,7 @@ import { configureMapWorkers } from '../lib/maplibreSetup.js'
 import { haversineMeters } from '../lib/geo.js'
 import { simulatedColor } from '../lib/buildingUses.js'
 import { buildingHeightDescription, buildingHeightSource } from '../lib/buildingHeights.js'
-import { DETAIL_ZOOM } from '../lib/studioData.js'
+import { DETAIL_ZOOM, DETAIL_EXIT_ZOOM, hasMapDetail, renderViewport } from '../lib/studioData.js'
 import { mapSourceDiff } from '../lib/mapSourceDiff.js'
 import { networkDisplayIndex } from '../lib/networkDisplay.js'
 
@@ -24,15 +24,16 @@ export default function PlannerMap({ parcelIndex, buildingIndex, neighborhoods, 
   const container = useRef(null), mapRef = useRef(null), callbacks = useRef({ onSelect, onStop, tool, placing, onPlace })
   const [ready, setReady] = useState(false), [error, setError] = useState(null)
   const [viewport, setViewport] = useState(null)
-  const visibleParcels = useMemo(() => viewport?.zoom >= DETAIL_ZOOM ? parcelIndex.query(viewport.bounds) : [], [viewport, parcelIndex])
-  const visibleBuildings = useMemo(() => viewport?.zoom >= DETAIL_ZOOM && showExisting ? buildingIndex.query(viewport.bounds) : [], [viewport, buildingIndex, showExisting])
+  const detail = hasMapDetail(viewport), renderBounds = viewport?.bounds
+  const visibleParcels = useMemo(() => detail ? parcelIndex.query(renderBounds) : [], [detail, renderBounds, parcelIndex])
+  const visibleBuildings = useMemo(() => detail && showExisting ? buildingIndex.query(renderBounds) : [], [detail, renderBounds, buildingIndex, showExisting])
   const lastPin = useRef(null)
   const marker = useRef(null)
   const popup = useRef(null)
   const uploaded = useRef(new Map())
   const roadIndex = useMemo(() => tool === 'network' && network ? networkDisplayIndex(network, neighborhoods) : null, [tool, network, neighborhoods])
   const visibleKey = visibleNeighborhoodIds.join('|')
-  const visibleRoads = useMemo(() => viewport?.zoom >= DETAIL_ZOOM && roadIndex ? roadIndex.query(viewport.bounds, visibleKey.split('|').filter(Boolean)) : [], [roadIndex, viewport, visibleKey])
+  const visibleRoads = useMemo(() => detail && roadIndex ? roadIndex.query(renderBounds, visibleKey.split('|').filter(Boolean)) : [], [roadIndex, detail, renderBounds, visibleKey])
   function updateFeatures(id, features) {
     const idProperty = ['existing-buildings', 'walking-network'].includes(id) ? 'id' : 'pin'
     const { next, diff } = mapSourceDiff(uploaded.current.get(id), features, idProperty)
@@ -80,37 +81,37 @@ export default function PlannerMap({ parcelIndex, buildingIndex, neighborhoods, 
       map.addSource('walking-network', { type: 'geojson', data: empty(), promoteId: 'id', attribution: '<a href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors · ODbL</a>' })
       map.addLayer({ id: 'district-line', type: 'line', source: 'districts', paint: { 'line-color': '#78978c', 'line-width': 2, 'line-dasharray': [3, 3] } })
       map.addLayer({ id: 'district-fill', type: 'fill', source: 'districts', maxzoom: DETAIL_ZOOM, paint: { 'fill-color': '#78978c', 'fill-opacity': .12 } }, 'district-line')
-      map.addLayer({ id: 'parcel-fill', type: 'fill', source: 'parcels', minzoom: DETAIL_ZOOM, paint: { 'fill-color': ['case', ['get', 'vacant'], '#81b99c', '#e6e9e3'], 'fill-opacity': .28 } })
-      map.addLayer({ id: 'parcel-line', type: 'line', source: 'parcels', minzoom: 14, paint: { 'line-color': '#788f84', 'line-width': .6, 'line-opacity': .55 } })
-      map.addLayer({ id: 'empty-site-fill', type: 'fill', source: 'empty-sites', minzoom: DETAIL_ZOOM, paint: { 'fill-color': '#fbbf24', 'fill-opacity': .45 } })
-      map.addLayer({ id: 'empty-site-outline', type: 'line', source: 'empty-sites', minzoom: DETAIL_ZOOM, paint: { 'line-color': '#a16207', 'line-width': 2 } })
+      map.addLayer({ id: 'parcel-fill', type: 'fill', source: 'parcels', minzoom: DETAIL_EXIT_ZOOM, paint: { 'fill-color': ['case', ['get', 'vacant'], '#81b99c', '#e6e9e3'], 'fill-opacity': .28 } })
+      map.addLayer({ id: 'parcel-line', type: 'line', source: 'parcels', minzoom: DETAIL_EXIT_ZOOM, paint: { 'line-color': '#788f84', 'line-width': .6, 'line-opacity': .55 } })
+      map.addLayer({ id: 'empty-site-fill', type: 'fill', source: 'empty-sites', minzoom: DETAIL_EXIT_ZOOM, paint: { 'fill-color': '#fbbf24', 'fill-opacity': .45 } })
+      map.addLayer({ id: 'empty-site-outline', type: 'line', source: 'empty-sites', minzoom: DETAIL_EXIT_ZOOM, paint: { 'line-color': '#a16207', 'line-width': 2 } })
       map.addLayer({ id: 'discovery-outline', type: 'line', source: 'discovery', paint: { 'line-color': '#0891b2', 'line-width': 2 } })
       map.addLayer({ id: 'selected-fill', type: 'fill', source: 'selected', paint: { 'fill-color': '#2b8061', 'fill-opacity': .12 } })
       map.addLayer({ id: 'selected-line', type: 'line', source: 'selected', paint: { 'line-color': '#23694f', 'line-width': 2.5 } })
       map.addLayer({ id: 'park-fill', type: 'fill', source: 'parks', paint: { 'fill-color': '#87af67', 'fill-opacity': .35 } })
-      map.addLayer({ id: 'network-line', type: 'line', source: 'walking-network', minzoom: 14, layout: { visibility: 'none' }, paint: { 'line-color': '#598daf', 'line-width': 2, 'line-opacity': .7 } })
+      map.addLayer({ id: 'network-line', type: 'line', source: 'walking-network', minzoom: DETAIL_EXIT_ZOOM, layout: { visibility: 'none' }, paint: { 'line-color': '#598daf', 'line-width': 2, 'line-opacity': .7 } })
       map.addLayer({ id: 'network-nodes', type: 'circle', source: 'network-nodes', minzoom: 16, paint: { 'circle-color': '#fff', 'circle-radius': 3, 'circle-stroke-color': '#467a9c', 'circle-stroke-width': 1.5 } })
       map.addLayer({ id: 'reservation-fill', type: 'fill', source: 'reservations', paint: { 'fill-color': ['case', ['==', ['get', 'kind'], 'park'], '#70aa53', '#bd8d55'], 'fill-opacity': .6 } })
       map.addLayer({ id: 'connection-line', type: 'line', source: 'connections', paint: { 'line-color': '#a16736', 'line-width': 4 } })
       map.addLayer({ id: 'saved-route-line', type: 'line', source: 'saved-routes', paint: { 'line-color': '#137bd1', 'line-width': 5 } })
       map.addLayer({ id: 'draft-point', type: 'circle', source: 'draft-node', paint: { 'circle-color': '#f3b45b', 'circle-radius': 7, 'circle-stroke-color': '#fff', 'circle-stroke-width': 2 } })
-      map.addLayer({ id: 'existing-buildings-overview', type: 'fill', source: 'existing-buildings', minzoom: DETAIL_ZOOM, maxzoom: 16, paint: { 'fill-color': ['coalesce', ['get', 'use_color'], '#cbd5e1'], 'fill-opacity': .8 } })
+      map.addLayer({ id: 'existing-buildings-overview', type: 'fill', source: 'existing-buildings', minzoom: DETAIL_EXIT_ZOOM, maxzoom: 16, paint: { 'fill-color': ['coalesce', ['get', 'use_color'], '#cbd5e1'], 'fill-opacity': .8 } })
       map.addLayer({ id: 'existing-buildings-fill', type: 'fill-extrusion', source: 'existing-buildings', minzoom: 16, paint: { 'fill-extrusion-height': ['get', 'height_m'], 'fill-extrusion-color': ['coalesce', ['get', 'use_color'], '#cbd5e1'], 'fill-extrusion-opacity': .8 } })
       map.addLayer({ id: 'service-link', type: 'line', source: 'service', filter: ['==', ['geometry-type'], 'LineString'], paint: { 'line-color': '#386da3', 'line-width': 3 } })
-      map.addLayer({ id: 'stops-points', type: 'circle', source: 'stops', minzoom: 14, paint: { 'circle-radius': 4, 'circle-color': '#fff', 'circle-stroke-color': '#587693', 'circle-stroke-width': 1.5 } })
+      map.addLayer({ id: 'stops-points', type: 'circle', source: 'stops', minzoom: DETAIL_EXIT_ZOOM, paint: { 'circle-radius': 4, 'circle-color': '#fff', 'circle-stroke-color': '#587693', 'circle-stroke-width': 1.5 } })
       map.addLayer({ id: 'service-zone', type: 'fill-extrusion', source: 'service', filter: ['==', ['geometry-type'], 'Polygon'], paint: { 'fill-extrusion-height': 1.5, 'fill-extrusion-color': ['get', 'color'], 'fill-extrusion-opacity': .95 } })
       map.addLayer({ id: 'placed-buildings-fill', type: 'fill-extrusion', source: 'placed-buildings', paint: { 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-color': ['get', 'color'], 'fill-extrusion-opacity': .96 } })
       map.addLayer({ id: 'placed-buildings-outline', type: 'line', source: 'placed-buildings', paint: { 'line-color': ['case', ['get', 'valid'], '#fff', '#dc2626'], 'line-width': 2, 'line-dasharray': [2, 1] } })
       map.addLayer({ id: 'building-fill', type: 'fill-extrusion', source: 'building', paint: { 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-color': ['get', 'color'], 'fill-extrusion-opacity': .6 } })
       map.addLayer({ id: 'building-outline', type: 'line', source: 'building', paint: { 'line-color': ['get', 'color'], 'line-width': 2.5, 'line-dasharray': [2, 1] } })
-      for (const id of ['discovery-outline', 'selected-fill', 'selected-line', 'park-fill', 'reservation-fill', 'connection-line', 'saved-route-line', 'draft-point', 'service-link', 'service-zone', 'placed-buildings-fill', 'placed-buildings-outline', 'building-fill', 'building-outline']) map.setLayerZoomRange(id, DETAIL_ZOOM, 24)
+      for (const id of ['discovery-outline', 'selected-fill', 'selected-line', 'park-fill', 'reservation-fill', 'connection-line', 'saved-route-line', 'draft-point', 'service-link', 'service-zone', 'placed-buildings-fill', 'placed-buildings-outline', 'building-fill', 'building-outline']) map.setLayerZoomRange(id, DETAIL_EXIT_ZOOM, 24)
       let hoverFrame = null
       map.on('mousemove', event => {
         if (!callbacks.current.placing || hoverFrame) return
         hoverFrame = requestAnimationFrame(() => { hoverFrame = null; callbacks.current.onHover?.([event.lngLat.lng, event.lngLat.lat]) })
       })
       map.on('click', event => {
-        if (map.getZoom() < DETAIL_ZOOM) return
+        if (!hasMapDetail(currentViewport)) return
         if (callbacks.current.drawing) { callbacks.current.onDraw([event.lngLat.lng, event.lngLat.lat]); return }
         if (callbacks.current.placing) { callbacks.current.onPlace([event.lngLat.lng, event.lngLat.lat]); return }
         const stopHit = map.queryRenderedFeatures(event.point, { layers: ['stops-points'] })[0]
@@ -142,15 +143,16 @@ export default function PlannerMap({ parcelIndex, buildingIndex, neighborhoods, 
       publishViewport(true)
       setReady(true)
     })
-    let viewportTimer = null
+    let viewportTimer = null, currentViewport = null
     const publishViewport = (loadNeighborhoods = false) => {
       clearTimeout(viewportTimer); viewportTimer = null
       const bounds = map.getBounds()
-      const next = { zoom: map.getZoom(), bounds: [bounds.getWest(), bounds.getSouth(), bounds.getEast(), bounds.getNorth()] }
+      const next = renderViewport(currentViewport, { zoom: map.getZoom(), bounds: [bounds.getWest(), bounds.getSouth(), bounds.getEast(), bounds.getNorth()] })
+      currentViewport = next
       setViewport(next)
-      if (loadNeighborhoods) callbacks.current.onViewport?.(next)
-      if (marker.current) marker.current.getElement().hidden = next.zoom < DETAIL_ZOOM
-      if (next.zoom < DETAIL_ZOOM) popup.current?.remove()
+      callbacks.current.onViewport?.(next, loadNeighborhoods)
+      if (marker.current) marker.current.getElement().hidden = !next.detail
+      if (!next.detail) popup.current?.remove()
     }
     // Cull existing detail while moving, but request new neighborhoods only after
     // the camera settles. Zooming out cannot start a burst of intermediate loads.
@@ -250,5 +252,5 @@ export default function PlannerMap({ parcelIndex, buildingIndex, neighborhoods, 
     if (point) lastPin.current = selected.properties.pin
   }, [ready, selected, view3d])
 
-  return <><div ref={container} className="planner-map" data-detail-level={!viewport || viewport.zoom < DETAIL_ZOOM ? 'overview' : viewport.zoom < 16 ? 'footprints' : '3d'} data-visible-neighborhoods={visibleKey} data-visible-parcels={visibleParcels.length} data-visible-buildings={visibleBuildings.length} data-visible-roads={visibleRoads.length} aria-label="3D parcel planning map. Select a parcel on the map or use the address search." />{error && <div className="planner-map-error" role="alert">{error}</div>}</>
+  return <><div ref={container} className="planner-map" data-detail-level={!detail ? 'overview' : viewport.zoom < 16 ? 'footprints' : '3d'} data-visible-neighborhoods={visibleKey} data-visible-parcels={visibleParcels.length} data-visible-buildings={visibleBuildings.length} data-visible-roads={visibleRoads.length} aria-label="3D parcel planning map. Select a parcel on the map or use the address search." />{error && <div className="planner-map-error" role="alert">{error}</div>}</>
 }

@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { mapSourceDiff } from './mapSourceDiff.js'
+import { GeoJSONVT } from '@maplibre/geojson-vt'
 
 const feature = (pin, height = 12.3456789) => ({ type: 'Feature', properties: { pin, height }, geometry: { type: 'Polygon', coordinates: [[[-79.923456789,40.412345678],[-79.923556789,40.412345678],[-79.923556789,40.412445678],[-79.923456789,40.412345678]]] } })
 function apply(map, diff) {
@@ -12,6 +13,7 @@ function apply(map, diff) {
     const f = map.get(change.id)
     if (change.newGeometry) f.geometry = structuredClone(change.newGeometry)
     if (change.removeAllProperties) f.properties = {}
+    for (const key of change.removeProperties || []) delete f.properties[key]
     for (const { key, value } of change.addOrUpdateProperties || []) f.properties[key] = value
   }
 }
@@ -50,4 +52,23 @@ test('promoted building and road IDs are supported and duplicate/missing IDs can
   assert.deepEqual(mapSourceDiff(undefined, [road], 'id').diff, { add: [road] })
   assert.throws(() => mapSourceDiff(undefined, [feature('a'), feature('a')], 'pin'), /unique/)
   assert.throws(() => mapSourceDiff(undefined, [feature(undefined)], 'pin'), /unique/)
+})
+
+test('real MapLibre tiler retains IDs, heights and colours when a cached chunk replaces a feature', () => {
+  const original = feature('home'), first = mapSourceDiff(undefined, [original], 'pin')
+  const tiler = new GeoJSONVT({ type: 'FeatureCollection', features: [] }, { promoteId: 'pin', updateable: true, maxZoom: 20, tolerance: 0 })
+  tiler.updateData(first.diff)
+  // The same building arrives as a different object from an overlapping chunk.
+  const replacement = structuredClone(original)
+  replacement.properties.use_color = '#abcdef'
+  const next = mapSourceDiff(first.next, [replacement], 'pin')
+  tiler.updateData(next.diff)
+  const [lng, lat] = original.geometry.coordinates[0][0], z = 18, scale = 2 ** z
+  const x = Math.floor((lng + 180) / 360 * scale)
+  const y = Math.floor((1 - Math.asinh(Math.tan(lat * Math.PI / 180)) / Math.PI) / 2 * scale)
+  const tileFeature = () => tiler.getTile(z, x, y).features.find(f => f.tags.pin === 'home')
+  assert.deepEqual(tileFeature()?.tags, replacement.properties, 'worker tiles must retain promoted ID and extrusion height')
+  const changed = { ...replacement, properties: { pin: 'home', height: 22.3456789 } }
+  tiler.updateData(mapSourceDiff(next.next, [changed], 'pin').diff)
+  assert.deepEqual(tileFeature()?.tags, changed.properties, 'removed colours cannot persist on rendered tiles')
 })
