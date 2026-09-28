@@ -8,7 +8,7 @@ export default function useNeighborhoodData(manifest, initialChunk, requiredIds,
   const cache = useRef(new Map([[initialChunk.id, initialChunk.data]]))
   const display = useRef(null)
   display.current ||= createNeighborhoodDisplay()
-  const [chunks, setChunks] = useState(cache.current), [error, setError] = useState(null), [pending, setPending] = useState(false), [attempt, setAttempt] = useState(0)
+  const [chunks, setChunks] = useState(() => new Map(cache.current)), [error, setError] = useState(null), [pending, setPending] = useState(false), [attempt, setAttempt] = useState(0)
   const boundaries = useMemo(() => new Map((neighborhoods?.features || []).map(f => [neighborhoodId(f.properties.name), f.geometry])), [neighborhoods])
   const visibleKey = useMemo(() => visibleNeighborhoods(manifest, viewport, activeId, boundaries).join('|'), [manifest, viewport, activeId, boundaries])
   const wantedKey = [...new Set([activeId, ...requiredIds, ...extraIds, ...visibleKey.split('|').filter(Boolean)])].join('|')
