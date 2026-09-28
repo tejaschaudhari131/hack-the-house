@@ -210,6 +210,10 @@ After placement, A/B and the five-template shortlist compare the whole placed pl
 
 ## Unified Studio interface
 
+**Highlight empty sites** marks conservative candidates in amber: affirmative vacancy records, no contradictory recorded use or mapped building overlap, known positive lot area, and at least one standard template with a by-right residential use, physical fit and no supported Title Nine conflict. Recorded public open space is excluded. Unknown/special-use permission is not treated as a pass. Missing building context produces no highlight. Other unsupported checks remain unassessed; a highlight does not establish availability, utility capacity or development approval. An unhighlighted site may support other designs or redevelopment.
+
+This discovery layer uses existing conditions and standard templates, independent of priorities and infrastructure edits. Clicking a highlight previews the first fitting template (not the highest-scoring type); selecting it runs the full current-plan evaluation. Parcels with a placed building leave the highlight. The original evidence and scoring are unchanged. Screening runs in a separate, cancellable worker for the current viewport and loaded visible neighborhoods, caches results only within that scope, hides below detail zoom, and makes no additional data requests. Full parcel and footprint geometry is retained for the checks.
+
 Studio now includes a Sites tool with record/use filters and map highlights; selecting a result continues on the same map. `/explore`, its source components, original scoring model and parcel download remain unchanged for reference. Existing-use colours do not encode recommendations.
 
 Rankings show all seven suitability scores (higher is preferred), evidence kinds, exclusions, eligibility and short exact weighted advantages/disadvantages against the best other eligible template. Tied options retain their tie; no advantage is fabricated. Priorities provides seven visible sliders and explicit team-authored stakeholder presets. These preset weights are normative choices, not measured stakeholder preferences.

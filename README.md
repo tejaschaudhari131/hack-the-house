@@ -12,7 +12,7 @@ The screenshots show the citywide branch. The preview may require team sign-in; 
 
 ## Try it
 
-1. **Pick a place.** Choose a neighborhood, then a parcel.
+1. **Pick a place.** Choose a neighborhood, then a parcel. Turn on **Highlight empty sites** to find screened vacant candidates; click one to try a fitting template.
 2. **Try housing types.** Preview houses, duplexes, triplexes and apartments. Place several to form a plan.
 3. **Compare options.** Open **Rankings → Compare to**. See scores, factor differences and zoning checks side by side.
 4. **Set your priorities.** Use **Priorities** to change what matters. Relative weights matter: all 1s and all 100s produce the same ranking.

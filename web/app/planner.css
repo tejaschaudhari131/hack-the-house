@@ -400,6 +400,15 @@
 /* Compact map keys stay below the draft without covering it when expanded. */
 .map-overlays { position: absolute; left: 88px; bottom: 30px; width: min(520px, calc(100% - 106px)); display: flex; flex-direction: column; align-items: flex-start; gap: 12px; max-height: calc(100% - 95px); overflow-y: auto; scrollbar-width: thin; pointer-events: none; }
 .map-overlays > * { pointer-events: auto; flex-shrink: 0; }
+.empty-sites-control { width: min(355px, 100%); padding: 10px 12px; border: 1px solid #d4dfd2; border-radius: 9px; background: #fafcf8f5; color: #365447; font-size: 11px; }
+.empty-sites-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.empty-sites-row label { display: flex; align-items: center; gap: 7px; cursor: pointer; font-weight: 600; }
+.empty-sites-row input { margin: 0; accent-color: #87600d; }
+.empty-sites-row i { width: 11px; height: 11px; background: #fbbf2473; border: 2px solid #a16207; border-radius: 2px; }
+.empty-sites-row [role="status"] { font-size: 10px; white-space: nowrap; }
+.empty-sites-control details { margin-top: 9px; font-size: 10px; }
+.empty-sites-control summary { cursor: pointer; }
+.empty-sites-control p { line-height: 1.5; margin: 8px 0 0; }
 .map-overlays .massing-tray { position: static; width: min(355px, 100%); }
 .map-overlays .canvas-legend { position: static; display: block; width: 100%; max-width: 100%; padding: 0; border: 1px solid #d4dfd2; background: #fafcf8f5; backdrop-filter: blur(12px); border-radius: 9px; font-size: 11px; }
 .canvas-legend > summary { list-style: none; cursor: pointer; padding: 9px 11px; }
