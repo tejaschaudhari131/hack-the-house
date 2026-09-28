@@ -397,8 +397,8 @@
 .draft-preview-status i { width: 8px; height: 8px; border-radius: 50%; }
 .draft-preview-status small { flex-basis: 100%; color: #637463; font-size: 10px; }
 
-/* Compact map keys stay below the draft without covering it when expanded. */
-.map-overlays { position: absolute; left: 88px; bottom: 30px; width: min(520px, calc(100% - 106px)); display: flex; flex-direction: column; align-items: flex-start; gap: 12px; max-height: calc(100% - 95px); overflow-y: auto; scrollbar-width: thin; pointer-events: none; }
+/* Keep the map key separate so its popover never expands the draft stack. */
+.map-overlays { position: absolute; left: 88px; bottom: 82px; width: min(355px, calc(100% - 106px)); display: flex; flex-direction: column; align-items: flex-start; gap: 12px; max-height: calc(100% - 147px); overflow-y: auto; scrollbar-width: thin; pointer-events: none; }
 .map-overlays > * { pointer-events: auto; flex-shrink: 0; }
 .empty-sites-control { width: min(355px, 100%); padding: 10px 12px; border: 1px solid #d4dfd2; border-radius: 9px; background: #fafcf8f5; color: #365447; font-size: 11px; }
 .empty-sites-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -410,24 +410,26 @@
 .empty-sites-control summary { cursor: pointer; }
 .empty-sites-control p { line-height: 1.5; margin: 8px 0 0; }
 .map-overlays .massing-tray { position: static; width: min(355px, 100%); }
-.map-overlays .canvas-legend { position: static; display: block; width: 100%; max-width: 100%; padding: 0; border: 1px solid #d4dfd2; background: #fafcf8f5; backdrop-filter: blur(12px); border-radius: 9px; font-size: 11px; }
-.canvas-legend > summary { list-style: none; cursor: pointer; padding: 9px 11px; }
+.canvas-legend { position: absolute; left: 88px; bottom: 30px; z-index: 3; display: block; width: max-content; max-width: calc(100% - 106px); padding: 0; border: 1px solid #d4dfd2; background: #fafcf8f5; border-radius: 9px; font-size: 12px; }
+.canvas-legend > summary { display: flex; align-items: center; gap: 9px; list-style: none; cursor: pointer; padding: 10px 12px; font-weight: 600; }
 .canvas-legend > summary::-webkit-details-marker { display: none; }
-.canvas-legend .legend-heading { justify-content: space-between; font-weight: 650; margin-bottom: 7px; }
-.canvas-legend .legend-expand, .canvas-legend .legend-collapse { font-size: 10px; font-weight: 400; }
-.canvas-legend .legend-collapse, .canvas-legend[open] .legend-expand { display: none; }
-.canvas-legend[open] .legend-collapse { display: flex; }
-.canvas-legend .legend-chips { display: flex; flex-wrap: wrap; gap: 7px 12px; font-size: 10px; }
-.canvas-legend .legend-chips > span { white-space: nowrap; }
+.canvas-legend .legend-icon { gap: 2px; }
+.canvas-legend .legend-icon i { width: 4px; height: 13px; }
+.canvas-legend[open] .legend-chevron { transform: rotate(180deg); }
 .canvas-legend i { flex-shrink: 0; }
-.legend-details { border-top: 1px solid #dce5d8; padding: 12px; }
-.legend-full-labels { display: grid; grid-template-columns: 1fr 1fr; gap: 9px 12px; margin: 12px 0; }
-.legend-markers { display: flex; flex-wrap: wrap; gap: 9px 12px; padding-top: 10px; border-top: 1px solid #dce5d8; }
-.legend-details p { font-size: 11px; line-height: 1.5; margin: 12px 0 5px; }
-.canvas-legend .legend-details small { font-size: 10px; }
+.legend-details { position: absolute; left: 0; bottom: calc(100% + 8px); width: 270px; max-width: calc(100vw - 110px); max-height: min(430px, calc(100dvh - 160px)); overflow-y: auto; padding: 14px; border: 1px solid #d4dfd2; border-radius: 12px; background: #fafcf8; box-shadow: 0 8px 28px #17372926; font-size: 11px; }
+.legend-details .existing-toggle { gap: 8px; font-size: 12px; }
+.legend-colours { width: 100%; border-collapse: collapse; margin: 12px 0; }
+.legend-colours th, .legend-colours td { padding: 5px 0; text-align: center; font-weight: 400; }
+.legend-colours th:first-child { text-align: left; }
+.legend-colours thead { color: #637463; font-size: 10px; }
+.legend-colours i { width: 13px; height: 13px; vertical-align: middle; border-radius: 3px; }
+.legend-colours .legend-planned { border: 1px dashed #fff; box-shadow: 0 0 0 1px #64748b55; }
+.legend-markers { display: grid; grid-template-columns: 1fr 1fr; gap: 9px 12px; padding-top: 12px; border-top: 1px solid #dce5d8; }
+.legend-details p { color: #637463; font-size: 10px; margin: 10px 0 0; }
 @media (max-width: 760px) {
-  .map-overlays { left: 82px; width: calc(100% - 98px); bottom: 33px; }
-  .legend-full-labels { grid-template-columns: 1fr; }
+  .map-overlays { left: 82px; width: calc(100% - 98px); bottom: 85px; }
+  .canvas-legend { left: 82px; bottom: 33px; }
 }
 
 /* A short, replayable tour. The native dialog handles modal keyboard focus. */

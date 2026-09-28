@@ -35,7 +35,7 @@ A six-step **Hazelwood example** opens on the first visit to Studio. **Tour** in
 
 The walkthrough uses a temporary scenario. **Skip**, Escape or **Return to my plan** restores the original parcel, scenario, undo/redo history, infrastructure view and inspector view. Demo changes do not remain in the user's plan. Each step starts from declared inputs, so Back does not accumulate edits. Dismissal is remembered in this browser; with storage blocked it still lasts for the current session.
 
-The map legend starts collapsed, with short labels and the existing building colours. Expand **Legend** for full labels, map symbols and the building-layer toggle.
+The compact **Map key** starts closed. It opens a small popover with existing/planned colour swatches side by side, map symbols and the existing-building toggle. Click outside or press Escape to close it. Opening the key does not move the other map controls.
 
 ### Neighborhood loading and map detail
 
@@ -219,6 +219,8 @@ Validation covers both real examples, no-op equality, shared transit gains witho
 ## Recorded building-use colours
 
 Studio colours existing footprints from the matched parcel assessment use, never from housing recommendations or inferred heights. Four housing bands share the Explorer palette; mixed/other residential and commercial/other nonresidential uses have separate colours. Unknown or contradictory vacant-use records stay neutral. Auxiliary footprints are not labelled as standalone homes. These are parcel-use classifications, not independently verified footprint occupancy. Explorer is unchanged.
+
+Placed proposals use a pastel version of their housing colour (45% white tint) with a white dashed footprint outline; conflicting placements retain the red outline. **Map key** shows the four planned-home tints beside the existing colours. Existing buildings, placement preview colours and comparison accents keep their original palette. This is a display change only, with no extra map layers or geometry.
 
 ## Area plans (planner-screen-1.5)
 
