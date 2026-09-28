@@ -43,6 +43,8 @@ The offline build partitions the walking graph into nine overlapping routing reg
 
 Run `npm run benchmark:studio` after building for reproducible payload and local CPU measurements. See [Validation](VALIDATION.md) for measured sizes and source parity. These are file/CPU measurements, not mobile frame-rate or 30-user load guarantees. Both maps restrict navigation to Pittsburgh's boundary extent, not an exact polygon mask.
 
+Studio requests native WebGL antialiasing to smooth 3D building edges, following [MapLibre's building example](https://maplibre.org/maplibre-gl-js/docs/examples/display-buildings-in-3d/). It does not increase pixel ratio, simplify outlines or alter heights. The browser selects the available sample count; it may decline antialiasing on some devices. The opt-in rendering benchmark and measured desktop results are documented in [Validation](VALIDATION.md#antialiasing-trial--september-27-2026).
+
 Tests cover neighborhood assignment, indexed source parity, complete city parcel round trips, hash verification, graph indices, failed/aborted requests, PIN lookup, viewport/cache behavior and original study regressions.
 
 Studio has one editable next-building draft, with no A/B controls. Cycle its housing type on the map or in Edit. In Rankings, **Compare to** adds any of the other four templates; **All types** compares all five, including triplex. **Expand comparison** opens the table at full width; **Back to map** returns to the same scene.
