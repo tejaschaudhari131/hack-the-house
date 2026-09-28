@@ -191,7 +191,7 @@ function Studio({ data }) {
   const tourIds = tourStep ? ['hazelwood', ...[savedScenario.pin, ...(savedScenario.buildings || []).map(b => b.pin)].map(pin => catalogue.get(pin).id)] : []
   const extraIds = [...historyIds, ...tourIds, ...(pendingPin ? [catalogue.get(pendingPin).id] : []), ...(tool === 'sites' ? manifest.neighborhoods.filter(n => n.area === catalogue.get(scenario.pin).properties.area).map(n => n.id) : [])]
   const loaded = useNeighborhoodData(manifest, initialChunk, requiredIds, viewport, extraIds, networkDescriptor.id, neighborhoods)
-  const emptySites = useEmptySites(highlightEmpty, loaded.chunks, loaded.visibleIds, viewport, zoning)
+  const emptySites = useEmptySites(highlightEmpty, loaded.chunks, loaded.visibleIds, viewport)
   const emptyCandidates = useMemo(() => {
     const placed = new Set((scenario.buildings || []).map(b => b.pin))
     return new Map(emptySites.matches.filter(site => !placed.has(site.pin)).map(site => [site.pin, site.typeId]))

@@ -6,10 +6,13 @@ import { createHash } from 'node:crypto'
 import { prepareStudioData } from '../scripts/prepare-studio-data.mjs'
 import { loadNeighborhood, locateNeighborhood } from './neighborhoodLoader.js'
 import { PITTSBURGH_NEIGHBORHOODS } from './pittsburgh.js'
-import { visibleNeighborhoods } from './studioData.js'
+import { visibleNeighborhoods, spatialIndex } from './studioData.js'
+import { prepareEmptySites } from './emptySites.js'
 
 test('all city chunks preserve canonical parcel evidence and hashes, with bounded files and valid routing indices',async()=>{
  const {manifest}=await prepareStudioData(), pins=new Set(),files=new Set()
+ const zoning=JSON.parse(await readFile(new URL('../public/data/zoning.json',import.meta.url)))
+ let candidates=0, candidateBytes=0
  const fetcher=async url=>({ok:true,json:async()=>JSON.parse(await readFile(new URL(`../public${url}`,import.meta.url)))})
  assert.deepEqual(manifest.neighborhoods.map(n=>n.name).sort(),[...PITTSBURGH_NEIGHBORHOODS].sort())
  assert.equal(manifest.catalogue,undefined)
@@ -22,13 +25,16 @@ test('all city chunks preserve canonical parcel evidence and hashes, with bounde
    assert.deepEqual(visibleNeighborhoods(manifest,{zoom:14,bounds:[-180,-85,180,85]},n.id),[n.id,...n.neighbors].sort())
    assert.deepEqual(visibleNeighborhoods(manifest,{zoom:13,bounds:[-180,-85,180,85]},n.id),[])
    const source=JSON.parse(gunzipSync(await readFile(new URL(`../../pipeline/data/processed/parcels/${n.id}.geojson.gz`,import.meta.url))))
-   const actual=await loadNeighborhood(n,undefined,fetcher,false)
+   const actual=await loadNeighborhood(n,undefined,fetcher,true)
    assert.deepEqual(actual.parcels,source,n.name)
+   assert.deepEqual(actual.emptySites,prepareEmptySites(source,zoning,spatialIndex(actual.buildings.features)),`${n.name}: cached candidates exactly match a fresh local screen`)
+   assert.equal(n.emptySiteCount,actual.emptySites.matches.length)
+   candidates+=n.emptySiteCount; candidateBytes+=n.emptySitesBytes
    assert.equal(actual.parcels.features.length,n.parcels)
    assert.ok(n.parcels>0,n.name)
    for(const f of actual.parcels.features){assert.equal(f.properties.neighborhood,n.name);assert.ok(!pins.has(f.properties.pin));pins.add(f.properties.pin);assert.ok(f.properties.scores && f.properties.factors);assert.ok('confidence' in f.properties)}
    assert.equal((await locateNeighborhood(manifest,n.examplePin,undefined,fetcher)).id,n.id)
-   for(const file of [...n.parcelFiles,...n.buildingFiles,n.networkFile,n.roadsFile])files.add(file)
+   for(const file of [...n.parcelFiles,...n.buildingFiles,n.networkFile,n.roadsFile,n.emptySitesFile])files.add(file)
    for(const file of n.buildingFiles)for(const f of JSON.parse(await readFile(new URL(`../public/data/studio/${file}`,import.meta.url))).features){
      if(checkedBuildings.has(f.properties.id))continue
      checkedBuildings.add(f.properties.id)
@@ -53,4 +59,7 @@ test('all city chunks preserve canonical parcel evidence and hashes, with bounde
  assert.equal(pins.size,manifest.parcelCount)
  assert.ok(pins.size>100000)
  assert.equal(checkedBuildings.size,originalBuildings.size)
+ assert.equal(candidates,manifest.emptySiteCount)
+ assert.equal(candidateBytes,manifest.emptySiteBytes)
+ assert.ok(candidates>0)
 })

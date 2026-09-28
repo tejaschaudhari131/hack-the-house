@@ -1,12 +1,11 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { once } from 'node:events'
-import { Worker } from 'node:worker_threads'
 import { gunzipSync } from 'node:zlib'
-import { recordedEmptySite, screenEmptySite, emptySiteChunk, emptySiteIndex } from './emptySites.js'
+import { recordedEmptySite, screenEmptySite, prepareEmptySites } from './emptySites.js'
 import { geometryBounds, rectangleAt } from './plannerGeometry.js'
 import { spatialIndex } from './studioData.js'
+import { preparedEmptySiteIndex } from './emptySiteData.js'
 import { evaluatePlanner } from './plannerModel.js'
 import { initialStudioScenario, optionFor } from './plannerState.js'
 
@@ -34,28 +33,6 @@ test('vacancy does not override footprint, physical fit or supported zoning conf
   assert.equal(screenEmptySite(feature({ sfha_overlap: .5 }), zoning, []).typeId, 'single_family', 'a hazard review signal alone does not invent a legal prohibition')
 })
 
-test('worker input preserves exact geometry, drops scores, and keeps boundary collision context', () => {
-  const f = feature({ scores: { arbitrary: 70 } })
-  const borderBuilding = { geometry: rectangleAt([-79.94, 40.41], 2, 2), properties: { display_neighborhoods: ['neighbor'] } }
-  const input = emptySiteChunk(chunk([f, feature({ pin: 'occupied', land_use: 'SINGLE FAMILY' })], [borderBuilding]))
-  assert.equal(input.parcels.length, 1)
-  assert.equal(input.parcels[0].geometry, f.geometry)
-  assert.equal(input.parcels[0].properties.scores, undefined)
-  assert.equal(input.buildings[0].geometry, borderBuilding.geometry)
-  assert.deepEqual([...emptySiteIndex(input, zoning).query(geometryBounds(f.geometry))], [null])
-  assert.deepEqual([...emptySiteIndex(emptySiteChunk({ parcels: { features: [f] } }), zoning).query(geometryBounds(f.geometry))], [null])
-})
-
-test('viewport query reuses cached results and excludes distant parcels', () => {
-  const a = feature(), b = feature({ pin: 'distant' }, rectangleAt([-80, 40.5], 35, 50))
-  const index = emptySiteIndex(emptySiteChunk(chunk([a, b])), zoning)
-  const first = [...index.query(geometryBounds(a.geometry))]
-  assert.equal(first.length, 1)
-  assert.equal(first[0].pin, 'site')
-  assert.equal([...index.query(geometryBounds(a.geometry))][0], first[0])
-  assert.deepEqual([...index.query([-79, 40, -78, 41])], [])
-})
-
 test('real sites match the Studio physical/zoning gates and exclude recorded-vacant footprint conflicts', () => {
   // Canonical snapshots are stable while cityData.test regenerates transport chunks.
   const source = name => JSON.parse(gunzipSync(readFileSync(new URL(`../../pipeline/data/processed/${name}.gz`, import.meta.url))))
@@ -70,6 +47,10 @@ test('real sites match the Studio physical/zoning gates and exclude recorded-vac
     const f = parcels.find(f => f.properties.pin === pin)
     const context = buildings.query(geometryBounds(f.geometry))
     const candidate = screenEmptySite(f, zoning, context)
+    const precomputed = prepareEmptySites({ features: [f] }, zoning, buildings)
+    assert.deepEqual(precomputed.matches, candidate ? [candidate] : [])
+    const prepared = preparedEmptySiteIndex({ ...chunk([f], context), emptySites: precomputed })
+    assert.deepEqual(prepared.query(geometryBounds(f.geometry)), precomputed.matches)
     assert.equal(!!candidate, expected, `${id} ${pin}`)
     if (candidate) {
       const scenario = initialStudioScenario(pin, f.properties)
@@ -81,25 +62,22 @@ test('real sites match the Studio physical/zoning gates and exclude recorded-vac
   }
 })
 
-test('background worker discards stale searches, evicts old neighborhoods, and clears at overview zoom', async t => {
-  const workerUrl = new URL('../workers/emptySites.worker.js', import.meta.url).href
-  const worker = new Worker(`const { parentPort } = require('node:worker_threads'); global.self = { postMessage: data => parentPort.postMessage(data) }; import(${JSON.stringify(workerUrl)}).then(() => { parentPort.on('message', data => self.onmessage({data})); parentPort.postMessage({ready:true}); });`, { eval: true })
-  t.after(() => worker.terminate())
-  await once(worker, 'message')
-  worker.postMessage({ type: 'init', zoning })
-  const features = Array.from({ length: 36 }, (_, i) => feature({ pin: `site-${i}` }))
-  const data = emptySiteChunk(chunk(features)), bounds = geometryBounds(features[0].geometry)
-  const response = once(worker, 'message')
-  worker.postMessage({ revision: 1, chunks: [['first', data]], ids: ['first'], bounds })
-  worker.postMessage({ revision: 2, chunks: [], ids: [], bounds })
-  assert.deepEqual((await response)[0], { revision: 2, matches: [] }, 'a new scope cancels the old long query')
-  let next = once(worker, 'message')
-  worker.postMessage({ revision: 3, chunks: [], ids: ['first'], bounds })
-  assert.deepEqual((await next)[0].matches, [], 'evicted data cannot reappear without reloading')
-  next = once(worker, 'message')
-  worker.postMessage({ revision: 4, chunks: [['first', data]], ids: ['first'], bounds })
-  assert.equal((await next)[0].matches.length, 36)
-  next = once(worker, 'message')
-  worker.postMessage({ revision: 5, chunks: [], ids: [], bounds: null })
-  assert.deepEqual((await next)[0].matches, [])
+test('prepared candidates are spatially culled without altering geometry or running a new screen', () => {
+  const a = feature(), b = feature({ pin: 'remote' }, rectangleAt([-80, 40.5], 35, 50))
+  const data = chunk([a, b])
+  data.emptySites = prepareEmptySites(data.parcels, zoning, spatialIndex([]))
+  const index = preparedEmptySiteIndex(data)
+  assert.equal(index.query(geometryBounds(a.geometry))[0], data.emptySites.matches[0])
+  assert.deepEqual(index.query(geometryBounds(b.geometry)), [data.emptySites.matches[1]])
+  assert.deepEqual(index.query([-79, 40, -78, 41]), [])
+})
+
+test('missing, stale or mismatched prepared evidence fails closed instead of claiming no candidates', () => {
+  const data = chunk([feature()])
+  assert.throws(() => preparedEmptySiteIndex(data), /unavailable/)
+  assert.throws(() => preparedEmptySiteIndex({ ...data, emptySites: { version: 99, matches: [] } }), /unavailable/)
+  for (const matches of [[{ pin: 'elsewhere', typeId: 'single_family' }], [{ pin: 'site', typeId: 'unknown-type' }], [{ pin: 'site', typeId: 'single_family' }, { pin: 'site', typeId: 'triplex' }]]) {
+    assert.throws(() => preparedEmptySiteIndex({ ...data, emptySites: { version: 1, matches } }), /do not match/)
+  }
+  assert.deepEqual(preparedEmptySiteIndex({ ...data, emptySites: { version: 1, matches: [] } }).query(geometryBounds(data.parcels.features[0].geometry)), [])
 })

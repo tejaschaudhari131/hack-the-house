@@ -1,49 +1,25 @@
-import { useEffect, useRef, useState } from 'react'
-import { emptySiteChunk } from '../lib/emptySites.js'
+import { useMemo, useRef } from 'react'
+import { preparedEmptySiteIndex } from '../lib/emptySiteData.js'
 import { DETAIL_ZOOM } from '../lib/studioData.js'
 
-const EMPTY = []
+const EMPTY = { matches: [], pending: false, error: null }
 
-export default function useEmptySites(enabled, chunks, visibleIds, viewport, zoning) {
-  const worker = useRef(null), sent = useRef(new Map()), revision = useRef(0)
-  const [state, setState] = useState({ matches: EMPTY, pending: false, error: null })
+export default function useEmptySites(enabled, chunks, visibleIds, viewport) {
+  const indexes = useRef(new WeakMap())
   const scope = visibleIds.join('|')
-  useEffect(() => {
-    if (!enabled) return
-    let w
-    sent.current.clear()
-    setState({ matches: EMPTY, pending: true, error: null })
-    const fail = () => {
-      w?.terminate(); worker.current = null
-      setState({ matches: EMPTY, pending: false, error: 'Site highlighting unavailable. Toggle off and on to retry.' })
-    }
+  return useMemo(() => {
+    if (!enabled || !viewport || viewport.zoom < DETAIL_ZOOM) return EMPTY
+    const matches = [], seen = new Set()
     try {
-      w = new Worker(new URL('../workers/emptySites.worker.js', import.meta.url), { type: 'module' })
-      worker.current = w
-      w.onerror = fail
-      w.postMessage({ type: 'init', zoning })
-    } catch { fail() }
-    return () => { ++revision.current; w?.terminate(); worker.current = null; sent.current.clear() }
-  }, [enabled, zoning])
-
-  useEffect(() => {
-    if (!enabled || !worker.current) return
-    const nextRevision = ++revision.current
-    const ids = scope.split('|').filter(id => id && chunks.has(id))
-    const additions = []
-    for (const id of sent.current.keys()) if (!ids.includes(id)) sent.current.delete(id)
-    for (const id of ids) if (sent.current.get(id) !== chunks.get(id)) {
-      additions.push([id, emptySiteChunk(chunks.get(id))]); sent.current.set(id, chunks.get(id))
-    }
-    setState({ matches: EMPTY, pending: true, error: null })
-    // Install the response handler here so freshness includes the current viewport.
-    worker.current.onmessage = ({ data }) => {
-      if (data.revision !== revision.current) return
-      setState({ matches: data.matches || EMPTY, pending: false, error: data.error ? 'Site screening failed. Toggle off and on to retry.' : null, viewport, scope, chunks })
-    }
-    worker.current.postMessage({ revision: nextRevision, ids, chunks: additions, bounds: viewport?.zoom >= DETAIL_ZOOM ? viewport.bounds : null })
-  }, [enabled, chunks, scope, viewport, zoning])
-
-  const fresh = state.viewport === viewport && state.scope === scope && state.chunks === chunks
-  return { matches: enabled && fresh ? state.matches : EMPTY, pending: enabled && !state.error && (state.pending || !fresh), error: enabled ? state.error : null }
+      for (const id of scope.split('|').filter(Boolean)) {
+        const chunk = chunks.get(id)
+        if (!chunk) continue
+        if (!indexes.current.has(chunk)) indexes.current.set(chunk, preparedEmptySiteIndex(chunk))
+        for (const match of indexes.current.get(chunk).query(viewport.bounds)) {
+          if (!seen.has(match.pin)) { seen.add(match.pin); matches.push(match) }
+        }
+      }
+      return { matches, pending: false, error: null }
+    } catch (error) { return { ...EMPTY, error: error.message } }
+  }, [enabled, chunks, scope, viewport])
 }
