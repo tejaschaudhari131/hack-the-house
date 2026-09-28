@@ -1,6 +1,12 @@
-# Model card: Hack the House suitability screen
+# Playhouse
 
-Version: score model v1 (`web/public/data/score_model.json`), data pulled 2026-09-26/27, prompt version in `web/lib/explainPrompt.js`. Code: https://github.com/tejaschaudhari131/hack-the-house.
+Pittsburgh Planning Studio
+
+by Hack the House
+
+# Model card: Playhouse suitability screen
+
+Version: score model v1 (`web/public/data/score_model.json`), data pulled 2026-09-26/27, prompt version in `web/lib/explainPrompt.js`. Code: https://github.com/tejaschaudhari131/playhouse.
 
 ## What it is
 

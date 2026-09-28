@@ -1,3 +1,9 @@
+# Playhouse
+
+Pittsburgh Planning Studio
+
+by Hack the House
+
 # Validation
 
 What has been checked, how, and what has not. Run everything with:
@@ -32,7 +38,7 @@ Neighborhood switching and direct PIN links were exercised. Public-source drawer
 
 The infrastructure UI snapped two Hazelwood points (`-79.943814, 40.411423` → `-79.944191, 40.410018`) and saved a **225 m / 2.8 minute** route. Its underlying network route has ten vertices. Saving it left the displayed stop/park access unchanged, as expected for existing infrastructure. Automated tests additionally cover new connections into edge interiors; visual road crossings alone do not create junctions.
 
-Vercel successfully deployed feature commit `c3540f0` at the [branch preview](https://hack-the-house-git-playhouse-citywide-tej-fff0.vercel.app). The preview requires the team's login, so these browser checks were **local, not preview checks**. The owner has assigned manual preview testing to a teammate. [PR #7](https://github.com/tejaschaudhari131/hack-the-house/pull/7) is prepared for review and must remain unmerged until the team decides to merge.
+Vercel successfully deployed feature commit `c3540f0` at the [branch preview](https://hack-the-house-git-playhouse-citywide-tej-fff0.vercel.app). The preview requires the team's login, so these browser checks were **local, not preview checks**. The owner has assigned manual preview testing to a teammate. [PR #7](https://github.com/tejaschaudhari131/playhouse/pull/7) is prepared for review and must remain unmerged until the team decides to merge.
 
 For the teammate: open each PIN above on `/` and `/explore`, check sources and zoning, add a building in Studio, compare types (A/B in Explorer), and try **Infra → Route between two points**. Confirm camera panning and neighborhood switching on the actual deployed site. No screenshots were generated.
 

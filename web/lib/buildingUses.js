@@ -11,6 +11,11 @@ export const USE_LEGEND = [
 export const USE_BY_ID = Object.fromEntries(USE_LEGEND.map(use => [use.id, use]))
 export const PLACEMENT_COLORS = { valid: '#16a34a', invalid: '#dc2626' }
 export function simulatedColor(typeId) { return USE_BY_ID[typeId === 'triplex' ? 'small_apartment' : typeId]?.simulated || '#cbd5e1' }
+/** Pastel map tint stays distinct under 3D lighting; comparison accents retain their saturation. */
+export function placedBuildingColor(typeId) {
+  return '#' + simulatedColor(typeId).slice(1).match(/.{2}/g)
+    .map(channel => Math.round(parseInt(channel, 16) * .55 + 255 * .45).toString(16).padStart(2, '0')).join('')
+}
 
 export function recordedUse(parcel, footprint = {}) {
   const use = String(parcel?.land_use || '').toUpperCase(), group = parcel?.land_use_class

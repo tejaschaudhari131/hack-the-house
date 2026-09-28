@@ -1,10 +1,16 @@
 # Playhouse
 
+Pittsburgh Planning Studio
+
+by Hack the House
+
 **Plan homes. Test infrastructure. Compare tradeoffs.**
 
 Playhouse helps planners, developers and communities test housing and infrastructure proposals on a 3D map of Pittsburgh, using public data and explicit assumptions.
 
 [Open Playhouse](https://playhouse-pittsburgh.vercel.app) · [Citywide preview](https://hack-the-house-git-playhouse-citywide-tej-fff0.vercel.app) · [Hackathon challenge](https://ai-horizons-2026-ai-for-housing-hackathon.brandon831577.chatgpt.site/challenges/typology-equity-climate)
+
+https://hack-the-house.vercel.app still opens the app as an alternate address.
 
 The screenshots show the citywide branch. The preview may require team sign-in; production follows `main`.
 
@@ -91,4 +97,4 @@ Checks: `npm test` and `npm run build` in `web/`. Pipeline checks: `python -m un
 
 [Studio guide](docs/PLANNER.md) · [Model card](docs/MODEL_CARD.md) · [Title Nine checks](docs/TITLE_NINE.md) · [Data pipeline](pipeline/README.md) · [AI tool disclosure](docs/AI_TOOLS.md)
 
-Built by **Tejas Chaudhari** (data and scoring), **Chris Severns** (zoning), and **YY Ng** (map and frontend), with AI coding assistance under the team's direction.
+Built by **Tejas Chaudhari** (data and scoring), **Chris Severns** (zoning), and **Yoon Yik Ng** (map and frontend), with AI coding assistance under the team's direction.

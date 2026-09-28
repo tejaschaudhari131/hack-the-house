@@ -1,3 +1,9 @@
+# Playhouse
+
+Pittsburgh Planning Studio
+
+by Hack the House
+
 # Execution status
 
 Single integrator log for the owner's implementation spec (Sun Sep 27 2026). Times are ET.
@@ -22,7 +28,7 @@ Single integrator log for the owner's implementation spec (Sun Sep 27 2026). Tim
 | G7/G8 Permission states and unit counts | Done, tested | `unitPermission()` reads the §911.02 row for the building's unit count: triplex → Three-Unit, 12- and 40-unit buildings → Multi-Unit. States: permitted, partial, special approval, not permitted under the checked row, and unknown (never permitted). A triplex building (3 units) was added; a 12-home building in R3-L now reads "not permitted" instead of the triplex "partial" label. Find Sites → compare keeps the triplex, and the export and AI facts carry it (test L.7). "No type permitted by right" and "neither scenario permitted" are stated, not presented as recommendations. |
 | G3 Displacement intervention | Done | The Find Sites "anti-displacement" example now sets the displacement weight to 0 and says why. It does not change risk values. |
 | D4 Guided shortlist → compare → brief | Done, browser-checked | "Try a real example" (header and onboarding). `web/lib/guide.js` resolves the parcel from data at runtime: the city-triplex Find Sites question gives 25 matches; the top match is PIN 0056F00338000000 (Hazelwood Ave, LNC, 5,100 sq ft vacant, City inventory). The guide compares a triplex with a townhouse / duplex on that lot (72.6 vs 72.9, close). The CDC preset puts the triplex ahead (70.4 vs 68.6). Step 3 prints a decision brief with both scenarios, permission, contributions, weights and shares, a robustness summary, unresolved items, three rule-based next steps (`web/lib/nextActions.js`), sources, and build/model/data/prompt versions. |
-| Header / first screen | Done | "Hack the House", a plain task line, the parcel count from `summary.json`, a primary "Try a real example" button, and "Find sites". |
+| Header / first screen | Done | "Playhouse", a plain task line, the parcel count from `summary.json`, a primary "Try a real example" button, and "Find sites". |
 
 ## Tests at Checkpoint 1
 
@@ -64,7 +70,7 @@ Screenshots and the brief PDF are in the agent artifacts (`/opt/cursor/artifacts
 - Server logs: `[explain] provider error {stage, provider, model, status, name, message}`, with the message redacted against the configured keys and key-like strings. No IP or request body.
 - Tests: plan order for each environment combination; `LLM_*` answering without a gateway key; a gateway 401 falling through to `LLM_*`; both failing → template; logs contain the status and no key. Also checked against a local HTTP server speaking the OpenAI streaming protocol (not a mock model): the real `createOpenAICompatible` path streamed text; a wrong key logged status 401 and returned the template.
 - Not verified: a real call on production. That needs the merge and the owner's re-test.
-- Also fixed from the owner's verification: the compare sentence lists every weighted factor (favoring A, favoring B, held constant, negligible, or not comparable); one rounding rule (Python-style one decimal, ties to even) in the table, sentence, and brief, stated on screen; the double space before "The mapping…" is gone; the browser title is "Hack the House · Pittsburgh housing-site decision support".
+- Also fixed from the owner's verification: the compare sentence lists every weighted factor (favoring A, favoring B, held constant, negligible, or not comparable); one rounding rule (Python-style one decimal, ties to even) in the table, sentence, and brief, stated on screen; the double space before "The mapping…" is gone; the browser title is "Playhouse · Pittsburgh housing-site decision support".
 
 ### Tests at Checkpoint 2
 
