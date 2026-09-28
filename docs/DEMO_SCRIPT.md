@@ -1,6 +1,12 @@
+# Playhouse
+
+Pittsburgh Planning Studio
+
+by Hack the House
+
 # Demo script (about 4 minutes)
 
-Recorded against production, https://hack-the-house.vercel.app, at commit `8ff2989` data (pulled 2026-09-26/27) with default weights. The guided example resolves its parcel from the data at runtime (`web/lib/guide.js`); with this data it is **PIN 0056F00338000000** (Hazelwood Ave, Hazelwood; no house number in the county record). If the numbers on screen differ, the data or weights changed; say what is on screen, not what is written here.
+Recorded against production, https://playhouse-pittsburgh.vercel.app, at commit `8ff2989` data (pulled 2026-09-26/27) with default weights. The guided example resolves its parcel from the data at runtime (`web/lib/guide.js`); with this data it is **PIN 0056F00338000000** (Hazelwood Ave, Hazelwood; no house number in the county record). If the numbers on screen differ, the data or weights changed; say what is on screen, not what is written here.
 
 Captions in the recording are on-screen text overlays. There is no voice track; the narration below is for a live presenter.
 
@@ -8,7 +14,7 @@ The app is organized as three steps in the header (1 Find sites, 2 Compare optio
 
 | Time | Screen and clicks | Narration (word for word) |
 | --- | --- | --- |
-| 0:00–0:25 | Open the site. Read intro screen 1, click **Next** to show the three steps, then close it. The header shows the three steps. | "This is Hack the House, our entry for AI Horizons 2026, Challenge 3. A CDC or planner asks: which real lot and which kind of housing should we look at next, why does it rank that way, and what do we have to check before acting? It covers 8,645 lots in Hazelwood and Lawrenceville, in three steps: find sites, compare options, get the brief. It is decision support, not a permit." |
+| 0:00–0:25 | Open the site. Read intro screen 1, click **Next** to show the three steps, then close it. The header shows the three steps. | "This is Playhouse, our entry for AI Horizons 2026, Challenge 3. A CDC or planner asks: which real lot and which kind of housing should we look at next, why does it rank that way, and what do we have to check before acting? It covers 8,645 lots in Hazelwood and Lawrenceville, in three steps: find sites, compare options, get the brief. It is decision support, not a permit." |
 | 0:25–1:00 | Click **Start guided example**. Step 1 (Find sites) applies the question; point at the match count and the top lot. | "Step one starts from a real question: City-owned vacant lots where a triplex is allowed by right, outside mapped flood zones, near frequent transit. Twenty-five lots match. The top one is this 5,100-square-foot City-inventory lot on Hazelwood Avenue. A City record is not the same as available; that goes on our list to check." |
 | 1:00–1:45 | Click **Compare two housing options on this parcel**. Step 2 shows the answer card. | "Step two compares two kinds of housing on that lot: a three-unit triplex and a townhouse or duplex. The answer comes first: the townhouse scores slightly higher, 72.9 to 72.6, mostly because of market activity and lot fit, while the triplex does better on housing need. Both are allowed by right under the city's use table, and that is shown separately from the score." |
 | 1:45–2:20 | Open **How was this scored?** and show the points table; then open **Where the numbers come from** and expand one factor. | "Every number is one click away. Here are the points each factor adds; transit and displacement are the same for both options on one lot. And here is the evidence: source and year, what was observed, the assumptions, and what is missing." |

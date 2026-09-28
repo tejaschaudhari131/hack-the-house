@@ -1,3 +1,9 @@
+# Playhouse
+
+Pittsburgh Planning Studio
+
+by Hack the House
+
 # Planning studio
 
 ## Two-point road and path routing (planner-screen-1.9)
