@@ -1,3 +1,9 @@
+# Playhouse
+
+Pittsburgh Planning Studio
+
+by Hack the House
+
 # Public data sources
 
 This catalog describes the original parcel/Explorer dataset. Studio also uses county building outlines, assessment stories, OSM building tags, and an OSM walking graph and parks. See [the Studio guide](PLANNER.md) and the manifests in [web/public/data](../web/public/data) for those additions and their limitations.

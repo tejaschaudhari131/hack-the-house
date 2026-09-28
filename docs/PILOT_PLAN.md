@@ -1,12 +1,18 @@
+# Playhouse
+
+Pittsburgh Planning Studio
+
+by Hack the House
+
 # Pilot plan (proposal, not agreed)
 
-A two-week pilot to find out whether Hack the House helps a real team prepare a better housing-site shortlist, and where it is wrong. No partner has agreed; names below are roles, not commitments.
+A two-week pilot to find out whether Playhouse helps a real team prepare a better housing-site shortlist, and where it is wrong. No partner has agreed; names below are roles, not commitments.
 
 ## Participants
 
 - One community development corporation working in Hazelwood or Lawrenceville (2–3 staff who prepare site shortlists).
 - One qualified zoning reviewer (planner or zoning attorney) to check the §911.02 readings.
-- The team (Tejas Chaudhari, Chris Severns, YY Ng) to run sessions and log findings.
+- The team (Tejas Chaudhari, Chris Severns, Yoon Yik Ng) to run sessions and log findings.
 
 ## Week 1: review
 

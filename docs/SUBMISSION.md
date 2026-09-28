@@ -1,12 +1,16 @@
-# Submission draft (Google Form)
+# Playhouse
 
-Form: https://docs.google.com/forms/d/e/1FAIpQLSfDK_aD-miOV3D92Bl4NOFa1Skb8_u-GTCH5j1FE-VEWTr4DQ/viewform
+Pittsburgh Planning Studio
+
+by Hack the House
+
+Submission draft (Google Form): https://docs.google.com/forms/d/e/1FAIpQLSfDK_aD-miOV3D92Bl4NOFa1Skb8_u-GTCH5j1FE-VEWTr4DQ/viewform
 
 Draft answers for the team to review and paste. **Fields marked TODO must be filled in by the people concerned. The AI agent did not fill them and does not assert them.** Do not submit until every TODO is resolved.
 
 ## Team name
 
-Hack the House *(confirm with the team)*
+Hack the House
 
 ## Members (1–5)
 
@@ -14,7 +18,7 @@ Hack the House *(confirm with the team)*
 | --- | --- | --- | --- |
 | 1 | Tejas Chaudhari | TODO (member provides) | TODO (member provides) |
 | 2 | Chris Severns | TODO (member provides) | TODO (member provides) |
-| 3 | YY Ng | TODO (member provides) | TODO (member provides) |
+| 3 | Yoon Yik Ng | TODO (member provides) | TODO (member provides) |
 | 4 | TODO or leave blank | | |
 | 5 | TODO or leave blank | | |
 
@@ -24,7 +28,11 @@ Challenge 3: Housing Typology, Equity & Climate Matchmaker *(confirm the exact o
 
 ## Project title
 
-Playhouse: housing and infrastructure decision support for Pittsburgh
+Playhouse
+
+## Subtitle
+
+Pittsburgh Planning Studio
 
 ## Project description
 
@@ -44,11 +52,11 @@ TODO (team uploads the recording and pastes a link. The agent's recording is `/o
 
 ## Repository link
 
-https://github.com/tejaschaudhari131/hack-the-house
+https://github.com/tejaschaudhari131/playhouse
 
 ## Live app
 
-https://hack-the-house.vercel.app
+https://playhouse-pittsburgh.vercel.app
 
 Citywide release preview (PR #7, not merged): https://hack-the-house-git-playhouse-citywide-tej-fff0.vercel.app. Vercel deployment succeeded; the team will perform the protected-preview walkthrough. Local five-neighborhood checks are recorded in [VALIDATION.md](VALIDATION.md).
 

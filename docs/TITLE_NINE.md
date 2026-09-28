@@ -1,3 +1,9 @@
+# Playhouse
+
+Pittsburgh Planning Studio
+
+by Hack the House
+
 # Title Nine screening
 
 Studio applies supported yes/no zoning checks before ranking housing. **A supported conflict or a failed physical fit produces no overall housing score.** Priority weights cannot override that result.
