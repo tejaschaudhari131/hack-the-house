@@ -1,3 +1,9 @@
+# Playhouse
+
+Pittsburgh Planning Studio
+
+by Hack the House
+
 # Validation
 
 What has been checked, how, and what has not. Run everything with:
@@ -32,7 +38,7 @@ Neighborhood switching and direct PIN links were exercised. Public-source drawer
 
 The infrastructure UI snapped two Hazelwood points (`-79.943814, 40.411423` → `-79.944191, 40.410018`) and saved a **225 m / 2.8 minute** route. Its underlying network route has ten vertices. Saving it left the displayed stop/park access unchanged, as expected for existing infrastructure. Automated tests additionally cover new connections into edge interiors; visual road crossings alone do not create junctions.
 
-Vercel successfully deployed feature commit `c3540f0` at the [branch preview](https://hack-the-house-git-playhouse-citywide-tej-fff0.vercel.app). The preview requires the team's login, so these browser checks were **local, not preview checks**. The owner has assigned manual preview testing to a teammate. [PR #7](https://github.com/tejaschaudhari131/hack-the-house/pull/7) is prepared for review and must remain unmerged until the team decides to merge.
+Vercel successfully deployed feature commit `c3540f0` at the [branch preview](https://hack-the-house-git-playhouse-citywide-tej-fff0.vercel.app). The preview requires the team's login, so these browser checks were **local, not preview checks**. The owner has assigned manual preview testing to a teammate. [PR #7](https://github.com/tejaschaudhari131/playhouse/pull/7) is prepared for review and must remain unmerged until the team decides to merge.
 
 For the teammate: open each PIN above on `/` and `/explore`, check sources and zoning, add a building in Studio, compare types (A/B in Explorer), and try **Infra → Route between two points**. Confirm camera panning and neighborhood switching on the actual deployed site. No screenshots were generated.
 
@@ -131,7 +137,7 @@ At the Checkpoint 3 commit: JS 66/66 pass; Python `test_score` 18, `test_pii` 5,
 - Checkpoint 1 (local production build): fresh load → onboarding → guided shortlist (25 matches, top PIN 0056F00338000000) → triplex vs townhouse (72.6 vs 72.9) → priority change reverses → brief printed to PDF (2 pages: brief + source/version footer). No page exceptions.
 - Checkpoint 2: sweep table, evidence drawer, share link restore (603 characters), stale-version warnings, bad-link rejection, Tab order from the skip link with visible outlines, 0 px horizontal overflow at 390 px.
 - Checkpoint 3: the recorded walkthrough of production (`/opt/cursor/artifacts/cp3/`) follows `docs/DEMO_SCRIPT.md`.
-- Owner's production checks after the Checkpoint 2 merge: title, share link, and the six-factor compare sentence verified on https://hack-the-house.vercel.app.
+- Owner's production checks after the Checkpoint 2 merge: title, share link, and the six-factor compare sentence verified on https://playhouse-pittsburgh.vercel.app.
 
 ## Performance (measured, not estimated)
 

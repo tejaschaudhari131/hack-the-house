@@ -1,3 +1,9 @@
+# Playhouse
+
+Pittsburgh Planning Studio
+
+by Hack the House
+
 # Data notes
 
 How this prototype treats sources that do not agree. The organizers' data list is the citation source for names, URLs, and caveats. `data/processed/sources.json` is the machine-readable copy of what was actually pulled. Most layers were pulled on 2026-09-26. The CHAS tract file, the three WPRDC site-inventory layers, HUD LIHTC and QCT, ACS B25003, and the 2015–2019 rent file were pulled on 2026-09-27.
