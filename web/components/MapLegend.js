@@ -1,23 +1,39 @@
+import { useEffect, useRef, useState } from 'react'
 import { USE_LEGEND, PLACEMENT_COLORS, placedBuildingColor } from '../lib/buildingUses.js'
 
 const SHORT_LABELS = {
-  single_family: 'Single', townhouse_duplex: 'Town / duplex', small_apartment: 'Apts 3–19',
-  large_apartment: 'Apts 20+', other_residential: 'Other homes', nonresidential: 'Non-res.', unknown: 'Unknown',
+  single_family: 'Single-family', townhouse_duplex: 'Town / duplex', small_apartment: 'Apartments 3–19',
+  large_apartment: 'Apartments 20+', other_residential: 'Other homes', nonresidential: 'Non-residential', unknown: 'Unknown use',
 }
 
-export default function MapLegend({ showExisting, onShowExisting, context, error, onRetry }) {
-  return <details className="canvas-legend">
-    <summary aria-label="Map legend">
-      <span className="legend-heading">Legend <span className="legend-expand">Expand <span aria-hidden="true">⌄</span></span><span className="legend-collapse">Collapse <span aria-hidden="true">⌃</span></span></span>
-      <span className="legend-chips">{USE_LEGEND.map(use => <span key={use.id} title={use.label}><i style={{ background: use.color }} aria-hidden="true"/>{SHORT_LABELS[use.id]}</span>)}</span>
+export default function MapLegend({ showExisting, onShowExisting, error, onRetry }) {
+  const container = useRef(null), [open, setOpen] = useState(false)
+  useEffect(() => {
+    if (!open) return
+    const outside = event => { if (!container.current.contains(event.target)) container.current.open = false }
+    const escape = event => {
+      if (event.key !== 'Escape') return
+      container.current.open = false
+      container.current.querySelector('summary').focus()
+    }
+    document.addEventListener('pointerdown', outside)
+    document.addEventListener('keydown', escape)
+    return () => { document.removeEventListener('pointerdown', outside); document.removeEventListener('keydown', escape) }
+  }, [open])
+  return <details ref={container} className="canvas-legend" onToggle={event => setOpen(event.currentTarget.open)}>
+    <summary aria-label="Map key">
+      <span className="legend-icon" aria-hidden="true">{USE_LEGEND.slice(0, 3).map(use => <i key={use.id} style={{ background: use.color }}/>)}</span>
+      Map key <span className="legend-chevron" aria-hidden="true">⌃</span>
     </summary>
     <div className="legend-details">
-      <label className="existing-toggle"><input type="checkbox" checked={showExisting} onChange={e => onShowExisting(e.target.checked)}/>Show existing buildings</label>
-      <div className="legend-full-labels">{USE_LEGEND.map(use => <span key={use.id}><i style={{ background: use.color }} aria-hidden="true"/>{use.label}</span>)}</div>
-      <div className="legend-markers"><span><i className="legend-parcel" aria-hidden="true"/>Selected site</span><span><i style={{ background: PLACEMENT_COLORS.valid }} aria-hidden="true"/>No supported conflict</span><span><i style={{ background: PLACEMENT_COLORS.invalid }} aria-hidden="true"/>Placement review</span><span><i className="legend-stop" aria-hidden="true"/>Bus stop</span></div>
-      <div className="legend-planned"><span aria-hidden="true">{USE_LEGEND.filter(use => use.simulated).map(use => <i key={use.id} style={{ background: placedBuildingColor(use.id) }}/>)}</span>Planned homes · pastel tint + dashed outline</div>
-      <p>Blue line = modeled walk to stop.</p>
-      <small>{error ? <button onClick={onRetry}>Retry building layer</button> : context ? `${context.manifest.count.toLocaleString()} recorded outlines` : 'Loading building context…'}</small>
+      <label className="existing-toggle"><input type="checkbox" checked={showExisting} onChange={e => onShowExisting(e.target.checked)}/>Existing buildings</label>
+      <table className="legend-colours" aria-label="Existing and planned building colours">
+        <thead><tr><th scope="col">Housing / use</th><th scope="col">Existing</th><th scope="col">Planned</th></tr></thead>
+        <tbody>{USE_LEGEND.map(use => <tr key={use.id}><th scope="row" title={use.label}>{SHORT_LABELS[use.id]}</th><td><i style={{ background: use.color }} aria-hidden="true"/></td><td>{use.simulated ? <i className="legend-planned" style={{ background: placedBuildingColor(use.id) }} aria-hidden="true"/> : '—'}</td></tr>)}</tbody>
+      </table>
+      <div className="legend-markers"><span><i className="legend-parcel" aria-hidden="true"/>Selected site</span><span><i className="legend-stop" aria-hidden="true"/>Bus stop</span><span><i style={{ background: PLACEMENT_COLORS.valid }} aria-hidden="true"/>Preview: clear</span><span><i style={{ background: PLACEMENT_COLORS.invalid }} aria-hidden="true"/>Preview: review</span></div>
+      <p>Blue line: walk to stop</p>
+      {error && <button onClick={onRetry}>Retry building layer</button>}
     </div>
   </details>
 }

@@ -412,8 +412,8 @@ function Studio({ data }) {
         <div className="map-overlays">
         {tool === 'housing' && <div data-tour="housing" className="massing-tray"><div className="tray-top"><div><span className="eyebrow">CURRENT DRAFT</span><strong>{housingSpec(option).label}</strong></div><span className="option-chip">{housingSpec(option).units} homes</span></div><div className="type-cycler"><button aria-label="Previous housing type" onClick={() => cycle(-1)}>←</button><div className="type-dots">{BUILDING_IDS.map(id => <button key={id} title={BUILDINGS[id].label} aria-label={`Preview ${BUILDINGS[id].label}`} aria-pressed={id === option.typeId} className={id === option.typeId ? 'active' : ''} onClick={() => changeType(id)}><Icon name="building" size={18}/></button>)}</div><button aria-label="Next housing type" onClick={() => cycle(1)}>→</button></div><p>{option.width} × {option.depth} m footprint · {option.height} m high <span>Proposed dimensions</span></p><div className="draft-preview-status" role="status"><i style={{ background: buildingPreview?.properties.color || "#94a3b8" }}/>{buildingPreview?.properties.status || "Preparing preview…"}<small>Preview only · not added to plan</small></div></div>}
         <EmptySitesControl enabled={highlightEmpty} onChange={setHighlightEmpty} count={emptyPins.length} pending={emptySites.pending} loading={loaded.pending} error={emptySites.error || loaded.error} zoomedOut={!!viewport && !hasMapDetail(viewport)}/>
-        <MapLegend showExisting={showExisting} onShowExisting={setShowExisting} context={context} error={loaded.error} onRetry={loaded.retry}/>
         </div>
+        <MapLegend showExisting={showExisting} onShowExisting={setShowExisting} error={loaded.error} onRetry={loaded.retry}/>
       </section>
     }>
       <aside data-tour="inspector" id="planner-inspector" className="studio-inspector" tabIndex={-1}>
