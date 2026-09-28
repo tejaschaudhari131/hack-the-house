@@ -148,7 +148,6 @@ Headless Chrome on the build VM, local `next start`, three runs each. `parcels.g
 - **Expert zoning review pending.** No qualified reviewer has checked the §911.02 mapping, overlays, or the R1D lot-width rule. Every badge says it needs expert review.
 - **No practitioner validation.** Rankings have not been compared with CDC or planner judgment; see `docs/PILOT_PLAN.md`.
 - **No outcome validation.** There is no ground truth for "best housing type"; the scores are a transparent screen, not a prediction.
-- **Real AI calls on production have not succeeded**: no working credential is configured, so the live site shows the labeled template. The model path is tested with mocks and a local protocol server only.
 - **Map keyboard access.** Leaflet and MapLibre parcel maps are not keyboard-operable; address search, Find Sites results, the guided example, and share links are the keyboard path.
 - **Accessibility audit** beyond the checks above (screen-reader walkthrough, contrast measurement) has not been done.
 - **Data currency.** Layers were pulled 2026-09-26/27; the app does not refresh them. CHAS 2018–2022 lags the ACS 2020–2024 inputs.
