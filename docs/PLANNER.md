@@ -214,6 +214,8 @@ Validation covers both real examples, no-op equality, shared transit gains witho
 
 Studio colours existing footprints from the matched parcel assessment use, never from housing recommendations or inferred heights. Four housing bands share the Explorer palette; mixed/other residential and commercial/other nonresidential uses have separate colours. Unknown or contradictory vacant-use records stay neutral. Auxiliary footprints are not labelled as standalone homes. These are parcel-use classifications, not independently verified footprint occupancy. Explorer is unchanged.
 
+Placed proposals use a pastel version of their housing colour (45% white tint) with a white dashed footprint outline; conflicting placements retain the red outline. The expanded legend shows the four planned-home tints. Existing buildings, placement preview colours and comparison accents keep their original palette. This is a display change only, with no extra map layers or geometry.
+
 ## Area plans (planner-screen-1.5)
 
 Up to 40 fixed housing placements can be added across parcels in one study area. Map placement previews are green/red for the outline, overlap and use screen; committed proposals use a lighter shade of their housing band. Plans persist across parcel selection, with undo/redo, removal and JSON export. Changing study areas starts a new plan and can be undone. Existing buildings are retained; demolition is not assumed.

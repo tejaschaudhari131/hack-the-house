@@ -9,7 +9,7 @@ import 'maplibre-gl/dist/maplibre-gl.css'
 import { geometryCenter, rectangleAt } from '../lib/plannerGeometry.js'
 import { configureMapWorkers } from '../lib/maplibreSetup.js'
 import { haversineMeters } from '../lib/geo.js'
-import { simulatedColor } from '../lib/buildingUses.js'
+import { placedBuildingColor } from '../lib/buildingUses.js'
 import { buildingHeightDescription, buildingHeightSource } from '../lib/buildingHeights.js'
 import { DETAIL_ZOOM, DETAIL_EXIT_ZOOM, hasMapDetail, renderViewport } from '../lib/studioData.js'
 import { mapSourceDiff } from '../lib/mapSourceDiff.js'
@@ -225,7 +225,7 @@ export default function PlannerMap({ parcelIndex, buildingIndex, neighborhoods, 
 
   useEffect(() => {
     if (!ready) return
-    mapRef.current.getSource('placed-buildings').setData(fc(placedBuildings.filter(b => b.massing.geometry).map(b => ({ type: 'Feature', geometry: b.massing.geometry, properties: { id: b.id, pin: b.pin, height: b.height, color: simulatedColor(b.typeId), valid: b.eligible } }))))
+    mapRef.current.getSource('placed-buildings').setData(fc(placedBuildings.filter(b => b.massing.geometry).map(b => ({ type: 'Feature', geometry: b.massing.geometry, properties: { id: b.id, pin: b.pin, height: b.height, color: placedBuildingColor(b.typeId), valid: b.eligible } }))))
   }, [ready, placedBuildings])
 
   useEffect(() => {

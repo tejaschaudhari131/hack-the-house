@@ -1,4 +1,4 @@
-import { USE_LEGEND, PLACEMENT_COLORS } from '../lib/buildingUses.js'
+import { USE_LEGEND, PLACEMENT_COLORS, placedBuildingColor } from '../lib/buildingUses.js'
 
 const SHORT_LABELS = {
   single_family: 'Single', townhouse_duplex: 'Town / duplex', small_apartment: 'Apts 3–19',
@@ -15,7 +15,8 @@ export default function MapLegend({ showExisting, onShowExisting, context, error
       <label className="existing-toggle"><input type="checkbox" checked={showExisting} onChange={e => onShowExisting(e.target.checked)}/>Show existing buildings</label>
       <div className="legend-full-labels">{USE_LEGEND.map(use => <span key={use.id}><i style={{ background: use.color }} aria-hidden="true"/>{use.label}</span>)}</div>
       <div className="legend-markers"><span><i className="legend-parcel" aria-hidden="true"/>Selected site</span><span><i style={{ background: PLACEMENT_COLORS.valid }} aria-hidden="true"/>No supported conflict</span><span><i style={{ background: PLACEMENT_COLORS.invalid }} aria-hidden="true"/>Placement review</span><span><i className="legend-stop" aria-hidden="true"/>Bus stop</span></div>
-      <p>Lighter shades = simulated buildings. Blue line = modeled walk to stop.</p>
+      <div className="legend-planned"><span aria-hidden="true">{USE_LEGEND.filter(use => use.simulated).map(use => <i key={use.id} style={{ background: placedBuildingColor(use.id) }}/>)}</span>Planned homes · pastel tint + dashed outline</div>
+      <p>Blue line = modeled walk to stop.</p>
       <small>{error ? <button onClick={onRetry}>Retry building layer</button> : context ? `${context.manifest.count.toLocaleString()} recorded outlines` : 'Loading building context…'}</small>
     </div>
   </details>

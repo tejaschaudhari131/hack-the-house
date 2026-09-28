@@ -423,6 +423,8 @@
 .legend-details { border-top: 1px solid #dce5d8; padding: 12px; }
 .legend-full-labels { display: grid; grid-template-columns: 1fr 1fr; gap: 9px 12px; margin: 12px 0; }
 .legend-markers { display: flex; flex-wrap: wrap; gap: 9px 12px; padding-top: 10px; border-top: 1px solid #dce5d8; }
+.legend-planned { display: flex; align-items: center; gap: 9px; margin-top: 12px; }
+.legend-planned i { border: 1px dashed #fff; box-shadow: 0 0 0 1px #64748b55; }
 .legend-details p { font-size: 11px; line-height: 1.5; margin: 12px 0 5px; }
 .canvas-legend .legend-details small { font-size: 10px; }
 @media (max-width: 760px) {
