@@ -17,6 +17,7 @@ The screenshots show the citywide branch. The preview may require team sign-in; 
 ## Try it for yourself
 
 **Live app:** https://playhouse-pittsburgh.vercel.app
+**Demo video (3 min):** https://youtu.be/ggot7Uslx28
 
 Open the link, click any Pittsburgh lot (or search a parcel ID such as 0056F00338000000), and compare housing options side by side. No sign-in needed.
 

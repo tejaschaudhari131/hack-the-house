@@ -48,7 +48,7 @@ Pittsburgh Planning Studio
 
 ## Demo video link
 
-TODO (team uploads the recording and pastes a link. The agent's recording is `/opt/cursor/artifacts/cp3/hack-the-house-demo.mp4`; review it before uploading.)
+https://youtu.be/ggot7Uslx28
 
 ## Repository link
 
