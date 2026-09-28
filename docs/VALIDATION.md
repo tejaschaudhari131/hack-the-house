@@ -67,6 +67,31 @@ Regional routing buffers can omit long detours; unmapped/disconnected access sta
 
 The initial Studio data for the default Hazelwood site is about **4.77 MB gzip**; the five new-neighborhood examples range from 3.80 to 5.69 MB gzip. These are local file measurements assuming compressed delivery, excluding JS/CSS, basemap tiles and adjacent neighborhoods fetched after camera movement. The benchmark script reproduces them. The largest tracked Git file is the old 27.85 MB regression fixture; no tracked file exceeds 50 MB. Derived browser chunks are generated at build time rather than stored in Git.
 
+## Antialiasing trial — September 27, 2026
+
+Studio now requests `canvasContextAttributes: { antialias: true }`. The local browser confirmed **4× MSAA**, versus zero samples in the previous configuration. Screenshots showed smoother building silhouettes. No geometry, heights, detail thresholds, data loading, scores or Explorer rendering changed.
+
+All **34 web test files pass**, including full-resolution city geometry/height preservation and score parity checks. The production build used for the benchmark also passes.
+
+The production-build browser benchmark ran on an AMD Radeon 780M using Chromium 154/ANGLE on Linux, with an **832 × 644 drawing canvas at device-pixel ratio 1**. Each mode used one warm-up orbit followed by three measured six-second pan/rotation orbits. Pitch stayed at 55°. Hazelwood ran OFF then ON; East Liberty ran ON then OFF. Both modes followed the same camera path over the same source data, with ordinary viewport culling and React updates active.
+
+| View | Median run FPS, OFF → ON | Median run p95 frame interval, OFF → ON |
+| --- | --- | --- |
+| Hazelwood, zoom 17.6, about 123 buildings at rest | 59.31 → 59.61 | 19.7 → 19.4 ms |
+| East Liberty and visible adjoining neighborhoods, zoom 16.2, about 2,600–2,700 buildings | 56.05 → 56.69 | 30.4 → 28.3 ms |
+
+These differences are within ordinary run-to-run variation, **not evidence that antialiasing improves performance**. No meaningful regression was observed in these views, so antialiasing remains enabled for the trial. The wider view had occasional 50–84 ms frame intervals and main-thread long tasks in both modes. The measurements are delivered MapLibre render intervals, not GPU execution time; the close view is refresh-rate limited. GPU memory, power use, phones and larger/high-DPI canvases were not measured. Counts in the [raw results](benchmarks/antialiasing.json) are live DOM snapshots and can lag a final camera frame while React publishes viewport updates.
+
+To repeat, use a disposable local tab and a production build with the diagnostic explicitly enabled:
+
+```bash
+cd web
+NEXT_PUBLIC_MAP_BENCHMARK=1 npm run build
+npm run start -- --port 3001
+```
+
+Open `http://localhost:3001/?pin=0056F00338000000&renderBenchmark=1&antialias=off`, dismiss the tour if present, wait for the map and scores, then press **Run close camera benchmark**. Repeat with `antialias=on`. Use PIN `0083F00297000000` and **Run wide camera benchmark** for East Liberty. Keep the tab active, canvas size unchanged and avoid other GPU/CPU-heavy work during measurement. The diagnostic prints context attributes, sample count, render intervals, long tasks and visible-feature counts. It is absent from ordinary builds; rebuild without the environment variable for normal use. Antialiasing is isolated in its own feature commit for rollback.
+
 ## Historical checkpoints
 
 At the Checkpoint 3 commit: JS 66/66 pass; Python `test_score` 18, `test_pii` 5, `test_sites` 5 pass; `next build` succeeds.

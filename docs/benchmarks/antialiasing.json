@@ -1,0 +1,415 @@
+{
+  "baselineCommit": "c1ca471b20b496adacb4841696beea679c783001",
+  "measuredAt": "2026-09-28T00:59:52.601Z",
+  "method": "Production build. One warm-up orbit and three measured 6-second pan/rotation orbits per case. Delivered MapLibre render intervals; not GPU timing. Same full-resolution data, pitch, camera path and canvas dimensions. OFF/ON order reversed between neighborhoods.",
+  "cases": [
+    {
+      "name": "hazelwood-off",
+      "context": {
+        "antialias": false,
+        "samples": 0,
+        "renderer": "ANGLE (AMD, AMD Radeon 780M Graphics (radeonsi phoenix ACO), OpenGL 4.6)",
+        "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+        "pixelRatio": 1,
+        "canvas": [
+          832,
+          644
+        ]
+      },
+      "status": "Complete",
+      "results": [
+        {
+          "center": {
+            "lng": -79.94382949999999,
+            "lat": 40.41125199999999
+          },
+          "zoom": 17.6,
+          "pitch": 55,
+          "runs": [
+            {
+              "frames": 359,
+              "fps": 59.31,
+              "p50Ms": 16.6,
+              "p95Ms": 19.7,
+              "maxMs": 37.2,
+              "over33MsPercent": 0.28,
+              "over50Ms": 0,
+              "longTasks": 0,
+              "longTaskMs": 0,
+              "startCounts": {
+                "detailLevel": "3d",
+                "visibleNeighborhoods": "hazelwood",
+                "visibleParcels": "330",
+                "visibleBuildings": "123",
+                "visibleRoads": "0"
+              },
+              "endCounts": {
+                "detailLevel": "3d",
+                "visibleNeighborhoods": "hazelwood",
+                "visibleParcels": "331",
+                "visibleBuildings": "123",
+                "visibleRoads": "0"
+              }
+            },
+            {
+              "frames": 360,
+              "fps": 59.47,
+              "p50Ms": 16.6,
+              "p95Ms": 20.9,
+              "maxMs": 35.2,
+              "over33MsPercent": 0.28,
+              "over50Ms": 0,
+              "longTasks": 0,
+              "longTaskMs": 0,
+              "startCounts": {
+                "detailLevel": "3d",
+                "visibleNeighborhoods": "hazelwood",
+                "visibleParcels": "331",
+                "visibleBuildings": "123",
+                "visibleRoads": "0"
+              },
+              "endCounts": {
+                "detailLevel": "3d",
+                "visibleNeighborhoods": "hazelwood",
+                "visibleParcels": "330",
+                "visibleBuildings": "123",
+                "visibleRoads": "0"
+              }
+            },
+            {
+              "frames": 359,
+              "fps": 59.26,
+              "p50Ms": 16.8,
+              "p95Ms": 19.3,
+              "maxMs": 37,
+              "over33MsPercent": 0.28,
+              "over50Ms": 0,
+              "longTasks": 0,
+              "longTaskMs": 0,
+              "startCounts": {
+                "detailLevel": "3d",
+                "visibleNeighborhoods": "hazelwood",
+                "visibleParcels": "330",
+                "visibleBuildings": "123",
+                "visibleRoads": "0"
+              },
+              "endCounts": {
+                "detailLevel": "3d",
+                "visibleNeighborhoods": "hazelwood",
+                "visibleParcels": "330",
+                "visibleBuildings": "123",
+                "visibleRoads": "0"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "hazelwood-on",
+      "context": {
+        "antialias": true,
+        "samples": 4,
+        "renderer": "ANGLE (AMD, AMD Radeon 780M Graphics (radeonsi phoenix ACO), OpenGL 4.6)",
+        "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+        "pixelRatio": 1,
+        "canvas": [
+          832,
+          644
+        ]
+      },
+      "status": "Complete",
+      "results": [
+        {
+          "center": {
+            "lng": -79.94382949999999,
+            "lat": 40.41125199999999
+          },
+          "zoom": 17.6,
+          "pitch": 55,
+          "runs": [
+            {
+              "frames": 358,
+              "fps": 59.1,
+              "p50Ms": 16.7,
+              "p95Ms": 19.4,
+              "maxMs": 34.1,
+              "over33MsPercent": 0.28,
+              "over50Ms": 0,
+              "longTasks": 0,
+              "longTaskMs": 0,
+              "startCounts": {
+                "detailLevel": "3d",
+                "visibleNeighborhoods": "hazelwood",
+                "visibleParcels": "330",
+                "visibleBuildings": "123",
+                "visibleRoads": "0"
+              },
+              "endCounts": {
+                "detailLevel": "3d",
+                "visibleNeighborhoods": "hazelwood",
+                "visibleParcels": "330",
+                "visibleBuildings": "123",
+                "visibleRoads": "0"
+              }
+            },
+            {
+              "frames": 361,
+              "fps": 59.61,
+              "p50Ms": 16.7,
+              "p95Ms": 18.9,
+              "maxMs": 34,
+              "over33MsPercent": 0.56,
+              "over50Ms": 0,
+              "longTasks": 0,
+              "longTaskMs": 0,
+              "startCounts": {
+                "detailLevel": "3d",
+                "visibleNeighborhoods": "hazelwood",
+                "visibleParcels": "330",
+                "visibleBuildings": "123",
+                "visibleRoads": "0"
+              },
+              "endCounts": {
+                "detailLevel": "3d",
+                "visibleNeighborhoods": "hazelwood",
+                "visibleParcels": "330",
+                "visibleBuildings": "123",
+                "visibleRoads": "0"
+              }
+            },
+            {
+              "frames": 361,
+              "fps": 59.61,
+              "p50Ms": 16.8,
+              "p95Ms": 19.4,
+              "maxMs": 31.6,
+              "over33MsPercent": 0,
+              "over50Ms": 0,
+              "longTasks": 0,
+              "longTaskMs": 0,
+              "startCounts": {
+                "detailLevel": "3d",
+                "visibleNeighborhoods": "hazelwood",
+                "visibleParcels": "330",
+                "visibleBuildings": "123",
+                "visibleRoads": "0"
+              },
+              "endCounts": {
+                "detailLevel": "3d",
+                "visibleNeighborhoods": "hazelwood",
+                "visibleParcels": "330",
+                "visibleBuildings": "123",
+                "visibleRoads": "0"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "east-liberty-on",
+      "context": {
+        "antialias": true,
+        "samples": 4,
+        "renderer": "ANGLE (AMD, AMD Radeon 780M Graphics (radeonsi phoenix ACO), OpenGL 4.6)",
+        "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+        "pixelRatio": 1,
+        "canvas": [
+          832,
+          644
+        ]
+      },
+      "status": "Complete",
+      "results": [
+        {
+          "center": {
+            "lng": -79.92543,
+            "lat": 40.46788799999996
+          },
+          "zoom": 16.2,
+          "pitch": 55,
+          "runs": [
+            {
+              "frames": 342,
+              "fps": 56.48,
+              "p50Ms": 16.5,
+              "p95Ms": 32,
+              "maxMs": 69.3,
+              "over33MsPercent": 4.99,
+              "over50Ms": 3,
+              "longTasks": 3,
+              "longTaskMs": 169,
+              "startCounts": {
+                "detailLevel": "3d",
+                "visibleNeighborhoods": "east-liberty|friendship|garfield|highland-park|morningside|stanton-heights",
+                "visibleParcels": "2841",
+                "visibleBuildings": "2695",
+                "visibleRoads": "0"
+              },
+              "endCounts": {
+                "detailLevel": "3d",
+                "visibleNeighborhoods": "east-liberty|friendship|garfield|highland-park|morningside|stanton-heights",
+                "visibleParcels": "2737",
+                "visibleBuildings": "2638",
+                "visibleRoads": "0"
+              }
+            },
+            {
+              "frames": 352,
+              "fps": 58.2,
+              "p50Ms": 16.6,
+              "p95Ms": 25.4,
+              "maxMs": 62.9,
+              "over33MsPercent": 2.28,
+              "over50Ms": 3,
+              "longTasks": 1,
+              "longTaskMs": 54,
+              "startCounts": {
+                "detailLevel": "3d",
+                "visibleNeighborhoods": "east-liberty|friendship|garfield|highland-park|morningside|stanton-heights",
+                "visibleParcels": "2737",
+                "visibleBuildings": "2638",
+                "visibleRoads": "0"
+              },
+              "endCounts": {
+                "detailLevel": "3d",
+                "visibleNeighborhoods": "east-liberty|friendship|garfield|highland-park|morningside|stanton-heights",
+                "visibleParcels": "2754",
+                "visibleBuildings": "2652",
+                "visibleRoads": "0"
+              }
+            },
+            {
+              "frames": 343,
+              "fps": 56.69,
+              "p50Ms": 16.6,
+              "p95Ms": 28.3,
+              "maxMs": 77.6,
+              "over33MsPercent": 2.92,
+              "over50Ms": 5,
+              "longTasks": 2,
+              "longTaskMs": 132,
+              "startCounts": {
+                "detailLevel": "3d",
+                "visibleNeighborhoods": "east-liberty|friendship|garfield|highland-park|morningside|stanton-heights",
+                "visibleParcels": "2754",
+                "visibleBuildings": "2652",
+                "visibleRoads": "0"
+              },
+              "endCounts": {
+                "detailLevel": "3d",
+                "visibleNeighborhoods": "east-liberty|friendship|garfield|highland-park|morningside|stanton-heights",
+                "visibleParcels": "2841",
+                "visibleBuildings": "2695",
+                "visibleRoads": "0"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "east-liberty-off",
+      "context": {
+        "antialias": false,
+        "samples": 0,
+        "renderer": "ANGLE (AMD, AMD Radeon 780M Graphics (radeonsi phoenix ACO), OpenGL 4.6)",
+        "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+        "pixelRatio": 1,
+        "canvas": [
+          832,
+          644
+        ]
+      },
+      "status": "Complete",
+      "results": [
+        {
+          "center": {
+            "lng": -79.92543,
+            "lat": 40.46788799999996
+          },
+          "zoom": 16.2,
+          "pitch": 55,
+          "runs": [
+            {
+              "frames": 339,
+              "fps": 56.05,
+              "p50Ms": 16.8,
+              "p95Ms": 27.2,
+              "maxMs": 83.7,
+              "over33MsPercent": 2.96,
+              "over50Ms": 4,
+              "longTasks": 3,
+              "longTaskMs": 201,
+              "startCounts": {
+                "detailLevel": "3d",
+                "visibleNeighborhoods": "east-liberty|friendship|garfield|highland-park|morningside|stanton-heights",
+                "visibleParcels": "2849",
+                "visibleBuildings": "2701",
+                "visibleRoads": "0"
+              },
+              "endCounts": {
+                "detailLevel": "3d",
+                "visibleNeighborhoods": "east-liberty|friendship|garfield|highland-park|morningside|stanton-heights",
+                "visibleParcels": "2733",
+                "visibleBuildings": "2636",
+                "visibleRoads": "0"
+              }
+            },
+            {
+              "frames": 338,
+              "fps": 55.54,
+              "p50Ms": 16.8,
+              "p95Ms": 30.9,
+              "maxMs": 67.3,
+              "over33MsPercent": 3.56,
+              "over50Ms": 5,
+              "longTasks": 2,
+              "longTaskMs": 112,
+              "startCounts": {
+                "detailLevel": "3d",
+                "visibleNeighborhoods": "east-liberty|friendship|garfield|highland-park|morningside|stanton-heights",
+                "visibleParcels": "2733",
+                "visibleBuildings": "2636",
+                "visibleRoads": "0"
+              },
+              "endCounts": {
+                "detailLevel": "3d",
+                "visibleNeighborhoods": "east-liberty|friendship|garfield|highland-park|morningside|stanton-heights",
+                "visibleParcels": "2732",
+                "visibleBuildings": "2634",
+                "visibleRoads": "0"
+              }
+            },
+            {
+              "frames": 341,
+              "fps": 56.48,
+              "p50Ms": 16.8,
+              "p95Ms": 30.4,
+              "maxMs": 70.8,
+              "over33MsPercent": 4.41,
+              "over50Ms": 4,
+              "longTasks": 2,
+              "longTaskMs": 114,
+              "startCounts": {
+                "detailLevel": "3d",
+                "visibleNeighborhoods": "east-liberty|friendship|garfield|highland-park|morningside|stanton-heights",
+                "visibleParcels": "2732",
+                "visibleBuildings": "2634",
+                "visibleRoads": "0"
+              },
+              "endCounts": {
+                "detailLevel": "3d",
+                "visibleNeighborhoods": "east-liberty|friendship|garfield|highland-park|morningside|stanton-heights",
+                "visibleParcels": "2756",
+                "visibleBuildings": "2653",
+                "visibleRoads": "0"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

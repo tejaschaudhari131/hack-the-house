@@ -48,11 +48,14 @@ export default function PlannerMap({ parcelIndex, buildingIndex, neighborhoods, 
   callbacks.current = { onSelect, onStop, tool, placing, onPlace, onHover, drawing, onDraw, onViewport }
 
   useEffect(() => {
-    let map
+    let map, disposeBenchmark
+    const benchmark = process.env.NEXT_PUBLIC_MAP_BENCHMARK === '1' && new URLSearchParams(window.location.search).has('renderBenchmark')
     try {
       configureMapWorkers()
       map = new GLMap({ container: container.current, center: geometryCenter(selected.geometry), zoom: 17.6, pitch: 55, bearing: -25, attributionControl: true,
         maxBounds: PITTSBURGH_BOUNDS, renderWorldCopies: false,
+        // Native MSAA smooths silhouettes without changing coordinates, heights or pixel ratio.
+        canvasContextAttributes: { antialias: !benchmark || new URLSearchParams(window.location.search).get('antialias') !== 'off' },
         style: { version: 8, sources: { basemap: { type: 'raster', tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize: 256, attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' } }, layers: [
           { id: 'background', type: 'background', paint: { 'background-color': '#dde5df' } },
           { id: 'basemap', type: 'raster', source: 'basemap', paint: { 'raster-saturation': -.7, 'raster-opacity': .75 } },
@@ -60,6 +63,9 @@ export default function PlannerMap({ parcelIndex, buildingIndex, neighborhoods, 
       })
     } catch { setError('3D rendering is unavailable on this device. The scenario controls and comparison still work.'); return }
     mapRef.current = map
+    if (benchmark) import('../scripts/map-render-benchmark.js').then(({ attachMapBenchmark }) => {
+      if (mapRef.current === map) disposeBenchmark = attachMapBenchmark(map)
+    })
     map.addControl(new NavigationControl({ visualizePitch: true }), 'top-right')
     map.addControl(new ScaleControl({ unit: 'metric' }), 'bottom-left')
     map.on('error', event => {
@@ -153,7 +159,7 @@ export default function PlannerMap({ parcelIndex, buildingIndex, neighborhoods, 
     map.on('resize', () => publishViewport(true))
     const observer = new ResizeObserver(() => map.resize())
     observer.observe(container.current)
-    return () => { clearTimeout(viewportTimer); observer.disconnect(); marker.current?.remove(); marker.current = null; popup.current?.remove(); map.remove(); mapRef.current = null; uploaded.current.clear() }
+    return () => { disposeBenchmark?.(); clearTimeout(viewportTimer); observer.disconnect(); marker.current?.remove(); marker.current = null; popup.current?.remove(); map.remove(); mapRef.current = null; uploaded.current.clear() }
   }, [neighborhoods, stops])
 
   useEffect(() => {
