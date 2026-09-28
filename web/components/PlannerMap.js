@@ -11,7 +11,8 @@ import { configureMapWorkers } from '../lib/maplibreSetup.js'
 import { haversineMeters } from '../lib/geo.js'
 import { simulatedColor } from '../lib/buildingUses.js'
 import { buildingHeightDescription, buildingHeightSource } from '../lib/buildingHeights.js'
-import { DETAIL_ZOOM, sameFeatureSet } from '../lib/studioData.js'
+import { DETAIL_ZOOM } from '../lib/studioData.js'
+import { mapSourceDiff } from '../lib/mapSourceDiff.js'
 import { networkDisplayIndex } from '../lib/networkDisplay.js'
 
 const empty = () => ({ type: 'FeatureCollection', features: [] })
@@ -33,9 +34,16 @@ export default function PlannerMap({ parcelIndex, buildingIndex, neighborhoods, 
   const visibleKey = visibleNeighborhoodIds.join('|')
   const visibleRoads = useMemo(() => viewport?.zoom >= DETAIL_ZOOM && roadIndex ? roadIndex.query(viewport.bounds, visibleKey.split('|').filter(Boolean)) : [], [roadIndex, viewport, visibleKey])
   function updateFeatures(id, features) {
-    if (sameFeatureSet(uploaded.current.get(id), features)) return
-    mapRef.current.getSource(id).setData(fc(features))
-    uploaded.current.set(id, features)
+    const idProperty = ['existing-buildings', 'walking-network'].includes(id) ? 'id' : 'pin'
+    const { next, diff } = mapSourceDiff(uploaded.current.get(id), features, idProperty)
+    if (!diff) return
+    const map = mapRef.current
+    uploaded.current.set(id, next)
+    map.getSource(id).updateData(diff).catch(() => {
+      if (mapRef.current !== map) return
+      uploaded.current.delete(id)
+      setError('Map detail could not update. Reload to restore the map; your scenario controls remain available.')
+    })
   }
   callbacks.current = { onSelect, onStop, tool, placing, onPlace, onHover, drawing, onDraw, onViewport }
 
@@ -62,8 +70,8 @@ export default function PlannerMap({ parcelIndex, buildingIndex, neighborhoods, 
       map.addSource('districts', { type: 'geojson', data: neighborhoods })
       map.addSource('stops', { type: 'geojson', data: stops || empty() })
       map.addSource('existing-buildings', { type: 'geojson', data: empty(), promoteId: 'id', attribution: '<a href="https://mapservices.pasda.psu.edu/server/rest/services/pasda/AlleghenyCounty/MapServer/11">Allegheny County / PASDA buildings</a> · Heights: County / <a href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors, ODbL</a>' })
-      for (const id of ['empty-sites', 'discovery', 'placed-buildings', 'building', 'selected', 'service', 'network-nodes', 'parks', 'reservations', 'connections', 'saved-routes', 'draft-node']) map.addSource(id, { type: 'geojson', data: empty() })
-      map.addSource('walking-network', { type: 'geojson', data: empty(), attribution: '<a href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors · ODbL</a>' })
+      for (const id of ['empty-sites', 'discovery', 'placed-buildings', 'building', 'selected', 'service', 'network-nodes', 'parks', 'reservations', 'connections', 'saved-routes', 'draft-node']) map.addSource(id, { type: 'geojson', data: empty(), ...(['empty-sites', 'discovery'].includes(id) ? { promoteId: 'pin' } : {}) })
+      map.addSource('walking-network', { type: 'geojson', data: empty(), promoteId: 'id', attribution: '<a href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors · ODbL</a>' })
       map.addLayer({ id: 'district-line', type: 'line', source: 'districts', paint: { 'line-color': '#78978c', 'line-width': 2, 'line-dasharray': [3, 3] } })
       map.addLayer({ id: 'district-fill', type: 'fill', source: 'districts', maxzoom: DETAIL_ZOOM, paint: { 'fill-color': '#78978c', 'fill-opacity': .12 } }, 'district-line')
       map.addLayer({ id: 'parcel-fill', type: 'fill', source: 'parcels', minzoom: DETAIL_ZOOM, paint: { 'fill-color': ['case', ['get', 'vacant'], '#81b99c', '#e6e9e3'], 'fill-opacity': .28 } })
