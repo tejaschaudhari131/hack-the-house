@@ -20,6 +20,10 @@ The screenshots show the citywide branch. The preview may require team sign-in; 
 
 **Demo video (3 min):** https://youtu.be/ggot7Uslx28
 
+https://github.com/user-attachments/assets/041714fe-86ed-4cd0-b937-b1fbd1365784
+
+[![Watch the PlayHouse demo (3 min)](https://img.youtube.com/vi/ggot7Uslx28/hqdefault.jpg)](https://youtu.be/ggot7Uslx28)
+
 Open the link, click any Pittsburgh lot (or search a parcel ID such as 0056F00338000000), and compare housing options side by side. No sign-in needed.
 
 ![A single-family proposal previewed among existing buildings on Wylie Avenue in Middle Hill](docs/images/studio-housing.jpg)
