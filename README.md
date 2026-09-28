@@ -14,6 +14,12 @@ https://hack-the-house.vercel.app still opens the app as an alternate address.
 
 The screenshots show the citywide branch. The preview may require team sign-in; production follows `main`.
 
+## Try it for yourself
+
+**Live app:** https://playhouse-pittsburgh.vercel.app
+
+Open the link, click any Pittsburgh lot (or search a parcel ID such as 0056F00338000000), and compare housing options side by side. No sign-in needed.
+
 ![A single-family proposal previewed among existing buildings on Wylie Avenue in Middle Hill](docs/images/studio-housing.jpg)
 
 ## Try it
