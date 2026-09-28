@@ -4,14 +4,17 @@ import { createNeighborhoodDisplay, sameChunkMap, mergeNeighborhoods, neighborho
 export { loadNeighborhood as fetchNeighborhood } from '../lib/neighborhoodLoader.js'
 import { loadNeighborhood as fetchNeighborhood, loadNeighborhoodBatch } from '../lib/neighborhoodLoader.js'
 
-export default function useNeighborhoodData(manifest, initialChunk, requiredIds, viewport, extraIds = [], activeId = initialChunk.id, neighborhoods) {
+export default function useNeighborhoodData(manifest, initialChunk, requiredIds, viewport, extraIds = [], activeId = initialChunk.id, neighborhoods, requestViewport = viewport) {
   const cache = useRef(new Map([[initialChunk.id, initialChunk.data]]))
   const display = useRef(null)
   display.current ||= createNeighborhoodDisplay()
   const [chunks, setChunks] = useState(() => new Map(cache.current)), [error, setError] = useState(null), [pending, setPending] = useState(false), [attempt, setAttempt] = useState(0)
   const boundaries = useMemo(() => new Map((neighborhoods?.features || []).map(f => [neighborhoodId(f.properties.name), f.geometry])), [neighborhoods])
   const visibleKey = useMemo(() => visibleNeighborhoods(manifest, viewport, activeId, boundaries).join('|'), [manifest, viewport, activeId, boundaries])
-  const wantedKey = [...new Set([activeId, ...requiredIds, ...extraIds, ...visibleKey.split('|').filter(Boolean)])].join('|')
+  // Restore cached detail during a zoom, but only start downloads for the settled
+  // camera. An overview's empty display scope must not persist until the next pan.
+  const requestKey = useMemo(() => visibleNeighborhoods(manifest, requestViewport, activeId, boundaries).join('|'), [manifest, requestViewport, activeId, boundaries])
+  const wantedKey = [...new Set([activeId, ...requiredIds, ...extraIds, ...requestKey.split('|').filter(Boolean)])].join('|')
   useEffect(() => {
     const ids = wantedKey.split('|').filter(Boolean), controller = new AbortController()
     const missing = ids.filter(id => !cache.current.has(id))

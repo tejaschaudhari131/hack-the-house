@@ -1,10 +1,26 @@
 import { boundsOverlap, geometryBounds, geometriesOverlap, slimParcels } from './plannerGeometry.js'
 
 export const DETAIL_ZOOM = 14
+export const DETAIL_EXIT_ZOOM = 13.5
+export const hasMapDetail = viewport => !!viewport && (viewport.detail ?? viewport.zoom >= DETAIL_ZOOM)
 export const NEIGHBORHOOD_CACHE_SIZE = 6
 export const collection = features => ({ type: 'FeatureCollection', features })
 export const neighborhoodId = name => name.toLowerCase().replace(/[^a-z0-9]+/g, '-')
 export const containsBounds = (outer, inner) => outer[0] <= inner[0] && outer[1] <= inner[1] && outer[2] >= inner[2] && outer[3] >= inner[3]
+
+/** Retain a small offscreen margin through camera jitter, without retaining a
+ * city-sized extent after zooming back in. This changes selection, never geometry.
+ */
+export function renderViewport(previous, camera) {
+  const detail = camera.zoom >= (hasMapDetail(previous) ? DETAIL_EXIT_ZOOM : DETAIL_ZOOM)
+  if (!detail) return { ...camera, detail }
+  const [w, s, e, n] = camera.bounds, width = e - w, height = n - s
+  const old = hasMapDetail(previous) && previous.bounds
+  const reusable = old && containsBounds(old, camera.bounds)
+    && (old[2] - old[0]) * (old[3] - old[1]) <= width * height * 4
+  const bounds = reusable ? old : [w - width * .25, s - height * .25, e + width * .25, n + height * .25]
+  return { ...camera, bounds, detail }
+}
 
 export function neighborhoodAdjacency(neighborhoods) {
   const rows = neighborhoods.features.map(f => ({ id: neighborhoodId(f.properties.name), geometry: f.geometry }))
@@ -13,7 +29,7 @@ export function neighborhoodAdjacency(neighborhoods) {
 
 /** Only the selected neighborhood and its immediate geographic neighbors may load for display. */
 export function visibleNeighborhoods(manifest, viewport, activeId, boundaries) {
-  if (!viewport || viewport.zoom < DETAIL_ZOOM) return []
+  if (!hasMapDetail(viewport)) return []
   const active = manifest.neighborhoods.find(n => n.id === activeId)
   if (!active) return []
   const allowed = new Set([active.id, ...(active.neighbors || [])])
