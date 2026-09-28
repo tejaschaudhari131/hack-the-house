@@ -27,7 +27,8 @@ import useEmptySites from './useEmptySites.js'
 import StudioTour from './StudioTour.js'
 import { TOUR_PIN, tourScenario, tourEvidence } from '../lib/studioTour.js'
 import { draftPreview } from '../lib/draftPreview.js'
-import { evaluatePlanner, nearbyStops, preferredStop, round } from '../lib/plannerModel.js'
+import { nearbyStops, preferredStop, round } from '../lib/plannerModel.js'
+import { createPlannerEvaluator, sameEvaluationContext } from '../lib/plannerEvaluation.js'
 import { EXAMPLES, MODEL_VERSION, PLANNER_FACTORS, MASSING_DEFAULTS, optionFor, initialStudioScenario, historyFor, scenarioReducer, scenarioExport } from '../lib/plannerState.js'
 
 const PlannerMap = dynamic(() => import('./PlannerMap.js'), { ssr: false, loading: () => <div className="planner-loading">Preparing the map…</div> })
@@ -66,10 +67,12 @@ function Numeric({ label, value, onChange, min = 0, max = 100000, step = 1, hint
 function useEvaluation(input, network) {
   const worker = useRef(null), latest = useRef(0), current = useRef(input)
   const networkRef = useRef(network), fallback = useRef(null), editRequests = useRef(new Map()), editId = useRef(0)
+  const sent = useRef(null), fallbackEvaluator = useRef(null)
   networkRef.current = network
   function compute(input) {
     if (fallback.current?.source !== networkRef.current) fallback.current = { source: networkRef.current, prepared: networkRef.current ? prepareNetwork(networkRef.current) : null }
-    return evaluatePlanner({ ...input, networkContext: fallback.current.prepared })
+    fallbackEvaluator.current ||= createPlannerEvaluator()
+    return fallbackEvaluator.current.evaluate({ ...input, networkContext: fallback.current.prepared })
   }
   const [state, setState] = useState({ result: null, pending: true, error: null })
   current.current = input
@@ -78,6 +81,7 @@ function useEvaluation(input, network) {
     try {
       w = new Worker(new URL('../workers/planner.worker.js', import.meta.url), { type: 'module' })
       worker.current = w
+      sent.current = null
       w.onmessage = ({ data }) => {
         if (data.type === 'edit') { const pending = editRequests.current.get(data.id); editRequests.current.delete(data.id); if (data.error) pending?.reject(new Error(data.error)); else pending?.resolve(data.result); return }
         if (data.revision !== latest.current) return
@@ -98,7 +102,11 @@ function useEvaluation(input, network) {
     const revision = ++latest.current
     setState(old => ({ ...old, pending: true, error: null }))
     const timer = setTimeout(() => {
-      if (worker.current) worker.current.postMessage({ revision, input })
+      if (worker.current) {
+        const { scenario, ...context } = input
+        worker.current.postMessage({ revision, scenario, ...(!sameEvaluationContext(sent.current, context) ? { context } : {}) })
+        sent.current = context
+      }
       else {
         try { setState({ result: compute(input), pending: false, error: null, pin: input.feature.properties.pin, input }) }
         catch (error) { setState({ result: null, pending: false, error: error.message }) }

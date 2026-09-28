@@ -172,6 +172,8 @@ Edits persist when selecting another parcel in the same study area, so subsequen
 
 ## Performance checks and deferred data delivery work
 
+Priority-only edits reuse the last complete physical, legal and network evaluation. Totals, rankings, shared evidence denominators, tradeoffs, placed-plan scores and sensitivity results are recomputed with the new weights. Any other scenario edit or changed evidence triggers a full evaluation. The worker keeps one evidence context, so slider messages do not repeatedly copy parcel, zoning and building geometry. `benchmark:planner` compares this path against full Studio evaluations; parity tests cover zeros, missing evidence, blocked options, placed plans and the real study examples.
+
 The browser now downloads full-evidence neighborhood chunks, not the old combined study file. No parcel properties were discarded to make the chunks smaller. The old study file survives in `web/testdata/study` for regression tests and is not served to users.
 
 Infra derives its display segments from the already loaded calculation graph, avoiding a separate roads download. A spatial index selects whole original segments touching the visible neighborhood scope and viewport. Display culling does not remove edges from the routing calculation, so routes may leave the view and return. The calculation graph initializes once per worker and is not copied on each edit. Baseline map geometry is not resent during scenario edits. Parcel search metadata is updated only when neighborhood chunks change, rather than rebuilt during pointer movement.
