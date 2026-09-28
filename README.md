@@ -8,7 +8,7 @@ by Hack the House
 
 Playhouse helps planners, developers and communities test housing and infrastructure proposals on a 3D map of Pittsburgh, using public data and explicit assumptions.
 
-[Open Playhouse](https://playhouse-pittsburgh.vercel.app) · [Citywide preview](https://hack-the-house-git-playhouse-citywide-tej-fff0.vercel.app) · [Hackathon challenge](https://ai-horizons-2026-ai-for-housing-hackathon.brandon831577.chatgpt.site/challenges/typology-equity-climate)
+[Open Playhouse](https://playhouse-pittsburgh.vercel.app)  · [Hackathon challenge](https://ai-horizons-2026-ai-for-housing-hackathon.brandon831577.chatgpt.site/challenges/typology-equity-climate)
 
 
 
