@@ -11,7 +11,8 @@ import { configureMapWorkers } from '../lib/maplibreSetup.js'
 import { haversineMeters } from '../lib/geo.js'
 import { simulatedColor } from '../lib/buildingUses.js'
 import { buildingHeightDescription, buildingHeightSource } from '../lib/buildingHeights.js'
-import { DETAIL_ZOOM, sameFeatureSet, spatialIndex } from '../lib/studioData.js'
+import { DETAIL_ZOOM } from '../lib/studioData.js'
+import { mapSourceDiff } from '../lib/mapSourceDiff.js'
 import { networkDisplayIndex } from '../lib/networkDisplay.js'
 
 const empty = () => ({ type: 'FeatureCollection', features: [] })
@@ -19,12 +20,10 @@ const fc = features => ({ type: 'FeatureCollection', features })
 // Official neighborhood union extent: navigation bounds, not a polygon mask.
 
 
-export default function PlannerMap({ parcels, neighborhoods, stops, existingBuildings, showExisting, selected, buildingPreview, stop, proposed, additionalDepartures, view3d, onSelect, onStop, tool, placing, onPlace, onHover, placedBuildings = [], network, visibleNeighborhoodIds = [], networkResult, reservations, connections, routes = [], drawing, draftNode, onDraw, discoveryPins = [], onViewport }) {
+export default function PlannerMap({ parcelIndex, buildingIndex, neighborhoods, stops, showExisting, selected, buildingPreview, stop, proposed, additionalDepartures, view3d, onSelect, onStop, tool, placing, onPlace, onHover, placedBuildings = [], network, visibleNeighborhoodIds = [], networkResult, reservations, connections, routes = [], drawing, draftNode, onDraw, discoveryPins = [], emptyPins = [], onViewport }) {
   const container = useRef(null), mapRef = useRef(null), callbacks = useRef({ onSelect, onStop, tool, placing, onPlace })
   const [ready, setReady] = useState(false), [error, setError] = useState(null)
   const [viewport, setViewport] = useState(null)
-  const parcelIndex = useMemo(() => spatialIndex(parcels.features), [parcels])
-  const buildingIndex = useMemo(() => spatialIndex(existingBuildings?.features || []), [existingBuildings])
   const visibleParcels = useMemo(() => viewport?.zoom >= DETAIL_ZOOM ? parcelIndex.query(viewport.bounds) : [], [viewport, parcelIndex])
   const visibleBuildings = useMemo(() => viewport?.zoom >= DETAIL_ZOOM && showExisting ? buildingIndex.query(viewport.bounds) : [], [viewport, buildingIndex, showExisting])
   const lastPin = useRef(null)
@@ -35,9 +34,16 @@ export default function PlannerMap({ parcels, neighborhoods, stops, existingBuil
   const visibleKey = visibleNeighborhoodIds.join('|')
   const visibleRoads = useMemo(() => viewport?.zoom >= DETAIL_ZOOM && roadIndex ? roadIndex.query(viewport.bounds, visibleKey.split('|').filter(Boolean)) : [], [roadIndex, viewport, visibleKey])
   function updateFeatures(id, features) {
-    if (sameFeatureSet(uploaded.current.get(id), features)) return
-    mapRef.current.getSource(id).setData(fc(features))
-    uploaded.current.set(id, features)
+    const idProperty = ['existing-buildings', 'walking-network'].includes(id) ? 'id' : 'pin'
+    const { next, diff } = mapSourceDiff(uploaded.current.get(id), features, idProperty)
+    if (!diff) return
+    const map = mapRef.current
+    uploaded.current.set(id, next)
+    map.getSource(id).updateData(diff).catch(() => {
+      if (mapRef.current !== map) return
+      uploaded.current.delete(id)
+      setError('Map detail could not update. Reload to restore the map; your scenario controls remain available.')
+    })
   }
   callbacks.current = { onSelect, onStop, tool, placing, onPlace, onHover, drawing, onDraw, onViewport }
 
@@ -64,12 +70,14 @@ export default function PlannerMap({ parcels, neighborhoods, stops, existingBuil
       map.addSource('districts', { type: 'geojson', data: neighborhoods })
       map.addSource('stops', { type: 'geojson', data: stops || empty() })
       map.addSource('existing-buildings', { type: 'geojson', data: empty(), promoteId: 'id', attribution: '<a href="https://mapservices.pasda.psu.edu/server/rest/services/pasda/AlleghenyCounty/MapServer/11">Allegheny County / PASDA buildings</a> · Heights: County / <a href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors, ODbL</a>' })
-      for (const id of ['discovery', 'placed-buildings', 'building', 'selected', 'service', 'network-nodes', 'parks', 'reservations', 'connections', 'saved-routes', 'draft-node']) map.addSource(id, { type: 'geojson', data: empty() })
-      map.addSource('walking-network', { type: 'geojson', data: empty(), attribution: '<a href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors · ODbL</a>' })
+      for (const id of ['empty-sites', 'discovery', 'placed-buildings', 'building', 'selected', 'service', 'network-nodes', 'parks', 'reservations', 'connections', 'saved-routes', 'draft-node']) map.addSource(id, { type: 'geojson', data: empty(), ...(['empty-sites', 'discovery'].includes(id) ? { promoteId: 'pin' } : {}) })
+      map.addSource('walking-network', { type: 'geojson', data: empty(), promoteId: 'id', attribution: '<a href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors · ODbL</a>' })
       map.addLayer({ id: 'district-line', type: 'line', source: 'districts', paint: { 'line-color': '#78978c', 'line-width': 2, 'line-dasharray': [3, 3] } })
       map.addLayer({ id: 'district-fill', type: 'fill', source: 'districts', maxzoom: DETAIL_ZOOM, paint: { 'fill-color': '#78978c', 'fill-opacity': .12 } }, 'district-line')
       map.addLayer({ id: 'parcel-fill', type: 'fill', source: 'parcels', minzoom: DETAIL_ZOOM, paint: { 'fill-color': ['case', ['get', 'vacant'], '#81b99c', '#e6e9e3'], 'fill-opacity': .28 } })
       map.addLayer({ id: 'parcel-line', type: 'line', source: 'parcels', minzoom: 14, paint: { 'line-color': '#788f84', 'line-width': .6, 'line-opacity': .55 } })
+      map.addLayer({ id: 'empty-site-fill', type: 'fill', source: 'empty-sites', minzoom: DETAIL_ZOOM, paint: { 'fill-color': '#fbbf24', 'fill-opacity': .45 } })
+      map.addLayer({ id: 'empty-site-outline', type: 'line', source: 'empty-sites', minzoom: DETAIL_ZOOM, paint: { 'line-color': '#a16207', 'line-width': 2 } })
       map.addLayer({ id: 'discovery-outline', type: 'line', source: 'discovery', paint: { 'line-color': '#0891b2', 'line-width': 2 } })
       map.addLayer({ id: 'selected-fill', type: 'fill', source: 'selected', paint: { 'fill-color': '#2b8061', 'fill-opacity': .12 } })
       map.addLayer({ id: 'selected-line', type: 'line', source: 'selected', paint: { 'line-color': '#23694f', 'line-width': 2.5 } })
@@ -155,6 +163,11 @@ export default function PlannerMap({ parcels, neighborhoods, stops, existingBuil
     updateFeatures('discovery', visibleParcels.filter(f => pins.has(f.properties.pin)))
     updateFeatures('existing-buildings', visibleBuildings)
   }, [ready, visibleParcels, visibleBuildings, discoveryPins])
+  useEffect(() => {
+    if (!ready) return
+    const pins = new Set(emptyPins)
+    updateFeatures('empty-sites', visibleParcels.filter(f => pins.has(f.properties.pin)))
+  }, [ready, visibleParcels, emptyPins])
   useEffect(() => {
     if (!ready) return
     mapRef.current.setLayoutProperty('existing-buildings-fill', 'visibility', showExisting ? 'visible' : 'none')

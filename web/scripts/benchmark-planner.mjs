@@ -2,7 +2,9 @@ import { readFileSync } from 'node:fs'
 import { cpus } from 'node:os'
 import { performance } from 'node:perf_hooks'
 import { evaluatePlanner, nearbyStops, preferredStop } from '../lib/plannerModel.js'
-import { initialScenario, EXAMPLES } from '../lib/plannerState.js'
+import { createPlannerEvaluator } from '../lib/plannerEvaluation.js'
+import { initialStudioScenario, EXAMPLES } from '../lib/plannerState.js'
+import { BUILDING_IDS } from '../lib/buildings.js'
 import { prepareNetwork } from '../lib/networkModel.js'
 import { geometryBounds, boundsOverlap } from '../lib/plannerGeometry.js'
 
@@ -20,8 +22,11 @@ const zoning = read('zoning.json'), stops = read('stops.geojson'), buildings = r
 const result = { runtime: process.version, cpu: cpus()[0].model, scope: 'Local Node CPU benchmark; excludes network download, worker transfer, React and WebGL rendering. Not a citywide or mobile performance guarantee.', parcels: { count: parcels.features.length, sourceBytes: Buffer.byteLength(sourceRaw), sourceParse: measure(() => JSON.parse(sourceRaw)) }, graphPreparationMs: +graphPreparationMs.toFixed(2), evaluation: {} }
 for (const example of EXAMPLES) {
   const feature = parcels.features.find(f => f.properties.pin === example.pin), stop = preferredStop(nearbyStops(feature, stops))
-  const scenario = { ...initialScenario(example.pin, feature.properties, String(stop.stop_id)), accessMode: 'network', additionalDepartures: 60, spareBoardings: 3 }
+  const scenario = { ...initialStudioScenario(example.pin, feature.properties, String(stop.stop_id)), comparisonTypes: BUILDING_IDS, accessMode: 'network', additionalDepartures: 60, spareBoardings: 3 }
   const existingBuildings = buildings.features.filter(b => boundsOverlap(geometryBounds(feature.geometry), geometryBounds(b.geometry)))
-  result.evaluation[example.id] = measure(() => evaluatePlanner({ feature, stop, scenario, zoning, existingBuildings, networkContext }))
+  const input = { feature, stop, scenario, zoning, existingBuildings, networkContext }, evaluator = createPlannerEvaluator()
+  evaluator.evaluate(input)
+  let changes = 0
+  result.evaluation[example.id] = { full: measure(() => evaluatePlanner(input)), prioritiesOnly: measure(() => evaluator.evaluate({ ...input, scenario: { ...scenario, weights: { ...scenario.weights, demand: ++changes % 100 } } })) }
 }
 console.log(JSON.stringify(result, null, 2))

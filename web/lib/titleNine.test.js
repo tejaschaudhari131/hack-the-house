@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { evaluateTitleNine, housingSpec } from './titleNine.js'
+import { readFileSync } from 'node:fs'
+import { evaluateTitleNine, housingSpec, housingPermission, housingUseOptions } from './titleNine.js'
 import { districtStandards } from './titleNineRules.js'
 import { rectangleAt, fitMassing } from './plannerGeometry.js'
 import { initialStudioScenario, optionFor } from './plannerState.js'
@@ -13,6 +14,44 @@ function fixture(code = 'LNC') {
   return { feature, zoning, option, existingBuildings: [], massing: fitMassing(feature.geometry, option.width, option.depth, null, []), siteInputs: {} }
 }
 const rule = (input, id) => evaluateTitleNine(input).checks.find(c => c.id === id)
+
+test('proposed housing permissions follow actual district rows, not the parcel recorded use', () => {
+  const zoning = JSON.parse(readFileSync(new URL('../public/data/zoning.json', import.meta.url)))
+  const input = fixture('R1D-H')
+  input.zoning = zoning
+  for (const land_use of ['SINGLE FAMILY', 'VACANT LAND', 'VACANT COMMERCIAL LAND', null]) {
+    input.feature.properties.land_use = land_use
+    const check = rule(input, 'use')
+    assert.equal(check.status, 'conflict', 'R1D duplex stays prohibited regardless of recorded use')
+    assert.equal(check.label, 'Proposed use: Duplex (2 units)')
+    const scenario = initialStudioScenario('site', input.feature.properties)
+    assert.equal(evaluatePlanner({ ...input, scenario, stop: null }).proposal.townhouse_duplex.total, null)
+  }
+  const categories = code => Object.fromEntries(housingUseOptions(code, zoning).map(row => [row.useRow, row.permission.category]))
+  assert.equal(categories('R1D-H')['Single-Unit Detached'], 'permitted')
+  assert.equal(categories('R1D-H')['Single-Unit Attached'], 'special')
+  assert.equal(categories('R1D-H')['Two-Unit'], 'not_permitted')
+  assert.ok(Object.values(categories('LNC')).every(value => value === 'permitted'), 'commercial zoning can allow housing')
+  assert.ok(Object.values(categories('GI')).every(value => value === 'not_permitted'), 'industrial parcels are not automatically residential')
+  assert.equal(categories('UI')['Three-Unit'], 'not_permitted')
+  assert.equal(categories('UI')['Multi-Unit'], 'special')
+  for (const code of ['SP-10', 'NOT-A-DISTRICT', null]) {
+    assert.ok(Object.values(categories(code)).every(value => value === 'unknown'), 'missing rules are not permission')
+  }
+  for (const row of housingUseOptions('R3-M', zoning)) {
+    assert.deepEqual(row.permission, housingPermission(row, 'R3-M', zoning), 'sidebar uses the same permission evaluator')
+  }
+  input.feature.properties.zoning_code = 'RM-M'
+  input.feature.properties.land_use = 'SINGLE FAMILY'
+  const scenario = initialStudioScenario('site', input.feature.properties)
+  assert.equal(rule(input, 'use').status, 'pass')
+  assert.ok(Number.isFinite(evaluatePlanner({ ...input, scenario, stop: null }).proposal.townhouse_duplex.total), 'a permitted residential use must retain a score when other supported checks pass')
+  input.existingBuildings = [{ geometry: input.feature.geometry }]
+  const occupied = evaluatePlanner({ ...input, scenario, stop: null }).proposal.townhouse_duplex
+  assert.equal(occupied.titleNine.checks.find(c => c.id === 'use').status, 'pass')
+  assert.equal(occupied.total, null)
+  assert.equal(occupied.gate, 'Building or infrastructure overlap', 'existing structures, not residential permission, explain the missing score')
+})
 
 test('base dimensions include separate height and story limits; threshold equality is allowed', () => {
   const input = fixture()

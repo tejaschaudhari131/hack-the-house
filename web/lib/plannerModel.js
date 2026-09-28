@@ -96,6 +96,15 @@ function weighted(option, weights, included) {
   return denominator > 0 ? included.reduce((sum, id) => sum + option.scores[id] * weights[id], 0) / denominator : null
 }
 
+/** Priorities only change aggregation; retain source, geometry and legal evidence. */
+function weightScreen({ baseline, proposal }, weights) {
+  const values = [...Object.values(baseline), ...Object.values(proposal)]
+  const included = PLANNER_FACTORS.map(f => f.id).filter(id => numeric(weights[id]) && weights[id] > 0 && values.every(o => numeric(o.scores[id])))
+  const excluded = PLANNER_FACTORS.map(f => f.id).filter(id => !included.includes(id))
+  const reweight = options => Object.fromEntries(Object.entries(options).map(([id, option]) => [id, { ...option, total: option.eligible ? weighted(option, weights, included) : null }]))
+  return { baseline: reweight(baseline), proposal: reweight(proposal), included, excluded }
+}
+
 function screenOptions(options, context) {
   const { feature, zoning, scenario, stop, existingBuildings, reservations, infrastructureErrors, accessBefore, accessAfter, committed = { baseline: [], proposal: [] } } = context
   const baseline = {}, proposal = {}
@@ -136,10 +145,7 @@ function screenOptions(options, context) {
       if (candidate.area.invalid.length) candidate.gate = `${candidate.area.invalid.length} placed building(s) need review`
     }
   // One evidence denominator across every candidate AND both infrastructure states.
-  const included = PLANNER_FACTORS.map(f => f.id).filter(id => numeric(scenario.weights[id]) && scenario.weights[id] > 0 && [...Object.values(baseline), ...Object.values(proposal)].every(o => numeric(o.scores[id])))
-  const excluded = PLANNER_FACTORS.map(f => f.id).filter(id => !included.includes(id))
-  for (const values of [baseline, proposal]) for (const slot of ids) values[slot].total = values[slot].eligible ? weighted(values[slot], scenario.weights, included) : null
-  return { baseline, proposal, included, excluded }
+  return weightScreen({ baseline, proposal }, scenario.weights)
 }
 
 
@@ -201,14 +207,29 @@ export function evaluatePlanner({ feature, zoning, scenario, stop, existingBuild
   const changed = before !== after
   const activeId = scenario.draft?.typeId || 'A'
   const accessDelta = baseline[activeId].service && proposal[activeId].service ? baseline[activeId].service.minutes - proposal[activeId].service.minutes : null
+  const result = { baseline, proposal, included, excluded, before, after, changed, accessDelta, reservations, infrastructureErrors, committed, placedPlan: summarizePlacedPlan(committed, scenario.weights), scope: areaSites.length ? 'area' : 'parcel' }
+  return { ...result, explanation: plannerExplanation(result, scenario, stop), audit: recommendationAudit(result, scenario, feature.properties), ...(scenario.draft ? { comparison: shortlist } : { shortlist }) }
+}
+
+export function reweightPlanner(previous, { scenario, feature, stop, shortlistSlot = 'B' }) {
+  const screen = weightScreen(previous, scenario.weights)
+  const before = rankedWinner(screen.baseline), after = rankedWinner(screen.proposal)
+  const sourceSlot = shortlistSlot === 'A' ? 'A' : 'B'
+  const templates = scenario.draft ? comparisonTemplates(scenario) : shortlistTemplates(scenario, sourceSlot)
+  const legacyScreen = scenario.draft ? null : Object.fromEntries(['baseline', 'proposal'].map(state => [state, Object.fromEntries(previous.shortlist.entries.map(e => [e.id, e[state]]))]))
+  const shortlist = summarizeShortlist(scenario.draft ? screen : weightScreen(legacyScreen, scenario.weights), templates, scenario, sourceSlot)
+  const result = { ...previous, ...screen, before, after, changed: before !== after, placedPlan: summarizePlacedPlan(previous.committed, scenario.weights) }
+  return { ...result, explanation: plannerExplanation(result, scenario, stop), audit: recommendationAudit(result, scenario, feature.properties), ...(scenario.draft ? { comparison: shortlist } : { shortlist }) }
+}
+
+function plannerExplanation(result, scenario, stop) {
+  const { infrastructureErrors, accessDelta, changed, baseline } = result
+  const activeId = scenario.draft?.typeId || 'A', routed = scenario.accessMode === 'network'
   const infrastructureEdited = (scenario.connections?.length || 0) + (scenario.parks?.length || 0) > 0
-  const result = { baseline, proposal, included, excluded, before, after, changed, accessDelta, reservations, infrastructureErrors, committed, placedPlan: summarizePlacedPlan(committed, scenario.weights), scope: areaSites.length ? 'area' : 'parcel',
-    explanation: infrastructureErrors.length ? `Proposal ranking is withheld: ${[...new Set(infrastructureErrors)].join(' ')}`
+  return infrastructureErrors.length ? `Proposal ranking is withheld: ${[...new Set(infrastructureErrors)].join(' ')}`
       : infrastructureEdited ? `${scenario.connections?.length || 0} connection(s) and ${scenario.parks?.length || 0} park(s) are proposed. ${accessDelta === null ? 'Stop access could not be compared on this network.' : `Modeled walk + wait changes by ${round(-accessDelta)} minutes.`} ${changed ? 'The preferred option changes under these assumptions.' : 'The housing preference stays the same.'} Access benefits are shared; reserved land can change housing fit. Park access has a ${scenario.parkAccessShare || 0}% share of the access factor. Demand, rents, displacement and carbon are held unchanged.`
       : !stop ? 'No scheduled stop is available. Transit access and capacity are excluded.'
       : routed && !baseline[activeId].service ? 'The selected stop cannot be reached in the loaded walking graph. Transit access and capacity are unknown; no straight-line fallback is used.'
       : scenario.additionalDepartures === 0 ? 'No infrastructure change yet. Add departures to compare the selected housing options before and after service changes.'
-      : `${scenario.additionalDepartures} proposed departures reduce modeled average walk + wait by ${round(accessDelta)} minutes. ${changed ? 'The preferred option changes under the current assumptions.' : 'The preferred housing option stays the same.'} Access gains are shared by selected types. ${baseline[activeId].supply === null ? 'Spare capacity is unknown and excluded from ranking.' : 'Capacity uses scheduled service and explicit spare-boardings and per-home demand assumptions, not observed occupancy.'} Demand, affordability, displacement and carbon stay unchanged.`,
-  }
-  return { ...result, audit: recommendationAudit(result, scenario, feature.properties), ...(scenario.draft ? { comparison: shortlist } : { shortlist }) }
+      : `${scenario.additionalDepartures} proposed departures reduce modeled average walk + wait by ${round(accessDelta)} minutes. ${changed ? 'The preferred option changes under the current assumptions.' : 'The preferred housing option stays the same.'} Access gains are shared by selected types. ${baseline[activeId].supply === null ? 'Spare capacity is unknown and excluded from ranking.' : 'Capacity uses scheduled service and explicit spare-boardings and per-home demand assumptions, not observed occupancy.'} Demand, affordability, displacement and carbon stay unchanged.`
 }

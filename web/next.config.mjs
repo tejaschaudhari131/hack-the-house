@@ -44,6 +44,7 @@ const nextConfig = {
       "./public/data/studio/*-buildings.*.json",
       "./public/data/studio/*-network.*.json",
       "./public/data/studio/*-roads.*.json",
+      "./public/data/studio/*-empty-sites.*.json",
     ],
   },
 }

@@ -323,6 +323,21 @@
 .studio .inspector-scroll { padding: 12px 18px 24px; }
 .studio .site-heading h2 { font-size: 19px; margin: 5px 0; }
 .studio .site-tags { margin-top: 8px; }
+.site-records { margin: 10px 0; display: grid; gap: 8px; font-size: 11px; }
+.site-records > div { display: grid; grid-template-columns: 90px minmax(0, 1fr); gap: 8px; }
+.site-records dt { color: #64745f; }
+.site-records dd { margin: 0; overflow-wrap: anywhere; }
+.site-records small { display: block; color: #64745f; font-size: 10px; margin-top: 2px; }
+.proposed-use { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px 12px; font-size: 11px; padding: 8px 0; border-top: 1px solid #dde5d8; }
+.site-zoning .permitted strong { color: #167247; }
+.site-zoning .not_permitted strong { color: #b42318; }
+.site-zoning .special strong, .site-zoning .unknown strong { color: #785b22; }
+.housing-permissions { font-size: 11px; }
+.housing-permissions summary { cursor: pointer; padding: 5px 0; }
+.housing-permissions ul { list-style: none; padding: 0; margin: 8px 0; }
+.housing-permissions li { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px solid #dde5d8; }
+.housing-permissions li strong { text-align: right; font-size: 10px; }
+.housing-permissions a { color: #17677d; }
 .studio .option-tabs { margin: 12px 0; }
 .studio .option-tabs button { padding: 8px; }
 .studio .section-heading { margin-top: 14px; }
@@ -385,6 +400,15 @@
 /* Compact map keys stay below the draft without covering it when expanded. */
 .map-overlays { position: absolute; left: 88px; bottom: 30px; width: min(520px, calc(100% - 106px)); display: flex; flex-direction: column; align-items: flex-start; gap: 12px; max-height: calc(100% - 95px); overflow-y: auto; scrollbar-width: thin; pointer-events: none; }
 .map-overlays > * { pointer-events: auto; flex-shrink: 0; }
+.empty-sites-control { width: min(355px, 100%); padding: 10px 12px; border: 1px solid #d4dfd2; border-radius: 9px; background: #fafcf8f5; color: #365447; font-size: 11px; }
+.empty-sites-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.empty-sites-row label { display: flex; align-items: center; gap: 7px; cursor: pointer; font-weight: 600; }
+.empty-sites-row input { margin: 0; accent-color: #87600d; }
+.empty-sites-row i { width: 11px; height: 11px; background: #fbbf2473; border: 2px solid #a16207; border-radius: 2px; }
+.empty-sites-row [role="status"] { font-size: 10px; white-space: nowrap; }
+.empty-sites-control details { margin-top: 9px; font-size: 10px; }
+.empty-sites-control summary { cursor: pointer; }
+.empty-sites-control p { line-height: 1.5; margin: 8px 0 0; }
 .map-overlays .massing-tray { position: static; width: min(355px, 100%); }
 .map-overlays .canvas-legend { position: static; display: block; width: 100%; max-width: 100%; padding: 0; border: 1px solid #d4dfd2; background: #fafcf8f5; backdrop-filter: blur(12px); border-radius: 9px; font-size: 11px; }
 .canvas-legend > summary { list-style: none; cursor: pointer; padding: 9px 11px; }
@@ -414,6 +438,7 @@
 .studio .tour-top button { padding: 5px 8px; border: 0; background: transparent; font-size: 12px; }
 .studio-tour h2 { margin: 18px 0 10px; font-size: 23px; font-weight: 600; letter-spacing: -.4px; outline: none; }
 .studio-tour p { font-size: 14px; line-height: 1.65; margin: 0; color: #526657; }
+.studio-tour .tour-evidence { margin-top: 14px; padding: 10px; border-radius: 6px; background: #eaf0e4; font-size: 12px; }
 .tour-progress { display: flex; gap: 5px; margin: 22px 0; }
 .tour-progress i { height: 4px; flex: 1; background: #dce5d8; border-radius: 5px; }
 .tour-progress i.active { background: #315b46; }

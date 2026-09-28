@@ -12,8 +12,11 @@ export async function loadNeighborhood(descriptor, signal, fetcher = fetch, with
   if (!descriptor) throw new Error('Neighborhood is not in this release')
   if (descriptor.file) return fetchDataFile(descriptor.file, signal, fetcher)
   const parcels = await Promise.all(descriptor.parcelFiles.map(file => fetchDataFile(file, signal, fetcher)))
-  const buildings = withBuildings ? await Promise.all(descriptor.buildingFiles.map(file => fetchDataFile(file, signal, fetcher))) : []
-  return { parcels: collection(parcels.flatMap(c => c.features)), buildings: collection(buildings.flatMap(c => c.features)) }
+  const [buildings, emptySites] = await Promise.all([
+    withBuildings ? Promise.all(descriptor.buildingFiles.map(file => fetchDataFile(file, signal, fetcher))) : [],
+    withBuildings && descriptor.emptySitesFile ? fetchDataFile(descriptor.emptySitesFile, signal, fetcher) : null,
+  ])
+  return { parcels: collection(parcels.flatMap(c => c.features)), buildings: collection(buildings.flatMap(c => c.features)), emptySites }
 }
 
 /** Limit simultaneous parse/download bursts; obsolete camera requests never start queued work. */

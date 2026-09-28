@@ -2,7 +2,15 @@ import { segmentTouchesPolygon } from './plannerGeometry.js'
 import { neighborhoodId, spatialIndex } from './studioData.js'
 
 /** Reuse the loaded graph for display; no second multi-megabyte roads download. */
+const displays = new WeakMap()
 export function networkDisplayIndex(network, neighborhoods) {
+  if (!displays.has(network)) displays.set(network, new WeakMap())
+  const cache = displays.get(network)
+  if (!cache.has(neighborhoods)) cache.set(neighborhoods, buildNetworkDisplay(network, neighborhoods))
+  return cache.get(neighborhoods)
+}
+
+function buildNetworkDisplay(network, neighborhoods) {
   const unique = new Map(), boundaryIndex = spatialIndex(neighborhoods.features), membership = new WeakMap()
   for (const [a, b] of network.edges) {
     const id = a < b ? `${a}:${b}` : `${b}:${a}`

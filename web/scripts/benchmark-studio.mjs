@@ -17,6 +17,6 @@ for(const name of ['Hazelwood','Lower Lawrenceville','Squirrel Hill North','East
  const n=manifest.neighborhoods.find(n=>n.name===name),raws=[...n.parcelFiles,...n.buildingFiles].map(file=>read(`studio/${file}`))
  const parcels=n.parcelFiles.flatMap(file=>JSON.parse(read(`studio/${file}`)).features),buildings=n.buildingFiles.flatMap(file=>JSON.parse(read(`studio/${file}`)).features)
  const index=spatialIndex(buildings),selected=parcels.find(f=>f.properties.pin===n.examplePin)
- result.examples[name]={pin:n.examplePin,parcels:n.parcels,initialStudioData:bytes([manifestRaw,...shared,...raws,read(`studio/${n.networkFile}`)]),parcelAndBuildingParse:measure(()=>raws.forEach(b=>JSON.parse(b))),nearbyBuildingQuery:measure(()=>index.query(geometryBounds(selected.geometry)))}
+ result.examples[name]={pin:n.examplePin,parcels:n.parcels,emptySiteBytes:n.emptySitesBytes,initialStudioData:bytes([manifestRaw,...shared,...raws,...(n.emptySitesFile?[read(`studio/${n.emptySitesFile}`)]:[]),read(`studio/${n.networkFile}`)]),parcelAndBuildingParse:measure(()=>raws.forEach(b=>JSON.parse(b))),nearbyBuildingQuery:measure(()=>index.query(geometryBounds(selected.geometry)))}
 }
 console.log(JSON.stringify(result,null,2))

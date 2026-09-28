@@ -6,6 +6,7 @@ import { resolve } from 'node:path'
 import { geometryBounds, boundsOverlap, geometriesOverlap } from '../lib/plannerGeometry.js'
 import { colorBuildingUses } from '../lib/buildingUses.js'
 import { collection, neighborhoodId, neighborhoodAdjacency, spatialIndex } from '../lib/studioData.js'
+import { prepareEmptySites } from '../lib/emptySites.js'
 
 // Legacy study partitioner retained for transport-parity regression tests.
 export function partitionStudioData(parcels, buildings, neighborhoods) {
@@ -52,6 +53,7 @@ export async function prepareStudioData() {
   const root = new URL('../public/data/', import.meta.url), destination = new URL('studio/', root)
   const source = new URL('../../pipeline/data/processed/', import.meta.url)
   const neighborhoods = await json(new URL('neighborhoods.geojson', root))
+  const zoning = await json(new URL('zoning.json', root))
   const adjacency = neighborhoodAdjacency(neighborhoods), neighborhoodIndex = spatialIndex(neighborhoods.features)
   if (neighborhoods.features.length !== 90) throw new Error('City release requires all 90 neighborhoods')
   // Remove obsolete hashed outputs: a local rebuild must match a clean deployment.
@@ -104,7 +106,7 @@ export async function prepareStudioData() {
     if (!regions.has(region)) regions.set(region,[])
     regions.get(region).push(bounds)
   }
-  const manifest={version:2, neighborhoods:descriptors, pinLookup:{}, parcelCount:uses.size, buildingCount:buildings.features.length, maximumFileBytes:0}
+  const manifest={version:2, neighborhoods:descriptors, pinLookup:{}, parcelCount:uses.size, buildingCount:buildings.features.length, maximumFileBytes:0, emptySiteCount:0, emptySiteBytes:0}
   for (const n of neighborhoods.features) {
     const name=n.properties.name, id=neighborhoodId(name), area=n.properties.group
     const parcels=await gz(new URL(`parcels/${id}.geojson.gz`,source))
@@ -112,6 +114,9 @@ export async function prepareStudioData() {
     const bounds=[Math.min(...boxes.map(b=>b[0])), Math.min(...boxes.map(b=>b[1])), Math.max(...boxes.map(b=>b[2])), Math.max(...boxes.map(b=>b[3]))]
     const footprints=index.query(bounds)
     const p=await writeParts(`${id}-parcels`,parcels.features), b=await writeParts(`${id}-buildings`,footprints)
+    const candidates=prepareEmptySites(parcels,zoning,index)
+    const emptySites=await write(`${id}-empty-sites`,candidates)
+    manifest.emptySiteCount+=candidates.matches.length; manifest.emptySiteBytes+=emptySites.bytes
     const region=areaRegions.get(area)
     if (!networkFiles.has(region)) {
       const groupBounds=regions.get(region)
@@ -125,9 +130,9 @@ export async function prepareStudioData() {
     }
     const favorite={'Hazelwood':'0056F00338000000','Lower Lawrenceville':'0049N00010000000'}[name]
     const example=parcels.features.find(f=>f.properties.pin===favorite) || parcels.features.find(f=>f.properties.vacant_lot && f.properties.lot_sqft>=3500 && f.properties.lot_sqft<30000 && f.properties.zoning_code) || parcels.features[0]
-    const descriptor={id,name,area,neighbors:adjacency[id],bounds,viewBounds:geometryBounds(n.geometry),examplePin:example?.properties.pin || null,parcels:parcels.features.length,buildings:footprints.length,parcelFiles:p.files,buildingFiles:b.files,bytes:[...p.sizes,...b.sizes].reduce((a,b)=>a+b,0),...networkFiles.get(region)}
+    const descriptor={id,name,area,neighbors:adjacency[id],bounds,viewBounds:geometryBounds(n.geometry),examplePin:example?.properties.pin || null,parcels:parcels.features.length,buildings:footprints.length,parcelFiles:p.files,buildingFiles:b.files,emptySitesFile:emptySites.file,emptySitesBytes:emptySites.bytes,emptySiteCount:candidates.matches.length,bytes:[...p.sizes,...b.sizes,emptySites.bytes].reduce((a,b)=>a+b,0),...networkFiles.get(region)}
     descriptors.push(descriptor)
-    manifest.maximumFileBytes=Math.max(manifest.maximumFileBytes,...p.sizes,...b.sizes,descriptor.networkBytes,descriptor.roadsBytes)
+    manifest.maximumFileBytes=Math.max(manifest.maximumFileBytes,...p.sizes,...b.sizes,emptySites.bytes,descriptor.networkBytes,descriptor.roadsBytes)
     console.log(`${name}: ${descriptor.parcels} parcels; ${(descriptor.bytes/1e6).toFixed(2)} MB split transport`)
   }
   for (const [prefix,rows] of Object.entries(pinLookup)) {

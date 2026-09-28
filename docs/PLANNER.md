@@ -25,7 +25,9 @@ Studio now applies [supported Title Nine checks](TITLE_NINE.md) before scoring. 
 
 Under **Assumptions → Advanced options**, enter exact stories and choose duplex versus attached-house form. **Additional zoning evidence** holds optional parcel-specific parking, grading, tree, landscaping and IZ inputs. Blank fields remain unknown; entered values are scenario assumptions. Undo/redo and exports retain these inputs.
 
-A six-step tour opens on the first visit to Studio. **Tour** in the header replays it. **Skip**, Escape or **Start planning** dismiss it; that choice is remembered in this browser. The tour previews the relevant controls, restores the previous view when dismissed and never edits the scenario. If browser storage is blocked, dismissal still works for the current session.
+A six-step **Hazelwood example** opens on the first visit to Studio. **Tour** in the header replays it. It loads the real Hazelwood Avenue parcel `0056F00338000000`, previews a single-family house, compares a duplex and triplex, applies Resident priorities, and tests 60 added weekday departures at a real nearby stop. Scores and walk/wait results come from the normal evaluator, not canned outcomes. The tour waits for parcel/network evidence and calculations; unavailable evidence shows an error with Retry and Skip.
+
+The walkthrough uses a temporary scenario. **Skip**, Escape or **Return to my plan** restores the original parcel, scenario, undo/redo history, infrastructure view and inspector view. Demo changes do not remain in the user's plan. Each step starts from declared inputs, so Back does not accumulate edits. Dismissal is remembered in this browser; with storage blocked it still lasts for the current session.
 
 The map legend starts collapsed, with short labels and the existing building colours. Expand **Legend** for full labels, map symbols and the building-layer toggle.
 
@@ -170,6 +172,12 @@ Edits persist when selecting another parcel in the same study area, so subsequen
 
 ## Performance checks and deferred data delivery work
 
+Priority-only edits reuse the last complete physical, legal and network evaluation. Totals, rankings, shared evidence denominators, tradeoffs, placed-plan scores and sensitivity results are recomputed with the new weights. Any other scenario edit or changed evidence triggers a full evaluation. The worker keeps one evidence context, so slider messages do not repeatedly copy parcel, zoning and building geometry. `benchmark:planner` compares this path against full Studio evaluations; parity tests cover zeros, missing evidence, blocked options, placed plans and the real study examples.
+
+Display indexes are prepared per loaded neighborhood and reused across changing viewport combinations. Cache bookkeeping alone does not republish unchanged geometry. Indexes use weak references to their source chunks so eviction can release them, while required planning evidence stays pinned. Reopening Infra reuses its road index and neighborhood membership checks; a new graph or boundary dataset creates a new index.
+
+Parcel, building, road and discovery layers use stable-ID GeoJSON patches. A camera move sends only entering, leaving or changed features; unchanged coordinates and heights are retained. Overview zoom clears detail, and zooming in adds the original features again. Selected-site and scenario overlays remain separate from the baseline sources.
+
 The browser now downloads full-evidence neighborhood chunks, not the old combined study file. No parcel properties were discarded to make the chunks smaller. The old study file survives in `web/testdata/study` for regression tests and is not served to users.
 
 Infra derives its display segments from the already loaded calculation graph, avoiding a separate roads download. A spatial index selects whole original segments touching the visible neighborhood scope and viewport. Display culling does not remove edges from the routing calculation, so routes may leave the view and return. The calculation graph initializes once per worker and is not copied on each edit. Baseline map geometry is not resent during scenario edits. Parcel search metadata is updated only when neighborhood chunks change, rather than rebuilt during pointer movement.
@@ -207,6 +215,10 @@ Up to 40 fixed housing placements can be added across parcels in one study area.
 After placement, A/B and the five-template shortlist compare the whole placed plan plus each next-building alternative. Factor scores are averages weighted by declared proposed homes (a normative aggregation choice), with common evidence coverage across candidates and infrastructure states. Transit reserve is shared once across proposed homes using the same stop, rather than granted to every building separately. Service increases and optional capacity assumptions remain attached to named stops. Unknown capacity stays unknown. All buildings must pass the geometry/use screen for an area alternative to rank; infrastructure can invalidate earlier placements. Existing residents are not added to modeled boarding demand; the spare-capacity input must already allow for existing users. No neighborhood demand, price, displacement or carbon causal forecast is introduced.
 
 ## Unified Studio interface
+
+**Highlight empty sites** marks conservative candidates in amber: affirmative vacancy records, no contradictory recorded use or mapped building overlap, known positive lot area, and at least one standard template with a by-right residential use, physical fit and no supported Title Nine conflict. Recorded public open space is excluded. Unknown/special-use permission is not treated as a pass. Missing building context produces no highlight. Other unsupported checks remain unassessed; a highlight does not establish availability, utility capacity or development approval. An unhighlighted site may support other designs or redevelopment.
+
+This discovery layer uses existing conditions and standard templates, independent of priorities and infrastructure edits. Clicking a highlight previews the first fitting template (not the highest-scoring type); selecting it runs the full current-plan evaluation. Parcels with a placed building leave the highlight. The original evidence and scoring are unchanged. Screening runs once during data preparation using full parcel and footprint geometry. Each neighborhood has a small hashed candidate list; the browser only looks up candidates in the visible area, hides them below detail zoom, and releases its index when the source chunk is evicted. Explorer does not request these files. No browser screening worker is needed.
 
 Studio now includes a Sites tool with record/use filters and map highlights; selecting a result continues on the same map. `/explore`, its source components, original scoring model and parcel download remain unchanged for reference. Existing-use colours do not encode recommendations.
 

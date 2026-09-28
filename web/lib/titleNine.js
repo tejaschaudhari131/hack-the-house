@@ -19,6 +19,20 @@ export function housingSpec(option) {
     : { ...spec, label: 'Duplex (2 units)', useRow: 'Two-Unit' }
 }
 
+/** Proposed use is tested against mapped zoning, never against recorded existing use. */
+export function housingPermission(option, code, zoning) {
+  const spec = housingSpec(option)
+  return unitPermission(spec.scoreType, spec.useRow, resolveZoning(code, zoning), spec.units)
+}
+
+/** Keep attached houses and duplexes separate even though they share a map colour. */
+export function housingUseOptions(code, zoning) {
+  const options = Object.keys(BUILDINGS).flatMap(typeId => typeId === 'townhouse_duplex'
+    ? [{ typeId, residentialForm: 'attached' }, { typeId, residentialForm: 'duplex' }]
+    : [{ typeId }])
+  return options.map(option => ({ ...option, ...housingSpec(option), permission: housingPermission(option, code, zoning) }))
+}
+
 /** Minimum distance to any parcel edge, including holes. Not legal street frontage. */
 export function boundaryClearanceFeet(parcel, building) {
   const origin = geometryCenter(parcel)
@@ -42,7 +56,7 @@ export function boundaryClearanceFeet(parcel, building) {
  */
 export function evaluateTitleNine({ option, feature, zoning, massing, existingBuildings = null, members, siteInputs = {}, projectInputs = {} }) {
   const props = feature.properties, spec = housingSpec(option), code = props.zoning_code
-  const permission = unitPermission(spec.scoreType, spec.useRow, resolveZoning(code, zoning), spec.units)
+  const permission = housingPermission(option, code, zoning)
   const checks = [], district = districtStandards(code), inputs = siteInputs
   const add = (id, label, source, status, detail, section = CODE[source][0], blocking = true) => checks.push({ id, label, section, url: codeLink(source), status, detail, blocking })
   const compare = (id, label, source, actual, limit, mode = 'max', section) => {
@@ -50,7 +64,7 @@ export function evaluateTitleNine({ option, feature, zoning, massing, existingBu
     add(id, label, source, !known ? 'unknown' : (mode === 'max' ? actual <= limit + 1e-7 : actual + 1e-7 >= limit) ? 'pass' : 'conflict',
       `${known ? show(actual) : 'Unknown'}; ${mode === 'max' ? 'maximum' : 'minimum'} ${show(limit)}.`, section)
   }
-  add('use', 'Residential use', 'use', permission.category === 'permitted' ? 'pass' : permission.category === 'not_permitted' ? 'conflict' : permission.category === 'special' ? 'conditional' : 'unknown', `${spec.useRow}: ${permission.label}. ${permission.detail || ''}`)
+  add('use', `Proposed use: ${spec.label}`, 'use', permission.category === 'permitted' ? 'pass' : permission.category === 'not_permitted' ? 'conflict' : permission.category === 'special' ? 'conditional' : 'unknown', `${spec.useRow}: ${permission.label}. ${permission.detail || ''}`)
   const floors = option.floors ?? spec.floors
   add('dimensions', 'Valid proposal dimensions', 'measurements', [option.width, option.depth, option.height].every(x => number(x) && x > 0) && count(floors) && floors > 0 ? 'pass' : 'conflict', 'Positive width, depth and height; a positive whole-number story count. Height means zoning height above grade, not roof elevation.', '925.07')
   if (option.residentialForm === 'attached' && option.typeId === 'townhouse_duplex') {

@@ -49,6 +49,8 @@ export function initialStudioScenario(pin, props = {}, stopId = '') {
 
 export function historyFor(scenario) { return { past: [], present: scenario, future: [] } }
 export function scenarioReducer(state, action) {
+  // Temporary walkthroughs restore the exact pre-tour state, including undo/redo.
+  if (action.type === 'restoreHistory') return action.history
   if (action.type === 'undo') {
     if (!state.past.length) return state
     return { past: state.past.slice(0, -1), present: state.past.at(-1), future: [state.present, ...state.future] }

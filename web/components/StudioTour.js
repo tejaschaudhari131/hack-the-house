@@ -1,24 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
+import { TOUR_STEPS as STEPS } from '../lib/studioTour.js'
 
-const SEEN_KEY = 'playhouse.studio-tour.v1'
+const SEEN_KEY = 'playhouse.studio-tour.v2'
 let dismissedThisSession = false
-const STEPS = [
-  { title: 'Choose a place', target: 'site', tool: 'housing', tab: 'edit',
-    text: 'Start in Hazelwood or Lawrenceville. Click a parcel on the map, or search for an address in the sidebar.' },
-  { title: 'Try a housing type', target: 'housing', tool: 'housing', tab: 'edit',
-    text: 'Cycle through homes to preview them. Green means no supported conflict; red needs review. Add a building when ready, then plan the next one.' },
-  { title: 'Compare the tradeoffs', target: 'comparison', tool: 'housing', tab: 'rankings',
-    text: 'Use “Compare to” for side-by-side housing scores. Physical or supported zoning conflicts remove the score; unsupported rules stay marked “Not assessed”.' },
-  { title: 'Set your priorities', target: 'inspector', tool: 'housing', tab: 'priorities',
-    text: 'Move the sliders to change what matters most. Their relative levels set the ranking. Assumptions holds exact income, rent and building-size inputs.' },
-  { title: 'Test infrastructure', target: 'tools', tool: 'service', tab: 'edit',
-    text: 'Transit tests extra bus service. Infra adds paths, streets and parks. Compare Baseline and Proposal to see the effects supported by the data.' },
-  { title: 'Keep your work', target: 'export', tool: 'housing', tab: 'rankings',
-    text: 'Export your scenario before reloading to keep a copy. Your plan is local to this session. Use the Tour button any time to replay these steps.' },
-]
 
 /** Native modal supplies focus containment and makes the background inert. No tour dependency. */
-export default function StudioTour({ startRequest, onStep, onFinish, triggerRef }) {
+export default function StudioTour({ startRequest, onStep, onFinish, triggerRef, ready, error, evidence, onRetry }) {
   const dialog = useRef(null), title = useRef(null)
   const [open, setOpen] = useState(false), [step, setStep] = useState(0)
   const current = STEPS[step]
@@ -48,7 +35,7 @@ export default function StudioTour({ startRequest, onStep, onFinish, triggerRef 
       title.current?.focus({ preventScroll: true })
     })
     return () => { cancelAnimationFrame(frame); target?.classList.remove('tour-highlight') }
-  }, [open, current])
+  }, [open, current, ready])
 
   function finish() {
     dismissedThisSession = true
@@ -62,10 +49,12 @@ export default function StudioTour({ startRequest, onStep, onFinish, triggerRef 
   function move(next) { onStep(STEPS[next]); setStep(next) }
 
   return <dialog ref={dialog} className="studio-tour" aria-labelledby="studio-tour-title" aria-describedby="studio-tour-description" onCancel={event => { event.preventDefault(); finish() }}>
-    <div className="tour-top"><span>QUICK TOUR · {step + 1} / {STEPS.length}</span><button onClick={finish} aria-label="Skip tour">Skip</button></div>
+    <div className="tour-top"><span>HAZELWOOD EXAMPLE · {step + 1} / {STEPS.length}</span><button onClick={finish} aria-label="Skip tour">Skip</button></div>
     <h2 id="studio-tour-title" ref={title} tabIndex={-1}>{current.title}</h2>
     <p id="studio-tour-description">{current.text}</p>
+    <p className="tour-evidence" role="status">{error ? `Example unavailable: ${error}` : ready ? evidence : 'Loading the example and recalculating…'}</p>
+    {error && <button onClick={onRetry}>Retry example</button>}
     <div className="tour-progress" aria-hidden="true">{STEPS.map((item, i) => <i key={item.title} className={i === step ? 'active' : ''}/>)}</div>
-    <div className="tour-actions"><button disabled={step === 0} onClick={() => move(step - 1)}>Back</button><button className="tour-next" onClick={() => step === STEPS.length - 1 ? finish() : move(step + 1)}>{step === STEPS.length - 1 ? 'Start planning' : 'Next'}</button></div>
+    <div className="tour-actions"><button disabled={step === 0 || !ready} onClick={() => move(step - 1)}>Back</button><button className="tour-next" disabled={!ready} onClick={() => step === STEPS.length - 1 ? finish() : move(step + 1)}>{step === STEPS.length - 1 ? 'Return to my plan' : 'Next'}</button></div>
   </dialog>
 }

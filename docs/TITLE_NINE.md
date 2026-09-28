@@ -4,6 +4,10 @@ Studio applies supported yes/no zoning checks before ranking housing. **A suppor
 
 Rules without enough evidence are **not assessed**. They are excluded from eligibility, not counted as passes or failures. Required approvals and discretionary exceptions stay visible as review notes. A remaining score compares housing under the assessed rules; it is not full zoning clearance.
 
+The Studio sidebar separates **Recorded use** (county assessment), **Mapped zoning** (district), and **Proposed use** (the selected housing type's permission). Expand **Housing use permissions** to see the other types, including separate attached-house and duplex rows. Existing residential or commercial use does not itself allow or prohibit new housing. These are use-table results, not a claim that the whole project is buildable; physical fit and other supported zoning conflicts still remove scores. Rezoning, demolition and conversion of existing buildings are not simulated.
+
+The comparison prints the blocker directly under **No score**. This applies to the tested size and placement, not all housing on the parcel. Regression example: 5006 Glenwood Ave (`0056G00082000000`, R1D-M) permits the checked single-family use; the default 8 × 12 m footprint fails, while a 6 × 10 m draft clears the current mapped fit/collision screen and receives a score. Unassessed checks still need review.
+
 ## Implemented checks
 
 | Rules | Evidence / limits |

@@ -29,6 +29,17 @@ test('PIN links resolve from one small prefix index, never a citywide parcel dow
   assert.equal(calls,1)
 })
 
+test('Studio loads the versioned candidate list with its neighborhood; Explorer does not', async () => {
+  const requests = [], emptySites = { version: 1, matches: [{ pin: '000ABC123', typeId: 'single_family' }] }
+  const candidateDescriptor = { ...descriptor, emptySitesFile: 'brookline-empty-sites.abcdef.json' }
+  const fetcher = async url => { requests.push(url); return { ok: true, json: async () => url.includes('empty-sites') ? emptySites : { features: [] } } }
+  assert.deepEqual((await loadNeighborhood(candidateDescriptor, undefined, fetcher)).emptySites, emptySites)
+  assert.ok(requests.includes('/data/studio/brookline-empty-sites.abcdef.json'))
+  requests.length = 0
+  assert.equal((await loadNeighborhood(candidateDescriptor, undefined, fetcher, false)).emptySites, null)
+  assert.ok(!requests.some(url => url.includes('empty-sites')))
+})
+
 test('failed parts reject a neighborhood rather than silently dropping buildings or scores',async()=>{
   await assert.rejects(loadNeighborhood(descriptor,undefined,async()=>({ok:false,status:503})),/503/)
   await assert.rejects(loadNeighborhood({...descriptor,parcelFiles:['../private.json']},undefined,()=>{throw Error('must not fetch')}),/Invalid/)

@@ -1,10 +1,11 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import { BUILDING_IDS } from './buildings.js'
-import { initialStudioScenario, scenarioReducer, historyFor, scenarioExport } from './plannerState.js'
+import { initialStudioScenario, scenarioReducer, historyFor, scenarioExport, optionFor } from './plannerState.js'
 import { comparisonTemplates } from './plannerShortlist.js'
 import { evaluatePlanner } from './plannerModel.js'
-import { rectangleAt } from './plannerGeometry.js'
+import { rectangleAt, geometryBounds, boundsOverlap } from './plannerGeometry.js'
 
 function fixture() {
   const scores = Object.fromEntries(['single_family', 'townhouse_duplex', 'small_apartment', 'large_apartment'].map((id, i) => [id, { demand: 30 + 15 * i, displacement_risk: 30, carbon_index: 60 - 10 * i }]))
@@ -12,6 +13,24 @@ function fixture() {
   const zoning = { districts: { TEST: { use_table_read: true, code_section: 'Fixture', allowed: ['single_family', 'townhouse_duplex', 'small_apartment', 'large_apartment'], use_rows: { 'Single-Unit Detached': 'P', 'Three-Unit': 'P', 'Multi-Unit': 'P' } } } }
   return { feature, zoning, scenario: initialStudioScenario('fixture', feature.properties), stop: null, existingBuildings: [] }
 }
+
+test('Glenwood residential parcel: a smaller proposal can score when the standard footprint cannot', () => {
+  const read = name => JSON.parse(readFileSync(new URL(`../testdata/study/${name}`, import.meta.url)))
+  const feature = read('parcels.geojson').features.find(f => f.properties.pin === '0056G00082000000')
+  const existingBuildings = read('existing-buildings.geojson').features.filter(f => boundsOverlap(geometryBounds(feature.geometry), geometryBounds(f.geometry)))
+  const scenario = initialStudioScenario(feature.properties.pin, feature.properties)
+  scenario.draft = optionFor('single_family', 1000)
+  const run = () => evaluatePlanner({ feature, zoning: read('zoning.json'), scenario, existingBuildings, stop: null }).proposal.single_family
+  assert.equal(feature.properties.land_use, 'SINGLE FAMILY')
+  assert.equal(run().permission.category, 'permitted')
+  assert.equal(run().gate, 'Footprint does not fit')
+  assert.equal(run().total, null)
+  Object.assign(scenario.draft, { width: 6, depth: 10 })
+  const smaller = run()
+  assert.equal(smaller.permission.category, 'permitted')
+  assert.equal(smaller.massing.collisions, 0)
+  assert.ok(Number.isFinite(smaller.total))
+})
 
 test('Studio stores and exports one draft; comparison types are unique and optional', () => {
   const { scenario } = fixture()
