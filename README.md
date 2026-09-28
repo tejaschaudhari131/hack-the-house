@@ -10,7 +10,7 @@ Playhouse helps planners, developers and communities test housing and infrastruc
 
 [Open Playhouse](https://playhouse-pittsburgh.vercel.app) · [Citywide preview](https://hack-the-house-git-playhouse-citywide-tej-fff0.vercel.app) · [Hackathon challenge](https://ai-horizons-2026-ai-for-housing-hackathon.brandon831577.chatgpt.site/challenges/typology-equity-climate)
 
-https://hack-the-house.vercel.app still opens the app as an alternate address.
+
 
 The screenshots show the citywide branch. The preview may require team sign-in; production follows `main`.
 
