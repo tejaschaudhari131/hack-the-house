@@ -11,7 +11,7 @@ import { configureMapWorkers } from '../lib/maplibreSetup.js'
 import { haversineMeters } from '../lib/geo.js'
 import { simulatedColor } from '../lib/buildingUses.js'
 import { buildingHeightDescription, buildingHeightSource } from '../lib/buildingHeights.js'
-import { DETAIL_ZOOM, sameFeatureSet, spatialIndex } from '../lib/studioData.js'
+import { DETAIL_ZOOM, sameFeatureSet } from '../lib/studioData.js'
 import { networkDisplayIndex } from '../lib/networkDisplay.js'
 
 const empty = () => ({ type: 'FeatureCollection', features: [] })
@@ -19,12 +19,10 @@ const fc = features => ({ type: 'FeatureCollection', features })
 // Official neighborhood union extent: navigation bounds, not a polygon mask.
 
 
-export default function PlannerMap({ parcels, neighborhoods, stops, existingBuildings, showExisting, selected, buildingPreview, stop, proposed, additionalDepartures, view3d, onSelect, onStop, tool, placing, onPlace, onHover, placedBuildings = [], network, visibleNeighborhoodIds = [], networkResult, reservations, connections, routes = [], drawing, draftNode, onDraw, discoveryPins = [], emptyPins = [], onViewport }) {
+export default function PlannerMap({ parcelIndex, buildingIndex, neighborhoods, stops, showExisting, selected, buildingPreview, stop, proposed, additionalDepartures, view3d, onSelect, onStop, tool, placing, onPlace, onHover, placedBuildings = [], network, visibleNeighborhoodIds = [], networkResult, reservations, connections, routes = [], drawing, draftNode, onDraw, discoveryPins = [], emptyPins = [], onViewport }) {
   const container = useRef(null), mapRef = useRef(null), callbacks = useRef({ onSelect, onStop, tool, placing, onPlace })
   const [ready, setReady] = useState(false), [error, setError] = useState(null)
   const [viewport, setViewport] = useState(null)
-  const parcelIndex = useMemo(() => spatialIndex(parcels.features), [parcels])
-  const buildingIndex = useMemo(() => spatialIndex(existingBuildings?.features || []), [existingBuildings])
   const visibleParcels = useMemo(() => viewport?.zoom >= DETAIL_ZOOM ? parcelIndex.query(viewport.bounds) : [], [viewport, parcelIndex])
   const visibleBuildings = useMemo(() => viewport?.zoom >= DETAIL_ZOOM && showExisting ? buildingIndex.query(viewport.bounds) : [], [viewport, buildingIndex, showExisting])
   const lastPin = useRef(null)

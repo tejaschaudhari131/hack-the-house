@@ -1,4 +1,4 @@
-import { boundsOverlap, geometryBounds, geometriesOverlap } from './plannerGeometry.js'
+import { boundsOverlap, geometryBounds, geometriesOverlap, slimParcels } from './plannerGeometry.js'
 
 export const DETAIL_ZOOM = 14
 export const NEIGHBORHOOD_CACHE_SIZE = 6
@@ -33,6 +33,42 @@ export function sameFeatureSet(a, b) {
   if (!a || a.length !== b.length) return false
   const previous = new Set(a)
   return b.every(f => previous.has(f))
+}
+
+export function sameChunkMap(a, b) {
+  return a.size === b.size && [...a].every(([id, chunk]) => b.get(id) === chunk)
+}
+
+/** Build each loaded neighborhood's display indexes once, not once per combination.
+ * Weak keys release indexes with evicted chunks; collision evidence remains untouched.
+ */
+export function createNeighborhoodDisplay() {
+  const prepared = new WeakMap(), stats = { prepared: 0 }
+  let previous
+  function get(chunks, ids) {
+    const key = ids.join('|'), sources = ids.map(id => chunks.get(id)).filter(Boolean)
+    if (previous?.key === key && previous.sources.length === sources.length && sources.every((source, i) => source === previous.sources[i])) return previous.result
+    const indexes = sources.map(chunk => {
+      if (!prepared.has(chunk)) {
+        prepared.set(chunk, { parcels: spatialIndex(slimParcels(chunk.parcels).features), buildings: spatialIndex(chunk.buildings.features) })
+        stats.prepared++
+      }
+      return prepared.get(chunk)
+    })
+    const visible = new Set(ids)
+    const query = (field, bounds) => {
+      const matches = new Map()
+      for (const index of indexes) for (const f of index[field].query(bounds)) {
+        if (field === 'buildings' && !f.properties.display_neighborhoods?.some(id => visible.has(id))) continue
+        matches.set(field === 'parcels' ? f.properties.pin : f.properties.id, f)
+      }
+      return [...matches.values()]
+    }
+    const result = { parcelIndex: { query: bounds => query('parcels', bounds) }, buildingIndex: { query: bounds => query('buildings', bounds) } }
+    previous = { key, sources, result }
+    return result
+  }
+  return { get, stats }
 }
 
 export function mergeNeighborhoods(chunks, field) {

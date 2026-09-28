@@ -2,8 +2,8 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { partitionStudioData } from '../scripts/prepare-studio-data.mjs'
-import { DETAIL_ZOOM, visibleNeighborhoods, mergeNeighborhoods, retainNeighborhoods, spatialIndex, neighborhoodAdjacency, displayBuildings, sameFeatureSet } from './studioData.js'
-import { geometryBounds, boundsOverlap } from './plannerGeometry.js'
+import { DETAIL_ZOOM, visibleNeighborhoods, mergeNeighborhoods, retainNeighborhoods, spatialIndex, neighborhoodAdjacency, displayBuildings, sameFeatureSet, sameChunkMap, createNeighborhoodDisplay } from './studioData.js'
+import { geometryBounds, boundsOverlap, slimParcels } from './plannerGeometry.js'
 import { evaluatePlanner, nearbyStops, preferredStop } from './plannerModel.js'
 import { EXAMPLES, initialStudioScenario } from './plannerState.js'
 import { prepareNetwork } from './networkModel.js'
@@ -12,6 +12,30 @@ const read = name => JSON.parse(readFileSync(new URL(`../testdata/study/${name}`
 const parcels = read('parcels.geojson'), buildings = read('existing-buildings.geojson'), neighborhoods = read('neighborhoods.geojson')
 const { manifest, chunks } = partitionStudioData(parcels, buildings, neighborhoods)
 const originals = new Map(parcels.features.map(f => [f.properties.pin, f]))
+
+test('reused neighborhood indexes preserve visible geometry, deduplicate boundary buildings and skip unchanged cache publications', () => {
+  const cache = new Map(chunks.map(c => [c.id, { ...c.data, buildings: { features: c.data.buildings.features.map(f => ({ ...f, properties: { ...f.properties, display_neighborhoods: [c.id] } })) } }]))
+  const display = createNeighborhoodDisplay(), ids = [...cache.keys()], bounds = [-81, 39, -74, 43]
+  const first = display.get(cache, [ids[0]])
+  assert.equal(display.get(new Map(cache), [ids[0]]), first, 'unrelated cache changes retain the display object')
+  const firstParcels = first.parcelIndex.query(bounds)
+  const both = display.get(cache, ids.slice(0, 2))
+  assert.equal(display.stats.prepared, 2)
+  const wanted = ids.slice(0, 2).map(id => cache.get(id))
+  const expected = slimParcels(mergeNeighborhoods(wanted, 'parcels')).features
+  assert.deepEqual(both.parcelIndex.query(bounds), expected)
+  assert.deepEqual(both.buildingIndex.query(bounds), displayBuildings(mergeNeighborhoods(wanted, 'buildings'), ids.slice(0, 2)).features)
+  assert.deepEqual(display.get(cache, [ids[0]]).parcelIndex.query(bounds), firstParcels)
+  assert.equal(display.stats.prepared, 2, 'returning to a cached neighborhood does not rebuild indexes')
+  assert.equal(display.get(cache, [ids[0]]).parcelIndex.query(bounds)[0], firstParcels[0])
+  assert.deepEqual(display.get(cache, []).parcelIndex.query(bounds), [])
+  assert.deepEqual(display.get(cache, []).buildingIndex.query(bounds), [])
+  assert.ok(sameChunkMap(cache, new Map([...cache].reverse())), 'LRU order does not change evidence')
+  const refreshed = new Map(cache); refreshed.set(ids[0], { ...cache.get(ids[0]) })
+  assert.ok(!sameChunkMap(cache, refreshed))
+  display.get(refreshed, [ids[0]])
+  assert.equal(display.stats.prepared, 3, 'a source refresh rebuilds the affected indexes')
+})
 
 test('neighborhood transport retains every original parcel and all recorded building geometry', () => {
   const joined = mergeNeighborhoods(chunks.map(c => c.data), 'parcels')

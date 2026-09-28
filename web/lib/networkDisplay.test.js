@@ -11,6 +11,9 @@ test('network display keeps original vertices, removes duplicate directions, and
   const neighborhoods={features:[{properties:{name:'Here'},geometry:box(-1,-1,3,3)},{properties:{name:'Away'},geometry:box(9,9,12,12)}]}
   for(const f of neighborhoods.features)f.geometry.coordinates=f.geometry.coordinates.map(r=>r.map(p=>p.map(v=>v/1000)))
   const index=networkDisplayIndex(network,neighborhoods)
+  assert.equal(networkDisplayIndex(network,neighborhoods),index,'reopening Infra reuses its index')
+  assert.notEqual(networkDisplayIndex(structuredClone(network),neighborhoods),index,'a changed graph is indexed separately')
+  assert.notEqual(networkDisplayIndex(network,structuredClone(neighborhoods)),index,'changed boundaries invalidate membership')
   const visible=index.query([-.001,-.001,.020,.020],['here'])
   assert.equal(visible.length,2)
   assert.deepEqual(visible.map(f=>f.geometry.coordinates),[[network.nodes[0],network.nodes[1]],[network.nodes[1],network.nodes[2]]])
