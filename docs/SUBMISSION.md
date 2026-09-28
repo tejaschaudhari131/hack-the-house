@@ -48,7 +48,7 @@ https://github.com/tejaschaudhari131/hack-the-house
 
 ## Live app
 
-https://hack-the-house.vercel.app
+https://playhouse-pittsburgh.vercel.app
 
 Citywide release preview (PR #7, not merged): https://hack-the-house-git-playhouse-citywide-tej-fff0.vercel.app. Vercel deployment succeeded; the team will perform the protected-preview walkthrough. Local five-neighborhood checks are recorded in [VALIDATION.md](VALIDATION.md).
 

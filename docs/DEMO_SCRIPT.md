@@ -1,6 +1,6 @@
 # Demo script (about 4 minutes)
 
-Recorded against production, https://hack-the-house.vercel.app, at commit `8ff2989` data (pulled 2026-09-26/27) with default weights. The guided example resolves its parcel from the data at runtime (`web/lib/guide.js`); with this data it is **PIN 0056F00338000000** (Hazelwood Ave, Hazelwood; no house number in the county record). If the numbers on screen differ, the data or weights changed; say what is on screen, not what is written here.
+Recorded against production, https://playhouse-pittsburgh.vercel.app, at commit `8ff2989` data (pulled 2026-09-26/27) with default weights. The guided example resolves its parcel from the data at runtime (`web/lib/guide.js`); with this data it is **PIN 0056F00338000000** (Hazelwood Ave, Hazelwood; no house number in the county record). If the numbers on screen differ, the data or weights changed; say what is on screen, not what is written here.
 
 Captions in the recording are on-screen text overlays. There is no voice track; the narration below is for a live presenter.
 

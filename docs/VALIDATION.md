@@ -131,7 +131,7 @@ At the Checkpoint 3 commit: JS 66/66 pass; Python `test_score` 18, `test_pii` 5,
 - Checkpoint 1 (local production build): fresh load → onboarding → guided shortlist (25 matches, top PIN 0056F00338000000) → triplex vs townhouse (72.6 vs 72.9) → priority change reverses → brief printed to PDF (2 pages: brief + source/version footer). No page exceptions.
 - Checkpoint 2: sweep table, evidence drawer, share link restore (603 characters), stale-version warnings, bad-link rejection, Tab order from the skip link with visible outlines, 0 px horizontal overflow at 390 px.
 - Checkpoint 3: the recorded walkthrough of production (`/opt/cursor/artifacts/cp3/`) follows `docs/DEMO_SCRIPT.md`.
-- Owner's production checks after the Checkpoint 2 merge: title, share link, and the six-factor compare sentence verified on https://hack-the-house.vercel.app.
+- Owner's production checks after the Checkpoint 2 merge: title, share link, and the six-factor compare sentence verified on https://playhouse-pittsburgh.vercel.app.
 
 ## Performance (measured, not estimated)
 
